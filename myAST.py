@@ -24,7 +24,7 @@ def getVar():
 	
 	var = Name("tmp%d" % (varNum))
 	
-	varLocs[var] = varNum * 4
+	varLocs[var.name] = varNum * 4
 	varNum += 1
 	
 	stackSize += 4
@@ -143,16 +143,24 @@ class Module(Node):
 		
 		code  = ".globl main\n"
 		code += "main:\n"
+		
+		#Push the old base pointer onto the stack.
 		code += "\tpushl %ebp\n"
+		#Make the old stack pointer the new base pointer.
+		code += "\tmovl %esp, %ebp\n"
 		
 		for stmt in self.stmts:
-			tmpSubCode, foo = stmt.compile()
-			
-			subCode += tmpSubCode + "\n"
+			subCode += stmt.compile()
 		
+		#Expand the stack.
 		code += "\tsubl $%d, %%esp\n\n" % (getStackSize())
 		
 		code += subCode
+		
+		#Restore the stack.
+		code += "\tleave\n"
+		#Return
+		code += "\tret\n"
 		
 		return code
 	
@@ -183,7 +191,7 @@ class Module(Node):
 		return module
 
 class Statement(Node):
-	def compile(self):
+	def compile(self, dest):
 		pass
 	
 	def flatten(self):
@@ -206,21 +214,15 @@ class Assign(Node):
 	def __repr__(self):
 		return "Assignment(%s, %s)" % (repr(self.var), repr(self.exp))
 	
-	def compile(self):
-		pass
+	def compile(self, dest = None):
+		code = ""
 		
-		"""
-		code, subResult = self.exp.compile()
+		if isinstance(self.exp, Name):
+			code += "\tmovl %s, %s\n" % (self.exp.compile(), self.var)
+		else:
+			code += self.exp.compile(self.var)
 		
-		result = getVarLoc(self.var)
-		
-		code += "\tmovl -%d(%%ebp), %%eax\n" % (subResult)
-		code += "\tmovl %%eax, -%d(%%ebp)\n" % (result)
-		
-		code += "\n"
-		
-		return code, self.var
-		"""
+		return code
 	
 	def flatten(self):
 		preStmts, self.exp = self.exp.flatten()
@@ -244,8 +246,14 @@ class FunctionCall(Statement):
 	def __repr__(self):
 		return "FunctionCall(%s, %s)" % (repr(self.name), repr(self.args))
 	
-	def compile(self):
-		pass
+	def compile(self, dest):
+		if isinstance(dest, Name):
+			dest = dest.compile()
+		
+		code  = "\tcall %s\n" % (self.name.name)
+		code += "\tmovl %%eax, %s\n" % (dest)
+
+		return code
 	
 	def flatten(self):
 		preStmts = []
@@ -304,8 +312,12 @@ class Print(Statement):
 		
 		return preStmts, self
 	
-	def compile(self):
-		pass
+	def compile(self, dest = None):
+		code  = "\tpushl %s\n" % (self.exps[0].compile())
+		code += "\tcall print_int_nl\n"
+		code += "\taddl $4, %esp\n"
+
+		return code
 	
 	def getChildren(self):
 		return self.exprs
@@ -325,7 +337,7 @@ class Print(Statement):
 		return call + ")"
 
 class Expression(Node):
-	def compile(self):
+	def compile(self, dest):
 		pass
 	
 	def getChildren(self):
@@ -341,7 +353,7 @@ class Name(Expression):
 	def __repr__(self):
 		return "Name(%s)" % (repr(self.name))
 	
-	def compile(self):
+	def compile(self, dest = None):
 		return "-%d(%%ebp)" % (getVarLoc(self.name))
 	
 	def flatten(self):
@@ -366,14 +378,14 @@ class Integer(Expression):
 	def __repr__(self):
 		return "Integer(%d)" % (self.value)
 	
-	def compile(self):
+	def compile(self, dest = None):
 		return "$%d" % (self.value)
 	
 	def flatten(self):
 		return [], self
 	
 	def getChildren(self):
-		None
+		[]
 	
 	def isSimple(self):
 		True
@@ -389,8 +401,26 @@ class BinOp(Expression):
 		self.left = left
 		self.right = right
 	
-	def compile(self):
-		pass
+	def compile(self, dest):
+		if isinstance(dest, Name):
+			dest = dest.compile()
+		
+		code = ""
+
+		if isinstance(self.left, Integer) and isinstance(self.right, Integer):
+			value = eval("%d %s %d" % (self.left.value, self.opString(), self.right.value))
+			code = "\tmovl %d, %s\n" % (value, dest)
+		elif isinstance(self.left, Integer) and isinstance(self.right, Name):
+			code += "\tmovl %s, %s\n" % (self.right.compile(), dest)
+			code += "\t%s %s, %s\n" % (self.opInstr(), self.left.compile(), dest)
+		elif isinstance(self.left, Name) and isinstance(self.right, Integer):
+			code += "\tmovl %s, %s\n" % (self.left.compile(), dest)
+			code += "\t%s %s, %s\n" % (self.opInstr(), self.right.compile(), est)
+		elif isinstance(self.left, Name) and isinstance(self.left, Name):
+			code += "\tmovl %s, %s\n" % (self.left.compile(), dest)
+			code += "\t%s %s, %s\n" %d (self.opInstr(), self.right.compile(), dest)
+
+		return code
 	
 	def flatten(self):
 		leftPreStmts, self.left = self.left.flatten()
@@ -406,6 +436,9 @@ class BinOp(Expression):
 	def getChildren(self):
 		return [self.left, self.right]
 	
+	def opInstr(self):
+		pass
+	
 	def opString(self):
 		pass
 	
@@ -419,8 +452,19 @@ class UnaryOp(Expression):
 	def __init__(self, operand):
 		self.operand = operand
 	
-	def compile(self):
-		pass
+	def compile(self, dest = None):
+		if dest != None and isinstance(dest, Name):
+			dest = dest.compile()
+		
+		code = ""
+
+		if dest == None:
+			code += "\t%s -%d(%%ebp)\n" % (self.opInstr(), self.operand.compile())
+		else:
+			code += "\tmovl %s, %s\n" % (self.operand.compile(), dest)
+			code += "\t%s -%d(%%ebp), %s\n" % (self.opInstr(), self.operand.compile(), dest)
+
+		return code
 	
 	def flatten(self):
 		preStmts, self.operand = self.operand.flatten()
@@ -432,6 +476,9 @@ class UnaryOp(Expression):
 	
 	def getChildren(self):
 		return [self.operand]
+	
+	def opInstr(self):
+		pass
 	
 	def opString(self):
 		pass
@@ -446,12 +493,18 @@ class Negate(UnaryOp):
 	def __repr__(self):
 		return "Negate(%s)" % (repr(self.operand))
 	
+	def opInstr(self):
+		return "negl"
+	
 	def opString(self):
 		return "-"
 
 class Add(BinOp):
 	def __repr__(self):
 		return "Add((%s, %s))" % (repr(self.left), repr(self.right))
+	
+	def opInstr(self):
+		return "addl"
 	
 	def opString(self):
 		return "+"
@@ -460,6 +513,9 @@ class Div(BinOp):
 	def __repr__(self):
 		return "Add((%s, %s))" % (repr(self.left), repr(self.right))
 	
+	def opInstr(self):
+		return "divl"
+	
 	def opString(self):
 		return "/"
 
@@ -467,12 +523,18 @@ class Mul(BinOp):
 	def __repr__(self):
 		return "Mul((%s, %s))" % (repr(self.left), repr(self.right))
 	
+	def opInstr(self):
+		return "mull"
+	
 	def opString(self):
 		return "*"
 
 class Sub(BinOp):
 	def __repr__(self):
 		return "Sub((%s, %s))" % (repr(self.left), repr(self.right))
+	
+	def opInstr(self):
+		return "subl"
 	
 	def opString(self):
 		return "-"

@@ -5,9 +5,14 @@ import sys
 
 import myAST
 
-f = open(sys.argv[1])
+if len(sys.argv) < 3:
+	print("Insufficient number of arguments.")
+	exit(0)
 
-ast = compiler.parse(f.read())
+inFile = open(sys.argv[1])
+outFile = open(sys.argv[2], "w")
+
+ast = compiler.parse(inFile.read())
 
 #Print their AST
 print(ast)
@@ -25,3 +30,11 @@ ast = ast.flatten()
 
 #Print out the Python code for my flattened AST
 print(ast.toPython())
+
+assembly = ast.compile()
+
+#Compile and print the AST
+print(assembly)
+
+#Put the compiled AST into the output file.
+outFile.write(assembly)
