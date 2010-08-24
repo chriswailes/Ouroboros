@@ -22,7 +22,7 @@ def getVar():
 	
 	global stackSize
 	
-	var = Name("tmp%d" % (varNum))
+	var = Name("tmp%d".format(varNum))
 	
 	varLocs[var.name] = varNum * 4
 	varNum += 1
@@ -136,7 +136,7 @@ class Module(Node):
 		self.stmts = stmts
 	
 	def __repr__(self):
-		return "Module(%s)" % (repr(self.stmts))
+		return "Module({0})".format(repr(self.stmts))
 	
 	def compile(self):
 		subCode = ""
@@ -153,7 +153,7 @@ class Module(Node):
 			subCode += stmt.compile()
 		
 		#Expand the stack.
-		code += "\tsubl $%d, %%esp\n\n" % (getStackSize())
+		code += "\tsubl ${0:d}, %esp\n\n".format(getStackSize())
 		
 		code += subCode
 		
@@ -212,13 +212,13 @@ class Assign(Node):
 		self.exp = exp
 	
 	def __repr__(self):
-		return "Assignment(%s, %s)" % (repr(self.var), repr(self.exp))
+		return "Assignment({0}, {1})".format(repr(self.var), repr(self.exp))
 	
 	def compile(self, dest = None):
 		code = ""
 		
 		if isinstance(self.exp, Name):
-			code += "\tmovl %s, %s\n" % (self.exp.compile(), self.var)
+			code += "\tmovl {0}, {1}\n".format(self.exp.compile(), self.var)
 		else:
 			code += self.exp.compile(self.var)
 		
@@ -236,7 +236,7 @@ class Assign(Node):
 		pass
 	
 	def toPython(self):
-		return "%s = %s" % (self.var.toPython(), self.exp.toPython())
+		return "{0} = {1}".format(self.var.toPython(), self.exp.toPython())
 
 class FunctionCall(Statement):
 	def __init__(self, name, args):
@@ -244,14 +244,14 @@ class FunctionCall(Statement):
 		self.args = args
 	
 	def __repr__(self):
-		return "FunctionCall(%s, %s)" % (repr(self.name), repr(self.args))
+		return "FunctionCall({0}, {1})".format(repr(self.name), repr(self.args))
 	
 	def compile(self, dest):
 		if isinstance(dest, Name):
 			dest = dest.compile()
 		
-		code  = "\tcall %s\n" % (self.name.name)
-		code += "\tmovl %%eax, %s\n" % (dest)
+		code  = "\tcall {0}\n".format(self.name.name)
+		code += "\tmovl %eax, {0}\n".format(dest)
 
 		return code
 	
@@ -295,7 +295,7 @@ class Print(Statement):
 		self.exps = exps
 	
 	def __repr__(self):
-		return "Print(%s)" % (repr(self.exps))
+		return "Print({0})".format(repr(self.exps))
 	
 	def flatten(self):
 		preStmts = []
@@ -313,7 +313,7 @@ class Print(Statement):
 		return preStmts, self
 	
 	def compile(self, dest = None):
-		code  = "\tpushl %s\n" % (self.exps[0].compile())
+		code  = "\tpushl {0}\n".format(self.exps[0].compile())
 		code += "\tcall print_int_nl\n"
 		code += "\taddl $4, %esp\n"
 
@@ -351,10 +351,10 @@ class Name(Expression):
 		self.name = name
 	
 	def __repr__(self):
-		return "Name(%s)" % (repr(self.name))
+		return "Name({0})".format(repr(self.name))
 	
 	def compile(self, dest = None):
-		return "-%d(%%ebp)" % (getVarLoc(self.name))
+		return "-{0:d}(%ebp)".format(getVarLoc(self.name))
 	
 	def flatten(self):
 		return [], self
@@ -376,10 +376,10 @@ class Integer(Expression):
 		self.value = value
 	
 	def __repr__(self):
-		return "Integer(%d)" % (self.value)
+		return "Integer({0:d})".format(self.value)
 	
 	def compile(self, dest = None):
-		return "$%d" % (self.value)
+		return "${0:d}".format(self.value)
 	
 	def flatten(self):
 		return [], self
@@ -394,7 +394,7 @@ class Integer(Expression):
 		pass
 	
 	def toPython(self):
-		return "%s" % (self.value)
+		return "{0:d}".format(self.value)
 
 class BinOp(Expression):
 	def __init__(self, left, right):
@@ -408,17 +408,17 @@ class BinOp(Expression):
 		code = ""
 
 		if isinstance(self.left, Integer) and isinstance(self.right, Integer):
-			value = eval("%d %s %d" % (self.left.value, self.opString(), self.right.value))
-			code = "\tmovl %d, %s\n" % (value, dest)
+			value = eval("{0:d} {1} {2:d}".format(self.left.value, self.opString(), self.right.value))
+			code = "\tmovl {0:d}, {1}\n".format(value, dest)
 		elif isinstance(self.left, Integer) and isinstance(self.right, Name):
-			code += "\tmovl %s, %s\n" % (self.right.compile(), dest)
-			code += "\t%s %s, %s\n" % (self.opInstr(), self.left.compile(), dest)
+			code += "\tmovl {0}, {1}\n".format(self.right.compile(), dest)
+			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.left.compile(), dest)
 		elif isinstance(self.left, Name) and isinstance(self.right, Integer):
-			code += "\tmovl %s, %s\n" % (self.left.compile(), dest)
-			code += "\t%s %s, %s\n" % (self.opInstr(), self.right.compile(), est)
+			code += "\tmovl {0}, {1}\n".format(self.left.compile(), dest)
+			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.right.compile(), est)
 		elif isinstance(self.left, Name) and isinstance(self.left, Name):
-			code += "\tmovl %s, %s\n" % (self.left.compile(), dest)
-			code += "\t%s %s, %s\n" %d (self.opInstr(), self.right.compile(), dest)
+			code += "\tmovl {0}, {1}\n".format(self.left.compile(), dest)
+			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.right.compile(), dest)
 
 		return code
 	
@@ -446,7 +446,7 @@ class BinOp(Expression):
 		pass
 	
 	def toPython(self):
-		return "%s %s %s" % (self.left.toPython(), self.opString(), self.right.toPython())
+		return "{0} {1} {2}".format(self.left.toPython(), self.opString(), self.right.toPython())
 
 class UnaryOp(Expression):
 	def __init__(self, operand):
@@ -459,10 +459,10 @@ class UnaryOp(Expression):
 		code = ""
 
 		if dest == None:
-			code += "\t%s -%d(%%ebp)\n" % (self.opInstr(), self.operand.compile())
+			code += "\t{0} -{1:d}(%ebp)\n".format(self.opInstr(), self.operand.compile())
 		else:
-			code += "\tmovl %s, %s\n" % (self.operand.compile(), dest)
-			code += "\t%s -%d(%%ebp), %s\n" % (self.opInstr(), self.operand.compile(), dest)
+			code += "\tmovl {0}, {1}\n".format(self.operand.compile(), dest)
+			code += "\t{0} -{1:d}(%ebp), {2}\n".format(self.opInstr(), self.operand.compile(), dest)
 
 		return code
 	
@@ -487,11 +487,11 @@ class UnaryOp(Expression):
 		pass
 	
 	def toPython(self):
-		return "%s%s" % (self.opString(), self.operand.toPython())
+		return "{0}{1}".format(self.opString(), self.operand.toPython())
 
 class Negate(UnaryOp):
 	def __repr__(self):
-		return "Negate(%s)" % (repr(self.operand))
+		return "Negate({0})".format(repr(self.operand))
 	
 	def opInstr(self):
 		return "negl"
@@ -501,7 +501,7 @@ class Negate(UnaryOp):
 
 class Add(BinOp):
 	def __repr__(self):
-		return "Add((%s, %s))" % (repr(self.left), repr(self.right))
+		return "Add(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
 		return "addl"
@@ -511,7 +511,7 @@ class Add(BinOp):
 
 class Div(BinOp):
 	def __repr__(self):
-		return "Add((%s, %s))" % (repr(self.left), repr(self.right))
+		return "Add(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
 		return "divl"
@@ -521,7 +521,7 @@ class Div(BinOp):
 
 class Mul(BinOp):
 	def __repr__(self):
-		return "Mul((%s, %s))" % (repr(self.left), repr(self.right))
+		return "Mul(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
 		return "mull"
@@ -531,7 +531,7 @@ class Mul(BinOp):
 
 class Sub(BinOp):
 	def __repr__(self):
-		return "Sub((%s, %s))" % (repr(self.left), repr(self.right))
+		return "Sub(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
 		return "subl"
