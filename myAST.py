@@ -8,15 +8,33 @@ Description:	Describes the abstract syntax tree used by my compiler for HW0.
 import compiler
 import compiler.ast as ast
 
-varnum = 0
+stackSize = 0
+def getStackSize():
+	global stackSize
+	
+	return stackSize
+
+varNum = 0
+varLocs = {}
 def getVar():
-	global varnum
+	global varNum
+	global varLocs
 	
-	var = Name("tmp%d" % (varnum))
+	global stackSize
 	
-	varnum += 1
+	var = Name("tmp%d" % (varNum))
+	
+	varLocs[var] = varNum * 4
+	varNum += 1
+	
+	stackSize += 4
 	
 	return var
+
+def getVarLoc(var):
+	global varLocs
+	
+	return varLocs[var]
 
 def flatten(seq):
     l = []
@@ -35,7 +53,16 @@ def toMyAST(oldAST):
 		right = toMyAST(oldAST.right)
 		
 		return Add(left, right)
+	
+	elif isinstance(oldAST, ast.Assign):
+		name = toMyAST(oldAST.nodes.pop())
+		expr = toMyAST(oldAST.expr)
 		
+		return Assign(name, expr)
+	
+	elif isinstance(oldAST, ast.AssName):
+		return Name(oldAST.name)
+	
 	elif isinstance(oldAST, ast.CallFunc):
 		name = toMyAST(oldAST.node)
 		args = [toMyAST for a in oldAST.args]
@@ -92,6 +119,9 @@ class Node:
 	def getChildren(self):
 		pass
 	
+	def isSimple(self):
+		False
+	
 	def setAttr(self, key, value):
 		self.attributes[key] = value
 	
@@ -109,7 +139,22 @@ class Module(Node):
 		return "Module(%s)" % (repr(self.stmts))
 	
 	def compile(self):
-		pass
+		subCode = ""
+		
+		code  = ".globl main\n"
+		code += "main:\n"
+		code += "\tpushl %ebp\n"
+		
+		for stmt in self.stmts:
+			tmpSubCode, foo = stmt.compile()
+			
+			subCode += tmpSubCode + "\n"
+		
+		code += "\tsubl $%d, %%esp\n\n" % (getStackSize())
+		
+		code += subCode
+		
+		return code
 	
 	def flatten(self):
 		newStmts = []
@@ -163,6 +208,19 @@ class Assign(Node):
 	
 	def compile(self):
 		pass
+		
+		"""
+		code, subResult = self.exp.compile()
+		
+		result = getVarLoc(self.var)
+		
+		code += "\tmovl -%d(%%ebp), %%eax\n" % (subResult)
+		code += "\tmovl %%eax, -%d(%%ebp)\n" % (result)
+		
+		code += "\n"
+		
+		return code, self.var
+		"""
 	
 	def flatten(self):
 		preStmts, self.exp = self.exp.flatten()
@@ -284,13 +342,16 @@ class Name(Expression):
 		return "Name(%s)" % (repr(self.name))
 	
 	def compile(self):
-		pass
+		return "-%d(%%ebp)" % (getVarLoc(self.name))
 	
 	def flatten(self):
 		return [], self
 	
 	def getChildren(self):
 		[]
+	
+	def isSimple(self):
+		True
 	
 	def toGraph(self):
 		pass
@@ -306,13 +367,16 @@ class Integer(Expression):
 		return "Integer(%d)" % (self.value)
 	
 	def compile(self):
-		pass
+		return "$%d" % (self.value)
 	
 	def flatten(self):
 		return [], self
 	
 	def getChildren(self):
 		None
+	
+	def isSimple(self):
+		True
 	
 	def toGraph(self):
 		pass
