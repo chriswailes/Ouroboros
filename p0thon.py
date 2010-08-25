@@ -1,16 +1,19 @@
 #!/usr/bin/python
 
 import compiler
+import os.path
 import sys
 
 import myAST
 
-if len(sys.argv) < 3:
+if len(sys.argv) < 2:
 	print("Insufficient number of arguments.")
 	exit(0)
 
 inFile = open(sys.argv[1])
-outFile = open(sys.argv[2], "w")
+
+outName = os.path.basename(sys.argv[1])[0:-3] + ".s"
+outFile = open(outName, "w")
 
 ast = compiler.parse(inFile.read())
 
@@ -23,7 +26,7 @@ ast = myAST.toMyAST(ast)
 #Print my AST
 print(ast)
 
-print("\n\n")
+print("\n")
 
 #Flatten my AST
 ast = ast.flatten()

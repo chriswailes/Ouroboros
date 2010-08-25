@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW0
+Project:		CSCI 5525 HW1
 Date:		2010/08/23
 Description:	Describes the abstract syntax tree used by my compiler for HW0.
 """
@@ -17,15 +17,14 @@ def getStackSize():
 varNum = 0
 varLocs = {}
 def getVar():
-	global varNum
-	global varLocs
-	
 	global stackSize
+	global varLocs
+	global varNum
 	
-	var = Name("tmp%d".format(varNum))
+	var = Name("tmp{0:d}".format(varNum))
 	
-	varLocs[var.name] = varNum * 4
 	varNum += 1
+	varLocs[var.name] = varNum * 4
 	
 	stackSize += 4
 	
@@ -33,8 +32,15 @@ def getVar():
 
 def getVarLoc(var):
 	global varLocs
+	global varNum
 	
-	return varLocs[var]
+	if varLocs.has_key(var):
+		return varLocs[var]
+	else:
+		varNum += 1
+		varLocs[var] = varNum * 4
+		
+		return varLocs[var]
 
 def flatten(seq):
     l = []
@@ -157,6 +163,8 @@ class Module(Node):
 		
 		code += subCode
 		
+		#Put our exit value in $eax
+		code += "\tmovl $0, %eax\n"
 		#Restore the stack.
 		code += "\tleave\n"
 		#Return
@@ -415,7 +423,7 @@ class BinOp(Expression):
 			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.left.compile(), dest)
 		elif isinstance(self.left, Name) and isinstance(self.right, Integer):
 			code += "\tmovl {0}, {1}\n".format(self.left.compile(), dest)
-			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.right.compile(), est)
+			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.right.compile(), dest)
 		elif isinstance(self.left, Name) and isinstance(self.left, Name):
 			code += "\tmovl {0}, {1}\n".format(self.left.compile(), dest)
 			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.right.compile(), dest)
@@ -462,7 +470,7 @@ class UnaryOp(Expression):
 			code += "\t{0} -{1:d}(%ebp)\n".format(self.opInstr(), self.operand.compile())
 		else:
 			code += "\tmovl {0}, {1}\n".format(self.operand.compile(), dest)
-			code += "\t{0} -{1:d}(%ebp), {2}\n".format(self.opInstr(), self.operand.compile(), dest)
+			code += "\t{0} {1}\n".format(self.opInstr(), dest)
 
 		return code
 	
