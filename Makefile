@@ -3,7 +3,7 @@
 #Date		= 2010/08/24
 #Description	= This file compiles the generated Python assembly code.
 
-CC		= clang
+CC		= gcc
 CFLAGS	= -O3 -arch=native -march=native -Wall -m32
 
 all: input

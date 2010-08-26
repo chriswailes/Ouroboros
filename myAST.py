@@ -8,6 +8,8 @@ Description:	Describes the abstract syntax tree used by my compiler for HW0.
 import compiler
 import compiler.ast as ast
 
+import ib
+
 stackSize = 0
 def getStackSize():
 	global stackSize
@@ -145,32 +147,36 @@ class Module(Node):
 		return "Module({0})".format(repr(self.stmts))
 	
 	def compile(self):
-		subCode = ""
+		subCode = ib.Block()
 		
-		code  = ".globl main\n"
-		code += "main:\n"
+		code = ib.Block()
+		code.header  = ".globl main\n"
+		code.header += "main:\n"
 		
 		#Push the old base pointer onto the stack.
-		code += "\tpushl %ebp\n"
+		code.append(ib.OneOp("push", "%ebp"))
 		#Make the old stack pointer the new base pointer.
-		code += "\tmovl %esp, %ebp\n"
+		code.append(ib.TwoOp("mov", "%esp", "%ebp"))
 		
 		for stmt in self.stmts:
-			subCode += stmt.compile()
+			subCode.append(stmt.compile())
 		
 		#Expand the stack.
-		code += "\tsubl ${0:d}, %esp\n\n".format(getStackSize())
+		code.append(ib.TwoOp("sub", "$" + str(getStackSize()), "%esp"))
 		
-		code += subCode
+		code.append(subCode)
 		
-		#Put our exit value in $eax
-		code += "\tmovl $0, %eax\n"
+		endBlock = ib.Block("\n")
+		#Put our exit value in %eax
+		endBlock.append(ib.TwoOp("mov", "$0", "%eax"))
 		#Restore the stack.
-		code += "\tleave\n"
+		endBlock.append(ib.Instruction("leave"))
 		#Return
-		code += "\tret\n"
+		endBlock.append(ib.Instruction("ret"))
+
+		code.append(endBlock)
 		
-		return code
+		return str(code)
 	
 	def flatten(self):
 		newStmts = []
@@ -223,14 +229,10 @@ class Assign(Node):
 		return "Assignment({0}, {1})".format(repr(self.var), repr(self.exp))
 	
 	def compile(self, dest = None):
-		code = ""
-		
 		if isinstance(self.exp, Name):
-			code += "\tmovl {0}, {1}\n".format(self.exp.compile(), self.var)
+			return ib.TwoOp("mov", self.exp.compile(), self.var)
 		else:
-			code += self.exp.compile(self.var)
-		
-		return code
+			return self.exp.compile(self.var)
 	
 	def flatten(self):
 		preStmts, self.exp = self.exp.flatten()
@@ -258,8 +260,9 @@ class FunctionCall(Statement):
 		if isinstance(dest, Name):
 			dest = dest.compile()
 		
-		code  = "\tcall {0}\n".format(self.name.name)
-		code += "\tmovl %eax, {0}\n".format(dest)
+		code = ib.Block("\n")
+		code.append(ib.OneOp("call", self.name.name, None))
+		code.append(ib.TwoOp("mov", "%eax", dest))
 
 		return code
 	
@@ -321,10 +324,11 @@ class Print(Statement):
 		return preStmts, self
 	
 	def compile(self, dest = None):
-		code  = "\tpushl {0}\n".format(self.exps[0].compile())
-		code += "\tcall print_int_nl\n"
-		code += "\taddl $4, %esp\n"
-
+		code = ib.Block("\n")
+		code.append(ib.OneOp("push", self.exps[0].compile()))
+		code.append(ib.OneOp("call", "print_int_ln", None))
+		code.append(ib.TwoOp("add", "$4", "%esp"))
+		
 		return code
 	
 	def getChildren(self):
@@ -357,6 +361,9 @@ class Expression(Node):
 class Name(Expression):
 	def __init__(self, name):
 		self.name = name
+	
+	def __str__(self):
+		return self.compile()
 	
 	def __repr__(self):
 		return "Name({0})".format(repr(self.name))
@@ -413,20 +420,23 @@ class BinOp(Expression):
 		if isinstance(dest, Name):
 			dest = dest.compile()
 		
-		code = ""
+		code = ib.Block()
 
 		if isinstance(self.left, Integer) and isinstance(self.right, Integer):
 			value = eval("{0:d} {1} {2:d}".format(self.left.value, self.opString(), self.right.value))
-			code = "\tmovl {0:d}, {1}\n".format(value, dest)
+			code.append(ib.TwoOp("mov", value, dest))
+
 		elif isinstance(self.left, Integer) and isinstance(self.right, Name):
-			code += "\tmovl {0}, {1}\n".format(self.right.compile(), dest)
-			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.left.compile(), dest)
+			code.append(ib.TwoOp("mov", self.right.compile(), dest))
+			code.append(ib.TwoOp(self.opInstr(), self.left.compile, dest))
+
 		elif isinstance(self.left, Name) and isinstance(self.right, Integer):
-			code += "\tmovl {0}, {1}\n".format(self.left.compile(), dest)
-			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.right.compile(), dest)
+			code.append(ib.TwoOp("mov", self.left.compile(), dest))
+			code.append(ib.TwoOp(self.opInstr(), self.right.compile(), dest))
+
 		elif isinstance(self.left, Name) and isinstance(self.left, Name):
-			code += "\tmovl {0}, {1}\n".format(self.left.compile(), dest)
-			code += "\t{0} {1}, {2}\n".format(self.opInstr(), self.right.compile(), dest)
+			code.append(ib.TwoOp("mov", self.left.compile(), dest))
+			code.append(ib.TwoOp(self.opInstr(), self.right.compile(), dest))
 
 		return code
 	
@@ -464,13 +474,13 @@ class UnaryOp(Expression):
 		if dest != None and isinstance(dest, Name):
 			dest = dest.compile()
 		
-		code = ""
+		code = ib.Block()
 
 		if dest == None:
-			code += "\t{0} -{1:d}(%ebp)\n".format(self.opInstr(), self.operand.compile())
+			code.append(ib.OneOp(self.opInstr(), self.operand.compile()))
 		else:
-			code += "\tmovl {0}, {1}\n".format(self.operand.compile(), dest)
-			code += "\t{0} {1}\n".format(self.opInstr(), dest)
+			code.append(ib.TwoOp("mov", self.operand.compile(), dest))
+			code.append(ib.OneOp(self.opInstr(), dest))
 
 		return code
 	
@@ -502,7 +512,7 @@ class Negate(UnaryOp):
 		return "Negate({0})".format(repr(self.operand))
 	
 	def opInstr(self):
-		return "negl"
+		return "neg"
 	
 	def opString(self):
 		return "-"
@@ -512,7 +522,7 @@ class Add(BinOp):
 		return "Add(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
-		return "addl"
+		return "add"
 	
 	def opString(self):
 		return "+"
@@ -522,7 +532,7 @@ class Div(BinOp):
 		return "Add(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
-		return "divl"
+		return "div"
 	
 	def opString(self):
 		return "/"
@@ -532,7 +542,7 @@ class Mul(BinOp):
 		return "Mul(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
-		return "mull"
+		return "mul"
 	
 	def opString(self):
 		return "*"
@@ -542,7 +552,7 @@ class Sub(BinOp):
 		return "Sub(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
-		return "subl"
+		return "sub"
 	
 	def opString(self):
 		return "-"
