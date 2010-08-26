@@ -24,40 +24,49 @@ class Block(object):
 		self.insts.append(inst)
 
 class Instruction(object):
-	def __init__(self, name, suffix = None):
+	def __init__(self, name, suffix = None, comment = ""):
+		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 	
 	def __str__(self):
-		return self.bookend(self.getOp())
-	
-	def bookend(self, str):
-		return "\t" + str + "\n"
+		return self.pack(self.getOp())
 	
 	def getOp(self):
 		if self.suffix == None:
 			return self.name
 		else:
 			return self.name + self.suffix
+	
+	def pack(self, instr):
+		return "\t{0:21} # {1}\n".format(instr, self.comment)
 
 class OneOp(Instruction):
-	def __init__(self, name, op = None, suffix = "l"):
+	def __init__(self, name, operand = None, suffix = "l", comment = ""):
+		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 		
-		self.op = op
+		if isinstance(operand, myAST.Name):
+			self.comment = "Var: " + operand.name
+		
+		self.operand = str(operand)
 	
 	def __str__(self):
-		return self.bookend(self.getOp() + " " + self.op)
+		return self.pack("{0:5s} {1}".format(self.getOp(), self.operand))
 
 class TwoOp(Instruction):
-	def __init__(self, name, src = None, dest = None, suffix = "l"):
+	def __init__(self, name, src = None, dest = None, suffix = "l", comment = ""):
+		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 		
-		self.src = src
-		self.dest = dest
+		self.src = str(src)
+		
+		if isinstance(dest, myAST.Name):
+			self.comment = "Var: " + dest.name
+		self.dest = str(dest)
 	
 	def __str__(self):
-		return self.bookend(self.getOp() + " " + str(self.src) + ", " + str(self.dest))
+		return self.pack("{0:5} {1}, {2}".format(self.getOp(), str(self.src), str(self.dest)))
 

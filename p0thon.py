@@ -15,10 +15,9 @@ inFile = open(sys.argv[1])
 outName = os.path.basename(sys.argv[1])[0:-3] + ".s"
 outFile = open(outName, "w")
 
-ast = compiler.parse(inFile.read())
+program = inFile.read()
 
-#Print their AST
-print(ast)
+ast = compiler.parse(program)
 
 #Generate my AST
 ast = myAST.toMyAST(ast)
@@ -26,17 +25,26 @@ ast = myAST.toMyAST(ast)
 #Print my AST
 print(ast)
 
+#Flatten my AST.
+ast.flatten()
+
+#Print my flattened AST
+print(ast)
+
 print("\n")
 
-#Flatten my AST
-ast = ast.flatten()
+#Print out the original program.
+print("Original:")
+print(program)
 
 #Print out the Python code for my flattened AST
+print("Flat:")
 print(ast.toPython())
 
+#Compile the AST.
 assembly = ast.compile()
 
-#Compile and print the AST
+#Print the AST
 print(assembly)
 
 #Put the compiled AST into the output file.

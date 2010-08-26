@@ -9,40 +9,8 @@ import compiler
 import compiler.ast as ast
 
 import ib
-
-stackSize = 0
-def getStackSize():
-	global stackSize
-	
-	return stackSize
-
-varNum = 0
-varLocs = {}
-def getVar():
-	global stackSize
-	global varLocs
-	global varNum
-	
-	var = Name("tmp{0:d}".format(varNum))
-	
-	varNum += 1
-	varLocs[var.name] = varNum * 4
-	
-	stackSize += 4
-	
-	return var
-
-def getVarLoc(var):
-	global varLocs
-	global varNum
-	
-	if varLocs.has_key(var):
-		return varLocs[var]
-	else:
-		varNum += 1
-		varLocs[var] = varNum * 4
-		
-		return varLocs[var]
+import registers as r
+import variables as v
 
 def flatten(seq):
     l = []
@@ -162,7 +130,7 @@ class Module(Node):
 			subCode.append(stmt.compile())
 		
 		#Expand the stack.
-		code.append(ib.TwoOp("sub", "$" + str(getStackSize()), "%esp"))
+		code.append(ib.TwoOp("sub", "$" + str(v.getStackSize()), "%esp"))
 		
 		code.append(subCode)
 		
@@ -226,11 +194,19 @@ class Assign(Node):
 		self.exp = exp
 	
 	def __repr__(self):
-		return "Assignment({0}, {1})".format(repr(self.var), repr(self.exp))
+		return "Assign({0}, {1})".format(repr(self.var), repr(self.exp))
 	
 	def compile(self, dest = None):
 		if isinstance(self.exp, Name):
-			return ib.TwoOp("mov", self.exp.compile(), self.var)
+			code = ib.Block()
+			
+			reg = r.alloc()
+			code.append(ib.TwoOp("mov", self.exp.compile(), reg))
+			code.append(ib.TwoOp("mov", reg, self.var))
+			
+			r.free(reg)
+			
+			return code
 		else:
 			return self.exp.compile(self.var)
 	
@@ -257,9 +233,6 @@ class FunctionCall(Statement):
 		return "FunctionCall({0}, {1})".format(repr(self.name), repr(self.args))
 	
 	def compile(self, dest):
-		if isinstance(dest, Name):
-			dest = dest.compile()
-		
 		code = ib.Block("\n")
 		code.append(ib.OneOp("call", self.name.name, None))
 		code.append(ib.TwoOp("mov", "%eax", dest))
@@ -279,7 +252,7 @@ class FunctionCall(Statement):
 		preStmts = flatten(preStmts)
 		self.args = newArgs
 		
-		var = getVar()
+		var = v.getVar()
 		preStmts.append(Assign(var, self))
 		
 		return preStmts, var
@@ -326,7 +299,7 @@ class Print(Statement):
 	def compile(self, dest = None):
 		code = ib.Block("\n")
 		code.append(ib.OneOp("push", self.exps[0].compile()))
-		code.append(ib.OneOp("call", "print_int_ln", None))
+		code.append(ib.OneOp("call", "print_int_nl", None))
 		code.append(ib.TwoOp("add", "$4", "%esp"))
 		
 		return code
@@ -369,7 +342,7 @@ class Name(Expression):
 		return "Name({0})".format(repr(self.name))
 	
 	def compile(self, dest = None):
-		return "-{0:d}(%ebp)".format(getVarLoc(self.name))
+		return "-{0:d}(%ebp)".format(v.getVarLoc(self.name))
 	
 	def flatten(self):
 		return [], self
@@ -393,6 +366,9 @@ class Integer(Expression):
 	def __repr__(self):
 		return "Integer({0:d})".format(self.value)
 	
+	def __str__(self):
+		return self.compile()
+
 	def compile(self, dest = None):
 		return "${0:d}".format(self.value)
 	
@@ -417,34 +393,40 @@ class BinOp(Expression):
 		self.right = right
 	
 	def compile(self, dest):
-		if isinstance(dest, Name):
-			dest = dest.compile()
-		
 		code = ib.Block()
+		reg = r.alloc()
 
 		if isinstance(self.left, Integer) and isinstance(self.right, Integer):
-			value = eval("{0:d} {1} {2:d}".format(self.left.value, self.opString(), self.right.value))
+			value = Integer(eval("{0:d} {1} {2:d}".format(self.left.value, self.opString(), self.right.value)))
 			code.append(ib.TwoOp("mov", value, dest))
 
 		elif isinstance(self.left, Integer) and isinstance(self.right, Name):
-			code.append(ib.TwoOp("mov", self.right.compile(), dest))
-			code.append(ib.TwoOp(self.opInstr(), self.left.compile, dest))
+			code.append(ib.TwoOp("mov", self.left, dest))
+			code.append(ib.TwoOp("mov", self.right, reg))
+			
+			#Do the actual operation.
+			code.append(ib.TwoOp(self.opInstr(), reg, dest))
 
 		elif isinstance(self.left, Name) and isinstance(self.right, Integer):
-			code.append(ib.TwoOp("mov", self.left.compile(), dest))
-			code.append(ib.TwoOp(self.opInstr(), self.right.compile(), dest))
+			code.append(ib.TwoOp("mov", self.left, reg))
+			code.append(ib.TwoOp("mov", reg, dest))
+			
+			#Do the actual operation.
+			code.append(ib.TwoOp(self.opInstr(), self.right, dest))
 
-		elif isinstance(self.left, Name) and isinstance(self.left, Name):
-			code.append(ib.TwoOp("mov", self.left.compile(), dest))
-			code.append(ib.TwoOp(self.opInstr(), self.right.compile(), dest))
-
+		elif isinstance(self.left, Name) and isinstance(self.right, Name):
+			code.append(ib.TwoOp("mov", self.left, reg))
+			code.append(ib.TwoOp(self.opInstr(), self.right, reg))
+			code.append(ib.TwoOp("mov", reg, dest))
+		
+		r.free(reg)
 		return code
 	
 	def flatten(self):
 		leftPreStmts, self.left = self.left.flatten()
 		rightPreStmts, self.right = self.right.flatten()
 		
-		var = getVar()
+		var = v.getVar()
 		assign = Assign(var, self)
 		
 		preStmts = [leftPreStmts, rightPreStmts, assign]
@@ -471,15 +453,21 @@ class UnaryOp(Expression):
 		self.operand = operand
 	
 	def compile(self, dest = None):
-		if dest != None and isinstance(dest, Name):
-			dest = dest.compile()
-		
 		code = ib.Block()
 
 		if dest == None:
 			code.append(ib.OneOp(self.opInstr(), self.operand.compile()))
 		else:
-			code.append(ib.TwoOp("mov", self.operand.compile(), dest))
+			if isinstance(dest, Name):
+				reg = r.alloc()
+				
+				code.append(ib.TwoOp("mov", self.operand.compile(), reg))
+				code.append(ib.TwoOp("mov", reg, dest))
+				
+				r.free(reg)
+			else:
+				code.append(ib.TwoOp("mov", self.operand.compile(), dest))
+
 			code.append(ib.OneOp(self.opInstr(), dest))
 
 		return code
@@ -487,7 +475,7 @@ class UnaryOp(Expression):
 	def flatten(self):
 		preStmts, self.operand = self.operand.flatten()
 		
-		var = getVar()
+		var = v.getVar()
 		preStmts.append(Assign(var, self))
 		
 		return preStmts, var
