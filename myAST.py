@@ -10,18 +10,8 @@ import compiler.ast as ast
 
 import ib
 import registers as r
+import util
 import variables as v
-
-def flatten(seq):
-    l = []
-    for elt in seq:
-        t = type(elt)
-        if t is tuple or t is list:
-            for elt2 in flatten(elt):
-                l.append(elt2)
-        else:
-            l.append(elt)
-    return l
 
 def toMyAST(oldAST):
 	if isinstance(oldAST, ast.Add):
@@ -58,7 +48,7 @@ def toMyAST(oldAST):
 		return Div(left, right)
 		
 	elif isinstance(oldAST, ast.Module):
-		children = flatten([toMyAST(n) for n in oldAST.getChildNodes()])
+		children = util.flatten([toMyAST(n) for n in oldAST.getChildNodes()])
 		
 		return Module(children)
 	
@@ -72,12 +62,12 @@ def toMyAST(oldAST):
 		return Name(oldAST.name)
 		
 	elif isinstance(oldAST, ast.Printnl):
-		children = flatten([toMyAST(e) for e in oldAST.getChildNodes()])
+		children = util.flatten([toMyAST(e) for e in oldAST.getChildNodes()])
 		
 		return Print(children)
 		
 	elif isinstance(oldAST, ast.Stmt):
-		stmts = flatten([toMyAST(s) for s in oldAST.getChildNodes()])
+		stmts = util.flatten([toMyAST(s) for s in oldAST.getChildNodes()])
 		
 		return stmts
 	
@@ -162,7 +152,7 @@ class Module(Node):
 
 		code.append(endBlock)
 		
-		return str(code)
+		return code
 	
 	def flatten(self):
 		newStmts = []
@@ -173,7 +163,7 @@ class Module(Node):
 			newStmts.append(preStmts)
 			newStmts.append(newStmt)
 		
-		self.stmts = flatten(newStmts)
+		self.stmts = util.flatten(newStmts)
 		return self
 	
 	def getChildren(self):
@@ -269,7 +259,7 @@ class FunctionCall(Statement):
 			preStmts.append(tmpPreStmts)
 			newArgs.append(newArg)
 		
-		preStmts = flatten(preStmts)
+		preStmts = util.flatten(preStmts)
 		self.args = newArgs
 		
 		if inplace:
@@ -321,7 +311,7 @@ class Print(Statement):
 			preStmts.append(tmpPreStmts)
 			newArgs.append(newArg)
 		
-		preStmts = flatten(preStmts)
+		preStmts = util.flatten(preStmts)
 		self.args = newArgs
 		
 		return preStmts, self
@@ -448,7 +438,7 @@ class BinOp(Expression):
 		leftPreStmts, self.left = self.left.flatten()
 		rightPreStmts, self.right = self.right.flatten()
 		
-		preStmts = flatten([leftPreStmts, rightPreStmts])
+		preStmts = util.flatten([leftPreStmts, rightPreStmts])
 		
 		if inplace:
 			return preStmts, self
@@ -500,7 +490,7 @@ class UnaryOp(Expression):
 		preStmts, self.operand = self.operand.flatten()
 		
 		if inplace:
-			return flatten(preStmts), self
+			return util.flatten(preStmts), self
 		else:
 			var = v.getVar()
 			preStmts.append(Assign(var, self))
