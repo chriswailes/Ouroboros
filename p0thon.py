@@ -24,6 +24,7 @@ ast = myAST.toMyAST(ast)
 
 #Print my AST
 print(ast)
+print("")
 
 #Flatten my AST.
 ast.flatten()

@@ -50,11 +50,23 @@ def toMyAST(oldAST):
 	
 	elif isinstance(oldAST, ast.Discard):
 		return toMyAST(oldAST.expr)
+	
+	elif isinstance(oldAST, ast.Div):
+		left = toMyAST(oldAST.left)
+		right = toMyAST(oldAST.right)
+		
+		return Div(left, right)
 		
 	elif isinstance(oldAST, ast.Module):
 		children = flatten([toMyAST(n) for n in oldAST.getChildNodes()])
 		
 		return Module(children)
+	
+	elif isinstance(oldAST, ast.Mul):
+		left = toMyAST(oldAST.left)
+		right = toMyAST(oldAST.right)
+		
+		return Mul(left, right)
 	
 	elif isinstance(oldAST, ast.Name):
 		return Name(oldAST.name)
@@ -68,6 +80,12 @@ def toMyAST(oldAST):
 		stmts = flatten([toMyAST(s) for s in oldAST.getChildNodes()])
 		
 		return stmts
+	
+	elif isinstance(oldAST, ast.Sub):
+		left = toMyAST(oldAST.left)
+		right = toMyAST(oldAST.right)
+		
+		return Sub(left, right)
 		
 	elif isinstance(oldAST, ast.UnarySub):
 		operand = toMyAST(oldAST.expr)
@@ -114,7 +132,7 @@ class Module(Node):
 	def __repr__(self):
 		return "Module({0})".format(repr(self.stmts))
 	
-	def compile(self):
+	def compile(self, dest = None):
 		subCode = ib.Block()
 		
 		code = ib.Block()
@@ -176,7 +194,7 @@ class Statement(Node):
 	def compile(self, dest):
 		pass
 	
-	def flatten(self):
+	def flatten(self, inplace = False):
 		pass
 	
 	def getChildren(self):
@@ -210,8 +228,8 @@ class Assign(Node):
 		else:
 			return self.exp.compile(self.var)
 	
-	def flatten(self):
-		preStmts, self.exp = self.exp.flatten()
+	def flatten(self, inplace = True):
+		preStmts, self.exp = self.exp.flatten(True)
 		
 		return preStmts, self
 	
@@ -232,19 +250,21 @@ class FunctionCall(Statement):
 	def __repr__(self):
 		return "FunctionCall({0}, {1})".format(repr(self.name), repr(self.args))
 	
-	def compile(self, dest):
+	def compile(self, dest = None):
 		code = ib.Block("\n")
 		code.append(ib.OneOp("call", self.name.name, None))
-		code.append(ib.TwoOp("mov", "%eax", dest))
+		
+		if dest:
+			code.append(ib.TwoOp("mov", "%eax", dest))
 
 		return code
 	
-	def flatten(self):
+	def flatten(self, inplace = False):
 		preStmts = []
 		newArgs = []
 		
 		for arg in self.args:
-			tmpPreStmts, newArg = arg.flatten
+			tmpPreStmts, newArg = arg.flatten(False)
 			
 			preStmts.append(tmpPreStmts)
 			newArgs.append(newArg)
@@ -252,10 +272,12 @@ class FunctionCall(Statement):
 		preStmts = flatten(preStmts)
 		self.args = newArgs
 		
-		var = v.getVar()
-		preStmts.append(Assign(var, self))
-		
-		return preStmts, var
+		if inplace:
+			return preStmts, self
+		else:
+			var = v.getVar()
+			preStmts.append(Assign(var, self))
+			return preStmts, var
 	
 	def getChildren(self):
 		return self.args
@@ -275,34 +297,34 @@ class FunctionCall(Statement):
 		return call + ")"
 
 class Print(Statement):
-	def __init__(self, exps):
-		self.exps = exps
+	def __init__(self, args):
+		self.args = args
 	
 	def __repr__(self):
-		return "Print({0})".format(repr(self.exps))
-	
-	def flatten(self):
-		preStmts = []
-		newExps = []
-		
-		for exp in self.exps:
-			subPreStmts, newExp = exp.flatten()
-			
-			preStmts.append(subPreStmts)
-			newExps.append(newExp)
-		
-		preStmts = flatten(preStmts)
-		self.exps = newExps
-		
-		return preStmts, self
+		return "Print({0})".format(repr(self.args))
 	
 	def compile(self, dest = None):
 		code = ib.Block("\n")
-		code.append(ib.OneOp("push", self.exps[0].compile()))
+		code.append(ib.OneOp("push", self.args[0].compile()))
 		code.append(ib.OneOp("call", "print_int_nl", None))
 		code.append(ib.TwoOp("add", "$4", "%esp"))
 		
 		return code
+	
+	def flatten(self, inplace = False):
+		preStmts = []
+		newArgs = []
+		
+		for arg in self.args:
+			tmpPreStmts, newArg = arg.flatten(False)
+			
+			preStmts.append(tmpPreStmts)
+			newArgs.append(newArg)
+		
+		preStmts = flatten(preStmts)
+		self.args = newArgs
+		
+		return preStmts, self
 	
 	def getChildren(self):
 		return self.exprs
@@ -313,8 +335,8 @@ class Print(Statement):
 	def toPython(self):
 		call = "print("
 		
-		for exp in self.exps:
-			call += exp.toPython() + ", "
+		for arg in self.args:
+			call += arg.toPython() + ", "
 		
 		if len(call) > 0:
 			call = call[0:-2]
@@ -344,7 +366,7 @@ class Name(Expression):
 	def compile(self, dest = None):
 		return "-{0:d}(%ebp)".format(v.getVarLoc(self.name))
 	
-	def flatten(self):
+	def flatten(self, inplace = False):
 		return [], self
 	
 	def getChildren(self):
@@ -372,7 +394,7 @@ class Integer(Expression):
 	def compile(self, dest = None):
 		return "${0:d}".format(self.value)
 	
-	def flatten(self):
+	def flatten(self, inplace = False):
 		return [], self
 	
 	def getChildren(self):
@@ -392,7 +414,7 @@ class BinOp(Expression):
 		self.left = left
 		self.right = right
 	
-	def compile(self, dest):
+	def compile(self, dest = None):
 		code = ib.Block()
 		reg = r.alloc()
 
@@ -422,16 +444,18 @@ class BinOp(Expression):
 		r.free(reg)
 		return code
 	
-	def flatten(self):
+	def flatten(self, inplace = False):
 		leftPreStmts, self.left = self.left.flatten()
 		rightPreStmts, self.right = self.right.flatten()
 		
-		var = v.getVar()
-		assign = Assign(var, self)
+		preStmts = flatten([leftPreStmts, rightPreStmts])
 		
-		preStmts = [leftPreStmts, rightPreStmts, assign]
-		
-		return preStmts, var
+		if inplace:
+			return preStmts, self
+		else:
+			var = v.getVar()
+			preStmts.append(Assign(var, self))
+			return preStmts, var
 	
 	def getChildren(self):
 		return [self.left, self.right]
@@ -472,13 +496,15 @@ class UnaryOp(Expression):
 
 		return code
 	
-	def flatten(self):
+	def flatten(self, inplace = False):
 		preStmts, self.operand = self.operand.flatten()
 		
-		var = v.getVar()
-		preStmts.append(Assign(var, self))
-		
-		return preStmts, var
+		if inplace:
+			return flatten(preStmts), self
+		else:
+			var = v.getVar()
+			preStmts.append(Assign(var, self))
+			return flatten(preStmts), var
 	
 	def getChildren(self):
 		return [self.operand]

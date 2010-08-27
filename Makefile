@@ -29,3 +29,4 @@ runtime.o: runtime.c runtime.h hashtable.o
 .PHONY: clean
 clean:
 	rm -f *.o *.s
+	rm -f *.pyc
