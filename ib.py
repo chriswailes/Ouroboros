@@ -9,7 +9,7 @@ import myAST
 import util
 
 class Block(object):
-	def __init__(self, header = ""):
+	def __init__(self, header = "\n"):
 		self.header = header
 		self.insts = []
 		
@@ -74,10 +74,7 @@ class Block(object):
 		
 	
 	def getNextInst(self):
-		if (self.pos + 1) < self.getNumInsts():
-			return self.getInst(self.pos + 1)
-		else:
-			return None
+		return self.lookahead()
 	
 	def getNumInsts(self):
 		num = 0
@@ -91,7 +88,13 @@ class Block(object):
 		return num
 	
 	def hasNext(self):
-		return self.pos < (self.getNumInsts() - 1)
+		return (self.pos + 1) < self.getNumInsts()
+	
+	def lookahead(self, dist = 1):
+		if (self.pos + dist) < self.getNumInsts():
+			return self.getInst(self.pos + dist)
+		else:
+			return None
 	
 	def next(self):
 		self.pos += 1
@@ -139,18 +142,18 @@ class Instruction(object):
 		return "\t{0:21} # {1}\n".format(instr, self.comment)
 
 class OneOp(Instruction):
-	def __init__(self, name, operand = None, suffix = "l", comment = ""):
+	def __init__(self, name, dest = None, suffix = "l", comment = ""):
 		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 		
-		if isinstance(operand, myAST.Name):
+		if isinstance(dest, myAST.Name):
 			self.comment = "Var: " + operand.name
 		
-		self.operand = str(operand)
+		self.dest = str(dest)
 	
 	def __str__(self):
-		return self.pack("{0:5s} {1}".format(self.getOp(), self.operand))
+		return self.pack("{0:5s} {1}".format(self.getOp(), self.dest))
 
 class TwoOp(Instruction):
 	def __init__(self, name, src = None, dest = None, suffix = "l", comment = ""):
@@ -160,8 +163,11 @@ class TwoOp(Instruction):
 		
 		self.src = str(src)
 		
-		if isinstance(dest, myAST.Name):
+		if isinstance(src, myAST.Name):
+			self.comment = "Var: " + src.name
+		elif isinstance(dest, myAST.Name):
 			self.comment = "Var: " + dest.name
+		
 		self.dest = str(dest)
 	
 	def __str__(self):

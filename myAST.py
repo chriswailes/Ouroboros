@@ -13,7 +13,7 @@ import registers as r
 import util
 import variables as v
 
-def toMyAST(oldAST):
+def toMyAST(oldAST, funcName = False):
 	if isinstance(oldAST, ast.Add):
 		left = toMyAST(oldAST.left)
 		right = toMyAST(oldAST.right)
@@ -27,10 +27,11 @@ def toMyAST(oldAST):
 		return Assign(name, expr)
 	
 	elif isinstance(oldAST, ast.AssName):
-		return Name(oldAST.name)
+		name = v.addUserVar(oldAST.name)
+		return Name(name)
 	
 	elif isinstance(oldAST, ast.CallFunc):
-		name = toMyAST(oldAST.node)
+		name = toMyAST(oldAST.node, True)
 		args = [toMyAST for a in oldAST.args]
 		
 		return FunctionCall(name, args)
@@ -59,7 +60,11 @@ def toMyAST(oldAST):
 		return Mul(left, right)
 	
 	elif isinstance(oldAST, ast.Name):
-		return Name(oldAST.name)
+		name = oldAST.name
+		if not funcName:
+			name = v.addUserVar(oldAST.name)
+		
+		return Name(name)
 		
 	elif isinstance(oldAST, ast.Printnl):
 		children = util.flatten([toMyAST(e) for e in oldAST.getChildNodes()])
@@ -142,7 +147,7 @@ class Module(Node):
 		
 		code.append(subCode)
 		
-		endBlock = ib.Block("\n")
+		endBlock = ib.Block()
 		#Put our exit value in %eax
 		endBlock.append(ib.TwoOp("mov", "$0", "%eax"))
 		#Restore the stack.
@@ -241,7 +246,7 @@ class FunctionCall(Statement):
 		return "FunctionCall({0}, {1})".format(repr(self.name), repr(self.args))
 	
 	def compile(self, dest = None):
-		code = ib.Block("\n")
+		code = ib.Block()
 		code.append(ib.OneOp("call", self.name.name, None))
 		
 		if dest:
@@ -294,7 +299,7 @@ class Print(Statement):
 		return "Print({0})".format(repr(self.args))
 	
 	def compile(self, dest = None):
-		code = ib.Block("\n")
+		code = ib.Block()
 		code.append(ib.OneOp("push", self.args[0].compile()))
 		code.append(ib.OneOp("call", "print_int_nl", None))
 		code.append(ib.TwoOp("add", "$4", "%esp"))
@@ -412,24 +417,16 @@ class BinOp(Expression):
 			value = Integer(eval("{0:d} {1} {2:d}".format(self.left.value, self.opString(), self.right.value)))
 			code.append(ib.TwoOp("mov", value, dest))
 
-		elif isinstance(self.left, Integer) and isinstance(self.right, Name):
-			code.append(ib.TwoOp("mov", self.left, dest))
-			code.append(ib.TwoOp("mov", self.right, reg))
-			
-			#Do the actual operation.
-			code.append(ib.TwoOp(self.opInstr(), reg, dest))
-
-		elif isinstance(self.left, Name) and isinstance(self.right, Integer):
-			code.append(ib.TwoOp("mov", self.left, reg))
-			code.append(ib.TwoOp("mov", reg, dest))
-			
-			#Do the actual operation.
-			code.append(ib.TwoOp(self.opInstr(), self.right, dest))
-
-		elif isinstance(self.left, Name) and isinstance(self.right, Name):
-			code.append(ib.TwoOp("mov", self.left, reg))
-			code.append(ib.TwoOp(self.opInstr(), self.right, reg))
-			code.append(ib.TwoOp("mov", reg, dest))
+		else:
+			if isinstance(dest, Name):
+				code.append(ib.TwoOp("mov", self.left, reg))
+				code.append(ib.TwoOp(self.opInstr(), self.right, reg))
+				code.append(ib.TwoOp("mov", reg, dest))
+			else:
+				#In this case the destination is a register.
+				code.append(ib.TwoOp("mov", self.left, dest))
+				code.append(ib.TwoOp("mov", self.right, reg))
+				code.append(ib.TwoOp(self.opInstr(), reg, dest))
 		
 		r.free(reg)
 		return code
@@ -476,14 +473,14 @@ class UnaryOp(Expression):
 				reg = r.alloc()
 				
 				code.append(ib.TwoOp("mov", self.operand.compile(), reg))
+				code.append(ib.OneOp(self.opInstr(), reg))
 				code.append(ib.TwoOp("mov", reg, dest))
 				
 				r.free(reg)
 			else:
 				code.append(ib.TwoOp("mov", self.operand.compile(), dest))
-
-			code.append(ib.OneOp(self.opInstr(), dest))
-
+				code.append(ib.OneOp(self.opInstr(), dest))
+		
 		return code
 	
 	def flatten(self, inplace = False):
@@ -494,7 +491,7 @@ class UnaryOp(Expression):
 		else:
 			var = v.getVar()
 			preStmts.append(Assign(var, self))
-			return flatten(preStmts), var
+			return util.flatten(preStmts), var
 	
 	def getChildren(self):
 		return [self.operand]
@@ -533,10 +530,37 @@ class Add(BinOp):
 
 class Div(BinOp):
 	def __repr__(self):
-		return "Add(({0}, {1}))".format(repr(self.left), repr(self.right))
+		return "Div(({0}, {1}))".format(repr(self.left), repr(self.right))
+	
+	def compile(self, dest = None):
+		code = ib.Block()
+
+		reg0 = r.alloc("%eax")
+		reg1 = r.alloc("%ebx")
+		reg2 = r.alloc("%edx")
+		
+		if isinstance(dest, Name):
+			code.append(ib.TwoOp("mov", self.left, reg0))
+			code.append(ib.TwoOp("mov", self.right, reg1))
+			code.append(ib.Instruction("cltd"))
+			
+			code.append(ib.OneOp(self.opInstr(), reg1))
+			code.append(ib.TwoOp("mov", reg0, dest))
+		else:
+			#This is broken for now.  Fixing it doesn't make sense until
+			#register allocation is working.
+			code.append(ib.TwoOp("mov", self.left, dest))
+			code.append(ib.TwoOp("mov", self.right, reg0))
+			code.append(ib.OneOp(self.opInstr(), dest))
+		
+		r.free(reg0)
+		r.free(reg1)
+		r.free(reg2)
+		
+		return code
 	
 	def opInstr(self):
-		return "div"
+		return "idiv"
 	
 	def opString(self):
 		return "/"
@@ -546,7 +570,7 @@ class Mul(BinOp):
 		return "Mul(({0}, {1}))".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
-		return "mul"
+		return "imul"
 	
 	def opString(self):
 		return "*"

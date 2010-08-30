@@ -23,7 +23,7 @@ hashtable_itr.o: hashtable_itr.c hashtable_itr.h
 hashtable_utility.o: hashtable_utility.c hashtable_utility.h
 	$(CC) $(CFLAGS) -c $<
 
-runtime.o: runtime.c runtime.h hashtable.o
+runtime: runtime.c runtime.h hashtable.o
 	$(CC) $(CFLAGS) -c $<
 
 .PHONY: clean

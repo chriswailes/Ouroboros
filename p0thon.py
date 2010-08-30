@@ -50,11 +50,8 @@ assembly = ast.compile()
 print("Before Assembly Passes")
 print(assembly)
 
-#Flatten and then run the instruction passes.
-print("Assembly Passes")
+#Run the instruction passes.
 ip.doInstructionPasses(assembly)
-#~print("Number of instructions: {0:d}".format(assembly.getNumInsts()))
-print("")
 
 #Print the AST
 print("After Assembly Passes")
