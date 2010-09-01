@@ -5,7 +5,7 @@
 
 CC		= gcc
 CONDFLAGS	= -march=native -m32
-CFLAGS	= -O3 -Wall $(CONDFLAGS)
+CFLAGS	= -O3 -Wall -fPIC $(CONDFLAGS)
 LFLAGS	= -lm -Lruntime/ -lpyrun
 
 all: runtime
@@ -16,8 +16,15 @@ s: runtime
 	done;
 
 .PHONY: runtime
-runtime:
-	cd runtime; make CONDFLAGS="$(CONDFLAGS)"
+runtime: runtime-static
+
+.PHONY: runtime-shared
+runtime-shared:
+	cd runtime; make shared CONDFLAGS="$(CONDFLAGS)"
+
+.PHONY: runtime-static
+runtime-static:
+	cd runtime; make static CONDFLAGS="$(CONDFLAGS)"
 
 .PHONY: clean
 clean:

@@ -121,9 +121,9 @@ unbound_method project_unbound_method(pyobj val) {
 
 
 /* Not used? */
-static int is_zero(pyobj val) {
-  return (val >> SHIFT) == 0;
-}
+//~static int is_zero(pyobj val) {
+  //~return (val >> SHIFT) == 0;
+//~}
 
 static void print_int(int x) {
   printf("%d", x);
@@ -198,9 +198,9 @@ big_pyobj* create_list(pyobj length) {
   return list_to_big(l);
 }
 
-static pyobj make_list(pyobj length) {
-  return inject_big(create_list(length));
-}
+//~static pyobj make_list(pyobj length) {
+  //~return inject_big(create_list(length));
+//~}
 
 
 static char is_in_list(list ls, pyobj b)
@@ -301,47 +301,64 @@ static int hash32shift(int key)
 }
 
 
-static unsigned int hash_any(void* o)
-{
-  pyobj obj = *(pyobj*)o;
-  switch (tag(obj)) {
-  case INT_TAG:
-    return hash32shift(project_int(obj));
-  case FLOAT_TAG:
-    return hash32shift(project_float(obj));
-  case BOOL_TAG:
-    return hash32shift(project_bool(obj));
-  case BIG_TAG: {
-    big_pyobj* b = project_big(obj);
-    switch (b->tag) {
-    case LIST: {
-      int i;
-      unsigned long h = 0; 
-      for (i = 0; i != b->u.l.len; ++i)
-	h = 5*h + hash_any(&b->u.l.data[i]);
-      return h;
-    }
-    case DICT: {
-      struct hashtable_itr* i;
-      unsigned long h = 0; 
-      if (hashtable_count(b->u.d) == 0)
-	return h;
-      i = hashtable_iterator(b->u.d); 
-      do {
-	h = 5*h + hash_any(hashtable_iterator_value(i));
-      } while (hashtable_iterator_advance(i));
-      return h;
-    }
-    default:
-      printf("unrecognized tag in hash_any\n");
-      *(int*)0 = 42;
-    }
-    break;
-  }
-  default:
-    printf("unrecognized tag in hash_any\n");
-    *(int*)0 = 42;
-  }
+static unsigned int hash_any(void* o) {
+	pyobj obj = *(pyobj*)o;
+	
+	switch (tag(obj)) {
+		case INT_TAG:
+			return hash32shift(project_int(obj));
+			
+		case FLOAT_TAG:
+			return hash32shift(project_float(obj));
+			
+		case BOOL_TAG:
+			return hash32shift(project_bool(obj));
+			
+		case BIG_TAG: {
+			big_pyobj* b = project_big(obj);
+			
+			switch (b->tag) {
+				case LIST: {
+					int i;
+					unsigned long h = 0; 
+					
+					for (i = 0; i != b->u.l.len; ++i) {
+						h = 5*h + hash_any(&b->u.l.data[i]);
+					}
+					
+					return h;
+				}
+				
+				case DICT: {
+					struct hashtable_itr* i;
+					unsigned long h = 0; 
+					
+					if (hashtable_count(b->u.d) == 0) {
+						return h;
+					}
+					
+					i = hashtable_iterator(b->u.d); 
+					do {
+						h = 5*h + hash_any(hashtable_iterator_value(i));
+					} while (hashtable_iterator_advance(i));
+					
+					return h;
+				}
+				
+				default:
+					printf("unrecognized tag in hash_any\n");
+					*(int*)0 = 42;
+			}
+			
+			break;
+		}
+		
+		default:
+			printf("unrecognized tag in hash_any\n");
+			*(int*)0 = 42;
+	}
+	
+	return 0;
 }
 
 
@@ -493,7 +510,7 @@ big_pyobj* create_dict()
   return v;
 }
 
-static pyobj make_dict() { return inject_big(create_dict()); }
+//~static pyobj make_dict() { return inject_big(create_dict()); }
 
 static pyobj* dict_subscript(dict d, pyobj key)
 {
@@ -798,7 +815,7 @@ static unsigned int attrname_hash(void *ptr)
   unsigned char *str = (unsigned char *)ptr;
   unsigned long hash = 5381;
   int c;
-  while(c=*str++)
+  while((c=*str++))
     hash = ((hash << 5) + hash) ^ c;
   return hash;
 }

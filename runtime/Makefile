@@ -7,11 +7,13 @@ AR		= ar
 CC		= gcc
 
 AFLAGS	= rcs
-CFLAGS	= -O3 -march=native -Wall -m32 -lm
+CFLAGS	= -O3 -Wall -fPIC $(CONDFLAGS)
+LFAGS	= -lm
+SFLAGS	= -shared -Wl,-soname,libpyrun.so
 
 OBJS		= runtime.o hashtable.o hashtable_itr.o hashtable_utility.o
 
-all: libpyrun
+all: static
 
 hashtable.o: hashtable.c hashtable.h hashtable_itr.o hashtable_utility.o
 	$(CC) $(CFLAGS) -c $<
@@ -22,7 +24,10 @@ hashtable_itr.o: hashtable_itr.c hashtable_itr.h
 hashtable_utility.o: hashtable_utility.c hashtable_utility.h
 	$(CC) $(CFLAGS) -c $<
 
-libpyrun: runtime.o
+shared: runtime.o
+	$(CC) $(CFLAGS) $(SFLAGS) -o libpyrun.so $(OBJS)
+
+static: runtime.o
 	$(AR) $(AFLAGS) libpyrun.a $(OBJS)
 	
 runtime.o: runtime.c runtime.h hashtable.o
@@ -30,4 +35,4 @@ runtime.o: runtime.c runtime.h hashtable.o
 
 .PHONY: clean
 clean:
-	rm -f *.o *.a
+	rm -f *.o *.a *.sa
