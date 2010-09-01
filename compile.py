@@ -11,8 +11,9 @@ import compiler
 import os.path
 import sys
 
-from lib import ast
 from assembler import ip
+from lib import ast, util
+from transforms.flatten import flatten
 
 if len(sys.argv) < 2:
 	print("Insufficient number of arguments.")
@@ -35,7 +36,7 @@ print(tree)
 print("")
 
 #Flatten my AST.
-tree.flatten()
+tree = flatten(tree)
 
 #Print my flattened AST
 print(tree)

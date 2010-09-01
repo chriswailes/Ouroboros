@@ -10,9 +10,9 @@ import compiler.ast as oast
 
 from assembler import ib
 
-from lib import registers as r
-from lib import util
-from lib import variables as v
+import registers as r
+import util
+import variables as v
 
 def toMyAST(oldAST, funcName = False):
 	if isinstance(oldAST, oast.Add):
@@ -90,36 +90,20 @@ def toMyAST(oldAST, funcName = False):
 	
 	else:
 		None
-	
 
-class Node:
+class Node(object):
 	def __iter__(self):
 		for n in self.getChildren():
 			yield n
 	
-	def compile(self):
-		pass
-	
-	def flatten(self):
-		pass
-	
 	def getAttr(self, key):
 		return self.attributes[key]
-	
-	def getChildren(self):
-		pass
 	
 	def isSimple(self):
 		False
 	
 	def setAttr(self, key, value):
 		self.attributes[key] = value
-	
-	def toGraph(self):
-		pass
-	
-	def toPython(self):
-		pass
 
 class Module(Node):
 	def __init__(self, stmts):
@@ -160,18 +144,6 @@ class Module(Node):
 		
 		return code
 	
-	def flatten(self):
-		newStmts = []
-		
-		for s in self.stmts:
-			preStmts, newStmt = s.flatten()
-			
-			newStmts.append(preStmts)
-			newStmts.append(newStmt)
-		
-		self.stmts = util.flatten(newStmts)
-		return self
-	
 	def getChildren(self):
 		return self.statements
 	
@@ -187,20 +159,7 @@ class Module(Node):
 		return module
 
 class Statement(Node):
-	def compile(self, dest):
-		pass
-	
-	def flatten(self, inplace = False):
-		pass
-	
-	def getChildren(self):
-		pass
-	
-	def toGraph(self):
-		pass
-	
-	def toPython(self):
-		pass
+	pass
 
 class Assign(Node):
 	def __init__(self, var, exp):
@@ -223,11 +182,6 @@ class Assign(Node):
 			return code
 		else:
 			return self.exp.compile(self.var)
-	
-	def flatten(self, inplace = True):
-		preStmts, self.exp = self.exp.flatten(True)
-		
-		return preStmts, self
 	
 	def getChildren(self):
 		return [self.exp]
@@ -254,26 +208,6 @@ class FunctionCall(Statement):
 			code.append(ib.TwoOp("mov", "%eax", dest))
 
 		return code
-	
-	def flatten(self, inplace = False):
-		preStmts = []
-		newArgs = []
-		
-		for arg in self.args:
-			tmpPreStmts, newArg = arg.flatten(False)
-			
-			preStmts.append(tmpPreStmts)
-			newArgs.append(newArg)
-		
-		preStmts = util.flatten(preStmts)
-		self.args = newArgs
-		
-		if inplace:
-			return preStmts, self
-		else:
-			var = v.getVar()
-			preStmts.append(Assign(var, self))
-			return preStmts, var
 	
 	def getChildren(self):
 		return self.args
@@ -307,21 +241,6 @@ class Print(Statement):
 		
 		return code
 	
-	def flatten(self, inplace = False):
-		preStmts = []
-		newArgs = []
-		
-		for arg in self.args:
-			tmpPreStmts, newArg = arg.flatten(False)
-			
-			preStmts.append(tmpPreStmts)
-			newArgs.append(newArg)
-		
-		preStmts = util.flatten(preStmts)
-		self.args = newArgs
-		
-		return preStmts, self
-	
 	def getChildren(self):
 		return self.exprs
 	
@@ -340,14 +259,7 @@ class Print(Statement):
 		return call + ")"
 
 class Expression(Node):
-	def compile(self, dest):
-		pass
-	
-	def getChildren(self):
-		pass
-	
-	def toGraph(self):
-		pass
+	pass
 
 class Name(Expression):
 	def __init__(self, name):
@@ -362,14 +274,11 @@ class Name(Expression):
 	def compile(self, dest = None):
 		return "-{0:d}(%ebp)".format(v.getVarLoc(self.name))
 	
-	def flatten(self, inplace = False):
-		return [], self
-	
 	def getChildren(self):
-		[]
+		return []
 	
 	def isSimple(self):
-		True
+		return True
 	
 	def toGraph(self):
 		pass
@@ -390,14 +299,11 @@ class Integer(Expression):
 	def compile(self, dest = None):
 		return "${0:d}".format(self.value)
 	
-	def flatten(self, inplace = False):
-		return [], self
-	
 	def getChildren(self):
-		[]
+		return []
 	
 	def isSimple(self):
-		True
+		return True
 	
 	def toGraph(self):
 		pass
@@ -432,27 +338,8 @@ class BinOp(Expression):
 		r.free(reg)
 		return code
 	
-	def flatten(self, inplace = False):
-		leftPreStmts, self.left = self.left.flatten()
-		rightPreStmts, self.right = self.right.flatten()
-		
-		preStmts = util.flatten([leftPreStmts, rightPreStmts])
-		
-		if inplace:
-			return preStmts, self
-		else:
-			var = v.getVar()
-			preStmts.append(Assign(var, self))
-			return preStmts, var
-	
 	def getChildren(self):
 		return [self.left, self.right]
-	
-	def opInstr(self):
-		pass
-	
-	def opString(self):
-		pass
 	
 	def toGraph(self):
 		pass
@@ -484,24 +371,8 @@ class UnaryOp(Expression):
 		
 		return code
 	
-	def flatten(self, inplace = False):
-		preStmts, self.operand = self.operand.flatten()
-		
-		if inplace:
-			return util.flatten(preStmts), self
-		else:
-			var = v.getVar()
-			preStmts.append(Assign(var, self))
-			return util.flatten(preStmts), var
-	
 	def getChildren(self):
 		return [self.operand]
-	
-	def opInstr(self):
-		pass
-	
-	def opString(self):
-		pass
 	
 	def toGraph(self):
 		pass
