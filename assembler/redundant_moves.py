@@ -2,18 +2,11 @@
 Author:		Chris Wailes <chris.wailes@gmail.com>
 Project:		CSCI 5525 HW1
 Date:		2010/08/27
-Description:	Classes and functions for doing instruction optimization passes.
+Description:	Removes redundant move operations from the generated assembly
+			code.
 """
 
-import sys
-
 import ib
-
-def doInstructionPasses(code):
-	code.reset()
-	
-	#printPass(code)
-	redundantMoves(code)
 
 def redundantMoves(code):
 	while (not code.atEnd()):
@@ -40,9 +33,4 @@ def redundantMoves(code):
 				index += 1
 				ahead = code.getInst(index)
 		
-		code.next()
-
-def printPass(code):
-	while (not code.atEnd()):
-		sys.stdout.write(str(code.getCurInst()))
 		code.next()

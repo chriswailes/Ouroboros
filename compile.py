@@ -11,7 +11,7 @@ import compiler
 import os.path
 import sys
 
-from assembler import ip
+from assembler.redundant_moves import redundantMoves
 from lib import ast, util
 from transforms.flatten import flatten
 
@@ -59,7 +59,7 @@ print("Before Assembly Passes")
 print(assembly)
 
 #Run the instruction passes.
-ip.doInstructionPasses(assembly)
+redundantMoves(assembly)
 
 #Print the AST
 print("After Assembly Passes")
