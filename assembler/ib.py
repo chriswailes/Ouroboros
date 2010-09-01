@@ -5,8 +5,7 @@ Date:		2010/08/26
 Description:	Classes and functions for building instructions.
 """
 
-import myAST
-import util
+from lib import util
 
 class Block(object):
 	def __init__(self, header = "\n"):
@@ -147,8 +146,11 @@ class OneOp(Instruction):
 		self.name = name
 		self.suffix = suffix
 		
-		if isinstance(dest, myAST.Name):
-			self.comment = "Var: " + operand.name
+		#Stupid hack to get around the lack of circular dependency resolution.
+		from lib import ast
+		
+		if isinstance(dest, ast.Name):
+			self.comment = "Var: " + dest.name
 		
 		self.dest = str(dest)
 	
@@ -163,9 +165,12 @@ class TwoOp(Instruction):
 		
 		self.src = str(src)
 		
-		if isinstance(src, myAST.Name):
+		#Stupid hack to get around the lack of circular dependency resolution.
+		from lib import ast
+		
+		if isinstance(src, ast.Name):
 			self.comment = "Var: " + src.name
-		elif isinstance(dest, myAST.Name):
+		elif isinstance(dest, ast.Name):
 			self.comment = "Var: " + dest.name
 		
 		self.dest = str(dest)

@@ -6,83 +6,84 @@ Description:	Describes the abstract syntax tree used by my compiler for HW0.
 """
 
 import compiler
-import compiler.ast as ast
+import compiler.ast as oast
 
-import ib
-import registers as r
-import util
-import variables as v
+from assembler import ib
+
+from lib import registers as r
+from lib import util
+from lib import variables as v
 
 def toMyAST(oldAST, funcName = False):
-	if isinstance(oldAST, ast.Add):
+	if isinstance(oldAST, oast.Add):
 		left = toMyAST(oldAST.left)
 		right = toMyAST(oldAST.right)
 		
 		return Add(left, right)
 	
-	elif isinstance(oldAST, ast.Assign):
+	elif isinstance(oldAST, oast.Assign):
 		name = toMyAST(oldAST.nodes.pop())
 		expr = toMyAST(oldAST.expr)
 		
 		return Assign(name, expr)
 	
-	elif isinstance(oldAST, ast.AssName):
+	elif isinstance(oldAST, oast.AssName):
 		name = v.addUserVar(oldAST.name)
 		return Name(name)
 	
-	elif isinstance(oldAST, ast.CallFunc):
+	elif isinstance(oldAST, oast.CallFunc):
 		name = toMyAST(oldAST.node, True)
 		args = [toMyAST for a in oldAST.args]
 		
 		return FunctionCall(name, args)
 	
-	elif isinstance(oldAST, ast.Const):
+	elif isinstance(oldAST, oast.Const):
 		return Integer(oldAST.value)
 	
-	elif isinstance(oldAST, ast.Discard):
+	elif isinstance(oldAST, oast.Discard):
 		return toMyAST(oldAST.expr)
 	
-	elif isinstance(oldAST, ast.Div):
+	elif isinstance(oldAST, oast.Div):
 		left = toMyAST(oldAST.left)
 		right = toMyAST(oldAST.right)
 		
 		return Div(left, right)
 		
-	elif isinstance(oldAST, ast.Module):
+	elif isinstance(oldAST, oast.Module):
 		children = util.flatten([toMyAST(n) for n in oldAST.getChildNodes()])
 		
 		return Module(children)
 	
-	elif isinstance(oldAST, ast.Mul):
+	elif isinstance(oldAST, oast.Mul):
 		left = toMyAST(oldAST.left)
 		right = toMyAST(oldAST.right)
 		
 		return Mul(left, right)
 	
-	elif isinstance(oldAST, ast.Name):
+	elif isinstance(oldAST, oast.Name):
 		name = oldAST.name
 		if not funcName:
 			name = v.addUserVar(oldAST.name)
 		
 		return Name(name)
 		
-	elif isinstance(oldAST, ast.Printnl):
+	elif isinstance(oldAST, oast.Printnl):
 		children = util.flatten([toMyAST(e) for e in oldAST.getChildNodes()])
 		
 		return Print(children)
 		
-	elif isinstance(oldAST, ast.Stmt):
+	elif isinstance(oldAST, oast.Stmt):
 		stmts = util.flatten([toMyAST(s) for s in oldAST.getChildNodes()])
 		
 		return stmts
 	
-	elif isinstance(oldAST, ast.Sub):
+	elif isinstance(oldAST, oast.Sub):
 		left = toMyAST(oldAST.left)
 		right = toMyAST(oldAST.right)
 		
 		return Sub(left, right)
 		
-	elif isinstance(oldAST, ast.UnarySub):
+	elif isinstance(oldAST, oast.UnarySub):
 		operand = toMyAST(oldAST.expr)
 		
 		return Negate(operand)

@@ -6,7 +6,7 @@ Description:	Functions and data structures for allocating space on the stack
 			for variables.
 """
 
-import myAST
+import ast
 
 stackSize = 0
 varNum = 0
@@ -37,7 +37,7 @@ def getVar():
 	global varLocs
 	global varNum
 	
-	var = myAST.Name("tmp:{0:d}".format(varNum))
+	var = ast.Name("tmp:{0:d}".format(varNum))
 	
 	varNum += 1
 	varLocs[var.name] = varNum * 4

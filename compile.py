@@ -1,11 +1,18 @@
 #!/usr/bin/python
 
+"""
+Author:		Chris Wailes <chris.wailes@gmail.com>
+Project:		CSCI 5525 HW1
+Date:		2010/08/26
+Description:	This file is the actual compiler.
+"""
+
 import compiler
 import os.path
 import sys
 
-import myAST
-import ip
+from lib import ast
+from assembler import ip
 
 if len(sys.argv) < 2:
 	print("Insufficient number of arguments.")
@@ -16,35 +23,35 @@ inFile = open(sys.argv[1])
 outName = os.path.basename(sys.argv[1])[0:-3] + ".s"
 outFile = open(outName, "w")
 
-program = inFile.read()
+tokens = inFile.read()
 
-ast = compiler.parse(program)
+tree = compiler.parse(tokens)
 
 #Generate my AST
-ast = myAST.toMyAST(ast)
+tree = ast.toMyAST(tree)
 
 #Print my AST
-print(ast)
+print(tree)
 print("")
 
 #Flatten my AST.
-ast.flatten()
+tree.flatten()
 
 #Print my flattened AST
-print(ast)
+print(tree)
 
 print("\n")
 
 #Print out the original program.
 print("Original:")
-print(program)
+print(tokens)
 
 #Print out the Python code for my flattened AST
 print("Flat:")
-print(ast.toPython())
+print(tree.toPython())
 
 #Compile the AST.
-assembly = ast.compile()
+assembly = tree.compile()
 
 #Print out the pre-assembly passes code.
 print("Before Assembly Passes")
