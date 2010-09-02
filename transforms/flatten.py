@@ -28,7 +28,7 @@ def flatten(node, inplace = False):
 			preStmts.append(ast.Assign(var, node))
 			return preStmts, var
 	
-	elif isinstance(node, ast.FunctionCall) or isinstance(node, ast.Print):
+	elif isinstance(node, ast.FunctionCall):
 		preStmts = []
 		newArgs = []
 		
@@ -41,7 +41,7 @@ def flatten(node, inplace = False):
 		preStmts = util.flatten(preStmts)
 		node.args = newArgs
 		
-		if inplace or isinstance(node, ast.Print):
+		if inplace:
 			return preStmts, node
 		else:
 			var = v.getVar()
@@ -55,7 +55,7 @@ def flatten(node, inplace = False):
 		newStmts = []
 		
 		for s in node.stmts:
-			preStmts, newStmt = flatten(s)
+			preStmts, newStmt = flatten(s, True)
 			
 			newStmts.append(preStmts)
 			newStmts.append(newStmt)

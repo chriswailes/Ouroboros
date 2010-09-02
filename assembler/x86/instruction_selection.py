@@ -77,12 +77,24 @@ def selectInstructions(node, dest = None):
 	
 	elif isinstance(node, ast.FunctionCall):
 		code = ib.Block()
+		
+		for arg in node.args:
+			code.append(ib.OneOp("push", selectInstructions(arg)))
+		
 		code.append(ib.OneOp("call", node.name.name, None))
+		
+		if len(node.args) > 0:
+			size = str(len(node.args) * 4)
+			code.append(ib.TwoOp("add", '$' + size, "%esp"))
 		
 		if dest:
 			code.append(ib.TwoOp("mov", "%eax", dest))
 
 		return code
+		
+		code.append(ib.OneOp("push", selectInstructions(node.args[0])))
+		code.append(ib.OneOp("call", "print_int_nl", None))
+		code.append(ib.TwoOp("add", "$4", "%esp"))
 	
 	elif isinstance(node, ast.Integer):
 		return "${0:d}".format(node.value)
@@ -121,14 +133,6 @@ def selectInstructions(node, dest = None):
 	
 	elif isinstance(node, ast.Name):
 		return "-{0:d}(%ebp)".format(v.getVarLoc(node.name))
-	
-	elif isinstance(node, ast.Print):
-		code = ib.Block()
-		code.append(ib.OneOp("push", selectInstructions(node.args[0])))
-		code.append(ib.OneOp("call", "print_int_nl", None))
-		code.append(ib.TwoOp("add", "$4", "%esp"))
-		
-		return code
 	
 	elif isinstance(node, ast.UnaryOp):
 		code = ib.Block()

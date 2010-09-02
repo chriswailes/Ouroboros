@@ -70,7 +70,8 @@ def toMyAST(oldAST, funcName = False):
 	elif isinstance(oldAST, oast.Printnl):
 		children = util.flatten([toMyAST(e) for e in oldAST.getChildNodes()])
 		
-		return Print(children)
+		return FunctionCall(Name("print_int_nl"), children)
+		#return Print(children)
 		
 	elif isinstance(oldAST, oast.Stmt):
 		stmts = util.flatten([toMyAST(s) for s in oldAST.getChildNodes()])
@@ -167,30 +168,6 @@ class FunctionCall(Statement):
 			call += arg.toPython() + ", "
 		
 		if len(self.args) > 0:
-			call = call[0:-2]
-		
-		return call + ")"
-
-class Print(Statement):
-	def __init__(self, args):
-		self.args = args
-	
-	def __repr__(self):
-		return "Print({0})".format(repr(self.args))
-	
-	def getChildren(self):
-		return self.exprs
-	
-	def toGraph(self):
-		pass
-	
-	def toPython(self):
-		call = "print("
-		
-		for arg in self.args:
-			call += arg.toPython() + ", "
-		
-		if len(call) > 0:
 			call = call[0:-2]
 		
 		return call + ")"
