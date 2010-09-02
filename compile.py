@@ -54,7 +54,7 @@ print("Flat:")
 print(tree.toPython())
 
 #Compile the AST.
-assembly = tree.compile()
+assembly = selectInstructions(tree)
 
 #Print out the pre-assembly passes code.
 print("Before Assembly Passes")

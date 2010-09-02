@@ -5,7 +5,7 @@ Date:		2010/09/02
 Description:	The wrapper for our instruction selection code.
 """
 
-from lib.confg import config
+from lib.config import config
 
 def selectInstructions(tree):
 	if config['arch'] == 'x86':

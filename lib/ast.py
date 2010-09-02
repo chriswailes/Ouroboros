@@ -112,38 +112,6 @@ class Module(Node):
 	def __repr__(self):
 		return "Module({0})".format(repr(self.stmts))
 	
-	def compile(self, dest = None):
-		subCode = ib.Block()
-		
-		code = ib.Block()
-		code.header  = ".globl main\n"
-		code.header += "main:\n"
-		
-		#Push the old base pointer onto the stack.
-		code.append(ib.OneOp("push", "%ebp"))
-		#Make the old stack pointer the new base pointer.
-		code.append(ib.TwoOp("mov", "%esp", "%ebp"))
-		
-		for stmt in self.stmts:
-			subCode.append(stmt.compile())
-		
-		#Expand the stack.
-		code.append(ib.TwoOp("sub", "$" + str(v.getStackSize()), "%esp"))
-		
-		code.append(subCode)
-		
-		endBlock = ib.Block()
-		#Put our exit value in %eax
-		endBlock.append(ib.TwoOp("mov", "$0", "%eax"))
-		#Restore the stack.
-		endBlock.append(ib.Instruction("leave"))
-		#Return
-		endBlock.append(ib.Instruction("ret"))
-
-		code.append(endBlock)
-		
-		return code
-	
 	def getChildren(self):
 		return self.statements
 	
@@ -169,20 +137,6 @@ class Assign(Node):
 	def __repr__(self):
 		return "Assign({0}, {1})".format(repr(self.var), repr(self.exp))
 	
-	def compile(self, dest = None):
-		if isinstance(self.exp, Name):
-			code = ib.Block()
-			
-			reg = r.alloc()
-			code.append(ib.TwoOp("mov", self.exp.compile(), reg))
-			code.append(ib.TwoOp("mov", reg, self.var))
-			
-			r.free(reg)
-			
-			return code
-		else:
-			return self.exp.compile(self.var)
-	
 	def getChildren(self):
 		return [self.exp]
 	
@@ -199,15 +153,6 @@ class FunctionCall(Statement):
 	
 	def __repr__(self):
 		return "FunctionCall({0}, {1})".format(repr(self.name), repr(self.args))
-	
-	def compile(self, dest = None):
-		code = ib.Block()
-		code.append(ib.OneOp("call", self.name.name, None))
-		
-		if dest:
-			code.append(ib.TwoOp("mov", "%eax", dest))
-
-		return code
 	
 	def getChildren(self):
 		return self.args
@@ -232,14 +177,6 @@ class Print(Statement):
 	
 	def __repr__(self):
 		return "Print({0})".format(repr(self.args))
-	
-	def compile(self, dest = None):
-		code = ib.Block()
-		code.append(ib.OneOp("push", self.args[0].compile()))
-		code.append(ib.OneOp("call", "print_int_nl", None))
-		code.append(ib.TwoOp("add", "$4", "%esp"))
-		
-		return code
 	
 	def getChildren(self):
 		return self.exprs
@@ -266,13 +203,10 @@ class Name(Expression):
 		self.name = name
 	
 	def __str__(self):
-		return self.compile()
+		return "-{0:d}(%ebp)".format(v.getVarLoc(self.name))
 	
 	def __repr__(self):
 		return "Name({0})".format(repr(self.name))
-	
-	def compile(self, dest = None):
-		return "-{0:d}(%ebp)".format(v.getVarLoc(self.name))
 	
 	def getChildren(self):
 		return []
@@ -294,9 +228,6 @@ class Integer(Expression):
 		return "Integer({0:d})".format(self.value)
 	
 	def __str__(self):
-		return self.compile()
-
-	def compile(self, dest = None):
 		return "${0:d}".format(self.value)
 	
 	def getChildren(self):
@@ -316,28 +247,6 @@ class BinOp(Expression):
 		self.left = left
 		self.right = right
 	
-	def compile(self, dest = None):
-		code = ib.Block()
-		reg = r.alloc()
-
-		if isinstance(self.left, Integer) and isinstance(self.right, Integer):
-			value = Integer(eval("{0:d} {1} {2:d}".format(self.left.value, self.opString(), self.right.value)))
-			code.append(ib.TwoOp("mov", value, dest))
-
-		else:
-			if isinstance(dest, Name):
-				code.append(ib.TwoOp("mov", self.left, reg))
-				code.append(ib.TwoOp(self.opInstr(), self.right, reg))
-				code.append(ib.TwoOp("mov", reg, dest))
-			else:
-				#In this case the destination is a register.
-				code.append(ib.TwoOp("mov", self.left, dest))
-				code.append(ib.TwoOp("mov", self.right, reg))
-				code.append(ib.TwoOp(self.opInstr(), reg, dest))
-		
-		r.free(reg)
-		return code
-	
 	def getChildren(self):
 		return [self.left, self.right]
 	
@@ -350,26 +259,6 @@ class BinOp(Expression):
 class UnaryOp(Expression):
 	def __init__(self, operand):
 		self.operand = operand
-	
-	def compile(self, dest = None):
-		code = ib.Block()
-
-		if dest == None:
-			code.append(ib.OneOp(self.opInstr(), self.operand.compile()))
-		else:
-			if isinstance(dest, Name):
-				reg = r.alloc()
-				
-				code.append(ib.TwoOp("mov", self.operand.compile(), reg))
-				code.append(ib.OneOp(self.opInstr(), reg))
-				code.append(ib.TwoOp("mov", reg, dest))
-				
-				r.free(reg)
-			else:
-				code.append(ib.TwoOp("mov", self.operand.compile(), dest))
-				code.append(ib.OneOp(self.opInstr(), dest))
-		
-		return code
 	
 	def getChildren(self):
 		return [self.operand]
@@ -403,33 +292,6 @@ class Add(BinOp):
 class Div(BinOp):
 	def __repr__(self):
 		return "Div(({0}, {1}))".format(repr(self.left), repr(self.right))
-	
-	def compile(self, dest = None):
-		code = ib.Block()
-
-		reg0 = r.alloc("%eax")
-		reg1 = r.alloc("%ebx")
-		reg2 = r.alloc("%edx")
-		
-		if isinstance(dest, Name):
-			code.append(ib.TwoOp("mov", self.left, reg0))
-			code.append(ib.TwoOp("mov", self.right, reg1))
-			code.append(ib.Instruction("cltd"))
-			
-			code.append(ib.OneOp(self.opInstr(), reg1))
-			code.append(ib.TwoOp("mov", reg0, dest))
-		else:
-			#This is broken for now.  Fixing it doesn't make sense until
-			#register allocation is working.
-			code.append(ib.TwoOp("mov", self.left, dest))
-			code.append(ib.TwoOp("mov", self.right, reg0))
-			code.append(ib.OneOp(self.opInstr(), dest))
-		
-		r.free(reg0)
-		r.free(reg1)
-		r.free(reg2)
-		
-		return code
 	
 	def opInstr(self):
 		return "idiv"
