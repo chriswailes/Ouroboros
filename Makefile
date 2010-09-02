@@ -4,8 +4,7 @@
 #Description	= This file compiles the generated Python assembly code.
 
 CC		= gcc
-CONDFLAGS	= -march=native -m32
-CFLAGS	= -O3 -Wall -fPIC $(CONDFLAGS)
+CFLAGS	= -O3 -Wall -fPIC -march=native
 LFLAGS	= -lm -Lruntime/ -lpyrun
 
 all: runtime
@@ -20,11 +19,15 @@ runtime: runtime-static
 
 .PHONY: runtime-shared
 runtime-shared:
-	cd runtime; make shared CONDFLAGS="$(CONDFLAGS)"
+	cd runtime
+	make shared-32
+	make shared-63
 
 .PHONY: runtime-static
 runtime-static:
-	cd runtime; make static CONDFLAGS="$(CONDFLAGS)"
+	cd runtime
+	make static-32
+	make static-64
 
 .PHONY: clean
 clean:

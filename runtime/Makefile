@@ -7,32 +7,62 @@ AR		= ar
 CC		= gcc
 
 AFLAGS	= rcs
-CFLAGS	= -O3 -Wall -fPIC $(CONDFLAGS)
+CFLAGS	= -O3 -Wall -fPIC -march=native
 LFAGS	= -lm
 SFLAGS	= -shared -Wl,-soname,libpyrun.so
 
-OBJS		= runtime.o hashtable.o hashtable_itr.o hashtable_utility.o
+CFLAGS32	= $(CFLAGS) -m32
+CFLAGS64	= $(CLFAGS) -m64
 
-all: static
+OBJS32	= runtime-32.o hashtable-32.o hashtable_itr-32.o hashtable_utility-32.o
+OBJS64	= runtime-64.o hashtable-64.o hashtable_itr-64.o hashtable_utility-64.o
 
-hashtable.o: hashtable.c hashtable.h hashtable_itr.o hashtable_utility.o
-	$(CC) $(CFLAGS) -c $<
+all: static-32 static-64
 
-hashtable_itr.o: hashtable_itr.c hashtable_itr.h
-	$(CC) $(CFLAGS) -c $<
+##################
+# 32-Bit Objects #
+##################
 
-hashtable_utility.o: hashtable_utility.c hashtable_utility.h
-	$(CC) $(CFLAGS) -c $<
+hashtable-32.o: hashtable.c hashtable.h hashtable_itr-32.o hashtable_utility-32.o
+	$(CC) $(CFLAGS32) -c -o $@ $<
 
-shared: runtime.o
-	$(CC) $(CFLAGS) $(SFLAGS) -o libpyrun.so $(OBJS)
+hashtable_itr-32.o: hashtable_itr.c hashtable_itr.h
+	$(CC) $(CFLAGS32) -c -o $@ $<
 
-static: runtime.o
-	$(AR) $(AFLAGS) libpyrun.a $(OBJS)
+hashtable_utility-32.o: hashtable_utility.c hashtable_utility.h
+	$(CC) $(CFLAGS32) -c -o $@ $<
+
+shared-32: runtime-32.o
+	$(CC) $(CFLAGS32) $(SFLAGS) -o libpyrun32.so $(OBJS32)
+
+static-32: runtime-32.o
+	$(AR) $(AFLAGS) libpyrun32.a $(OBJS32)
 	
-runtime.o: runtime.c runtime.h hashtable.o
-	$(CC) $(CFLAGS) -c $<
+runtime-32.o: runtime.c runtime.h hashtable-32.o
+	$(CC) $(CFLAGS32) -c -o $@ $<
+
+##################
+# 64-Bit Objects #
+##################
+
+hashtable-64.o: hashtable.c hashtable.h hashtable_itr-64.o hashtable_utility-64.o
+	$(CC) $(CFLAGS64) -c -o $@ $<
+
+hashtable_itr-64.o: hashtable_itr.c hashtable_itr.h
+	$(CC) $(CFLAGS64) -c -o $@ $<
+
+hashtable_utility-64.o: hashtable_utility.c hashtable_utility.h
+	$(CC) $(CFLAGS64) -c -o $@ $<
+
+shared-64: runtime-64.o
+	$(CC) $(CFLAGS64) $(SFLAGS) -o libpyrun64.so $(OBJS64)
+
+static-64: runtime-64.o
+	$(AR) $(AFLAGS) libpyrun64.a $(OBJS64)
+	
+runtime-64.o: runtime.c runtime.h hashtable-64.o
+	$(CC) $(CFLAGS64) -c -o $@ $<
 
 .PHONY: clean
 clean:
-	rm -f *.o *.a *.sa
+	rm -f *.o *.a *.so

@@ -8,7 +8,7 @@ Description:	The wrapper for our instruction selection code.
 from lib.config import config
 
 def selectInstructions(tree):
-	if config['arch'] == 'x86':
+	if config.arch == 'x86':
 		from x86 import instruction_selection as arch
 	else:
 		raise Exception("Unknown architecture.")
