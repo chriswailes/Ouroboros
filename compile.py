@@ -12,6 +12,8 @@ import os.path
 import sys
 
 from assembler.redundant_moves import redundantMoves
+from assembler.instruction_selection import selectInstructions
+
 from lib import ast, util
 from transforms.flatten import flatten
 
