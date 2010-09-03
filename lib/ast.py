@@ -120,7 +120,7 @@ class Module(Node):
 		module = ""
 		
 		for s in self.stmts:
-			module += s.toPython()
+			module += s.toPython() + "\n"
 		
 		return module
 

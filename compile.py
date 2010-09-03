@@ -10,7 +10,6 @@ Description:	This file is the actual compiler.
 import compiler
 
 import os
-import os.path
 
 from assembler.redundant_moves import redundantMoves
 from assembler.instruction_selection import selectInstructions
@@ -57,6 +56,7 @@ if config.verbose:
 	#Print out the Python code for my flattened AST
 	print("Flat:")
 	print(tree.toPython())
+	print("\n")
 
 #Compile the AST.
 assembly = selectInstructions(tree)
