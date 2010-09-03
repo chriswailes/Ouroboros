@@ -7,11 +7,14 @@ Description:	The instruction selection code for the x86 architecture.
 
 from assembler import ib
 
+import registers
+
 from lib import ast
-from lib import registers as r
 from lib import variables as v
 
 def selectInstructions(node, dest = None):
+	r = registers.RegisterFile()
+	
 	if isinstance(node, ast.Assign):
 		if isinstance(node.exp, ast.Name):
 			code = ib.Block()
@@ -29,21 +32,16 @@ def selectInstructions(node, dest = None):
 	elif isinstance(node, ast.BinOp) and not isinstance(node, ast.Div):
 		code = ib.Block()
 		reg = r.alloc()
-
-		if isinstance(node.left, ast.Integer) and isinstance(node.right, ast.Integer):
-			value = ast.Integer(eval("{0:d} {1} {2:d}".format(node.left.value, node.opString(), node.right.value)))
-			code.append(ib.TwoOp("mov", value, dest))
-
+		
+		if isinstance(dest, ast.Name):
+			code.append(ib.TwoOp("mov", node.left, reg))
+			code.append(ib.TwoOp(node.opInstr(), node.right, reg))
+			code.append(ib.TwoOp("mov", reg, dest))
 		else:
-			if isinstance(dest, ast.Name):
-				code.append(ib.TwoOp("mov", node.left, reg))
-				code.append(ib.TwoOp(node.opInstr(), node.right, reg))
-				code.append(ib.TwoOp("mov", reg, dest))
-			else:
-				#In this case the destination is a register.
-				code.append(ib.TwoOp("mov", node.left, dest))
-				code.append(ib.TwoOp("mov", node.right, reg))
-				code.append(ib.TwoOp(node.opInstr(), reg, dest))
+			#In this case the destination is a register.
+			code.append(ib.TwoOp("mov", node.left, dest))
+			code.append(ib.TwoOp("mov", node.right, reg))
+			code.append(ib.TwoOp(node.opInstr(), reg, dest))
 		
 		r.free(reg)
 		return code

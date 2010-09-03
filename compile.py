@@ -19,6 +19,7 @@ from lib import ast, util
 
 from lib.config import config, args
 
+from transforms.const_fold import foldConstants
 from transforms.flatten import flatten
 
 if len(args) == 0:
@@ -40,10 +41,11 @@ if config.verbose:
 	print("")
 
 #Run the AST transformation passes
+tree = foldConstants(tree)
 tree = flatten(tree)
 
 if config.verbose:
-	#Print my flattened AST
+	#Print my flattened (and folded) AST
 	print(tree)
 	
 	print("\n")
@@ -79,9 +81,7 @@ outFile.write(str(assembly))
 outFile.close()
 
 if config.target_stage == 'full':
-	cflags = "-O3 -Wall -fPIC -march=native -m32"
-	lflags = "-lm -L\"{0}\" -lpyrun32".format(config.lib)
-	command = "gcc {0} -o {1} {2} {3} ".format(cflags, outName, outName + '.s', lflags)
+	command = "gcc {0} -o {1} {2} {3} ".format(config.cflags, outName, outName + '.s', config.lflags)
 	
 	if config.verbose:
 		print(command)

@@ -8,9 +8,6 @@ Description:	Describes the abstract syntax tree used by my compiler for HW0.
 import compiler
 import compiler.ast as oast
 
-from assembler import ib
-
-import registers as r
 import util
 import variables as v
 
@@ -220,7 +217,8 @@ class Integer(Expression):
 		return "{0:d}".format(self.value)
 
 class BinOp(Expression):
-	def __init__(self, left, right):
+	def __init__(self, operator, left, right):
+		self.operator = operator
 		self.left = left
 		self.right = right
 	
@@ -231,10 +229,11 @@ class BinOp(Expression):
 		pass
 	
 	def toPython(self):
-		return "{0} {1} {2}".format(self.left.toPython(), self.opString(), self.right.toPython())
+		return "{0} {1} {2}".format(self.left.toPython(), self.operator, self.right.toPython())
 
 class UnaryOp(Expression):
-	def __init__(self, operand):
+	def __init__(self, operator, operand):
+		self.operator = operator
 		self.operand = operand
 	
 	def getChildren(self):
@@ -244,54 +243,63 @@ class UnaryOp(Expression):
 		pass
 	
 	def toPython(self):
-		return "{0}{1}".format(self.opString(), self.operand.toPython())
+		return "{0}{1}".format(self.operator, self.operand.toPython())
 
 class Negate(UnaryOp):
+	def __init__(self, operand):
+		self.operator = '-'
+		self.operand = operand
+	
 	def __repr__(self):
 		return "Negate({0})".format(repr(self.operand))
 	
 	def opInstr(self):
 		return "neg"
-	
-	def opString(self):
-		return "-"
 
 class Add(BinOp):
+	def __init__(self, left, right):
+		self.operator = '+'
+		self.left = left
+		self.right = right
+	
 	def __repr__(self):
-		return "Add(({0}, {1}))".format(repr(self.left), repr(self.right))
+		return "Add({0}, {1})".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
 		return "add"
-	
-	def opString(self):
-		return "+"
 
 class Div(BinOp):
+	def __init__(self, left, right):
+		self.operator = '/'
+		self.left = left
+		self.right = right
+	
 	def __repr__(self):
-		return "Div(({0}, {1}))".format(repr(self.left), repr(self.right))
+		return "Div({0}, {1})".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
 		return "idiv"
-	
-	def opString(self):
-		return "/"
 
 class Mul(BinOp):
+	def __init__(self, left, right):
+		self.operator = '*'
+		self.left = left
+		self.right = right
+	
 	def __repr__(self):
-		return "Mul(({0}, {1}))".format(repr(self.left), repr(self.right))
+		return "Mul({0}, {1})".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
 		return "imul"
-	
-	def opString(self):
-		return "*"
 
 class Sub(BinOp):
+	def __init__(self, left, right):
+		self.operator = '-'
+		self.left = left
+		self.right = right
+	
 	def __repr__(self):
-		return "Sub(({0}, {1}))".format(repr(self.left), repr(self.right))
+		return "Sub({0}, {1})".format(repr(self.left), repr(self.right))
 	
 	def opInstr(self):
 		return "sub"
-	
-	def opString(self):
-		return "-"

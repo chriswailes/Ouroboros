@@ -26,3 +26,9 @@ parser.add_option('-v', '--verbose', action = 'store_true',
 	dest = 'verbose', default = False, help = 'Print additional output.')
 
 config, args = parser.parse_args()
+
+cflags = "-O3 -Wall -fPIC -march=native -m32"
+lflags = "-lm -L\"{0}\" -lpyrun32".format(config.lib)
+
+setattr(config, 'cflags', cflags)
+setattr(config, 'lflags', lflags)
