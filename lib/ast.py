@@ -38,8 +38,7 @@ def toMyAST(oldAST, funcName = False):
 		return Integer(oldAST.value)
 	
 	elif isinstance(oldAST, oast.Discard):
-		name = v.getVar()
-		return Assign(name, toMyAST(oldAST.expr))
+		return toMyAST(oldAST.expr)
 	
 	elif isinstance(oldAST, oast.Div):
 		left = toMyAST(oldAST.left)
@@ -128,7 +127,7 @@ class Module(Node):
 class Statement(Node):
 	pass
 
-class Assign(Node):
+class Assign(Statement):
 	def __init__(self, var, exp):
 		self.var = var
 		self.exp = exp

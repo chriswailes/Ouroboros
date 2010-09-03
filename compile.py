@@ -20,6 +20,7 @@ from lib import ast, util
 from lib.config import config, args
 
 from transforms.const_fold import foldConstants
+from transforms.discard import discard
 from transforms.flatten import flatten
 
 if len(args) == 0:
@@ -41,6 +42,7 @@ if config.verbose:
 	print("")
 
 #Run the AST transformation passes
+tree = discard(tree)
 tree = foldConstants(tree)
 tree = flatten(tree)
 
