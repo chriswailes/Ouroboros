@@ -19,15 +19,13 @@ runtime: runtime-static
 
 .PHONY: runtime-shared
 runtime-shared:
-	cd runtime
-	make shared-32
-	make shared-63
+	cd runtime; make shared-32
+	cd runtime; make shared-64
 
 .PHONY: runtime-static
 runtime-static:
-	cd runtime
-	make static-32
-	make static-64
+	cd runtime; make static-32
+	cd runtime; make static-64
 
 .PHONY: clean
 clean:

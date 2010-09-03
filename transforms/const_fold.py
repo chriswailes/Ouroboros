@@ -75,7 +75,7 @@ def foldConstants(node):
 		node.operand = foldConstants(node.operand)
 		
 		if isinstance(node.operand, ast.Integer):
-			value = eval("{0} {1}".format(node.operator, node.operand))
+			value = eval("{0} {1}".format(node.operator, node.operand.value))
 			return ast.Integer(value)
 		
 		return node

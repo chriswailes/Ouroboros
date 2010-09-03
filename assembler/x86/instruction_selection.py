@@ -21,11 +21,12 @@ def selectInstructions(node, dest = None):
 			
 			reg = r.alloc()
 			code.append(ib.TwoOp("mov", selectInstructions(node.exp), reg))
-			code.append(ib.TwoOp("mov", reg, self.var))
-			
+			code.append(ib.TwoOp("mov", reg, node.var))
 			r.free(reg)
 			
 			return code
+		elif isinstance(node.exp, ast.Integer):
+			return ib.TwoOp("mov", selectInstructions(node.exp), node.var)
 		else:
 			return selectInstructions(node.exp, node.var)
 	

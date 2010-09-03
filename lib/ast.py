@@ -38,7 +38,8 @@ def toMyAST(oldAST, funcName = False):
 		return Integer(oldAST.value)
 	
 	elif isinstance(oldAST, oast.Discard):
-		return toMyAST(oldAST.expr)
+		name = v.getVar()
+		return Assign(name, toMyAST(oldAST.expr))
 	
 	elif isinstance(oldAST, oast.Div):
 		left = toMyAST(oldAST.left)
