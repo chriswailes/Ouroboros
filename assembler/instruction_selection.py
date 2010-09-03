@@ -10,6 +10,8 @@ from lib.config import config
 def selectInstructions(tree):
 	if config.arch == 'x86':
 		from x86 import instruction_selection as arch
+	elif config.arch == 'x86_64':
+		from x86_64 import instruction_selection as arch
 	else:
 		raise Exception("Unknown architecture.")
 	

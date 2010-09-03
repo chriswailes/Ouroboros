@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python -O
 
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
@@ -15,76 +15,79 @@ from assembler.redundant_moves import redundantMoves
 from assembler.instruction_selection import selectInstructions
 
 from lib import ast, util
-
+from lib.translate import translate
 from lib.config import config, args
 
 from transforms.const_fold import foldConstants
 from transforms.discard import discard
 from transforms.flatten import flatten
+from transforms.redundant_negations import redundantNegations
 
 if len(args) == 0:
 	print('No input files specified.')
 	exit(0)
 
-inFile = open(config.inName)
+if config.startStage == 'python':
+	inFile = open(config.inName)
 
-tokens = inFile.read()
+	tokens = inFile.read()
 
-#Generate my AST
-tree = ast.toMyAST(compiler.parse(tokens))
+	#Generate my AST
+	tree = translate(compiler.parse(tokens))
 
-if config.verbose:
-	#Print my AST
-	print(tree)
-	print("")
-
-#Run the AST transformation passes
-tree = discard(tree)
-tree = foldConstants(tree)
-tree = flatten(tree)
-
-if config.verbose:
-	#Print my flattened (and folded) AST
-	print(tree)
-	
-	print("\n")
-	
-	#Print out the original program.
-	print("Original:")
-	print(tokens)
-	
-	#Print out the Python code for my flattened AST
-	print("Flat:")
-	print(tree.toPython())
-	print("\n")
-
-#Compile the AST.
-assembly = selectInstructions(tree)
-
-if config.verbose:
-	#Print out the pre-assembly passes code.
-	print("Before Assembly Passes")
-	print(assembly)
-
-#Run the instruction passes.
-redundantMoves(assembly)
-
-if config.verbose:
-	#Print out the post-assembly passes code.
-	print("After Assembly Passes")
-	print(assembly)
-
-
-#Put the produced assembly into the output file.
-outFile = open(config.sName, 'w')
-outFile.write(str(assembly))
-outFile.close()
-
-if config.target_stage == 'full':
-	command = "gcc {0} -o {1} {2} {3} ".format(config.cflags, config.outName, config.sName, config.lflags)
-	
 	if config.verbose:
-		print(command)
+		#Print my AST
+		print(tree)
+		print("")
+
+	#Run the AST transformation passes
+	tree = discard(tree)
+	tree = redundantNegations(tree)
+	tree = foldConstants(tree)
+	tree = flatten(tree)
+
+	if config.verbose:
+		#Print my flattened (and folded) AST
+		print(tree)
+		
+		print("\n")
+		
+		#Print out the original program.
+		print("Original:")
+		print(tokens)
+		
+		#Print out the Python code for my flattened AST
+		print("Flat:")
+		print(tree.toPython())
+		print("\n")
+
+	#Compile the AST.
+	assembly = selectInstructions(tree)
+
+	if config.verbose:
+		#Print out the pre-assembly passes code.
+		print("Before Assembly Passes")
+		print(assembly)
+
+	#Run the instruction passes.
+	redundantMoves(assembly)
+
+	if config.verbose:
+		#Print out the post-assembly passes code.
+		print("After Assembly Passes")
+		print(assembly)
+
+
+	#Put the produced assembly into the output file.
+	outFile = open(config.sName, 'w')
+	outFile.write(str(assembly))
+	outFile.close()
+
+if config.targetStage == 'full':
+	if config.verbose:
+		print(config.compileCommand)
 	
-	os.system(command)
-	os.remove(config.sName)
+	os.system(config.compileCommand)
+	
+	if config.startStage != 'assembly':
+		os.remove(config.sName)

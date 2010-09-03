@@ -5,9 +5,7 @@ Date:		2010/09/02
 Description:	The instruction selection code for the x86 architecture.
 """
 
-from assembler import ib
-
-import registers
+from assembler.x86_64 import ib, registers
 
 from lib import ast
 from lib import variables as v
@@ -50,9 +48,9 @@ def selectInstructions(node, dest = None):
 	elif isinstance(node, ast.Div):
 		code = ib.Block()
 
-		reg0 = r.alloc("%eax")
-		reg1 = r.alloc("%ebx")
-		reg2 = r.alloc("%edx")
+		reg0 = r.alloc("%rax")
+		reg1 = r.alloc("%rbx")
+		reg2 = r.alloc("%rdx")
 		
 		if isinstance(dest, ast.Name):
 			code.append(ib.TwoOp("mov", node.left, reg0))
@@ -78,16 +76,22 @@ def selectInstructions(node, dest = None):
 		code = ib.Block()
 		
 		for arg in node.args:
-			code.append(ib.OneOp("push", selectInstructions(arg)))
+			reg = r.nextArgReg()
+			src = selectInstructions(arg)
+			
+			if reg:
+				code.append(ib.TwoOp("mov", src, reg))
+			else:
+				code.append(ib.OneOp("push", src))
 		
 		code.append(ib.OneOp("call", node.name.name, None))
 		
-		if len(node.args) > 0:
-			size = str(len(node.args) * 4)
-			code.append(ib.TwoOp("add", '$' + size, "%esp"))
+		if len(node.args) > 4:
+			size = str((len(node.args) - 4) * 4)
+			code.append(ib.TwoOp("add", '$' + size, "%rsp"))
 		
 		if dest:
-			code.append(ib.TwoOp("mov", "%eax", dest))
+			code.append(ib.TwoOp("mov", "%rax", selectInstructions(dest)))
 
 		return code
 	
@@ -95,31 +99,17 @@ def selectInstructions(node, dest = None):
 		return "${0:d}".format(node.value)
 	
 	elif isinstance(node, ast.Module):
-		subCode = ib.Block()
-		
 		code = ib.Block()
-		code.header  = "# x86\n"
+		code.header  = "# x86_64\n"
 		code.header += ".globl main\n"
-		code.header += "main:\n"
-		
-		#Push the old base pointer onto the stack.
-		code.append(ib.OneOp("push", "%ebp"))
-		#Make the old stack pointer the new base pointer.
-		code.append(ib.TwoOp("mov", "%esp", "%ebp"))
+		code.header += "main:"
 		
 		for stmt in node.stmts:
-			subCode.append(selectInstructions(stmt))
-		
-		#Expand the stack.
-		code.append(ib.TwoOp("sub", "$" + str(v.getStackSize()), "%esp"))
-		
-		code.append(subCode)
+			code.append(selectInstructions(stmt))
 		
 		endBlock = ib.Block()
-		#Put our exit value in %eax
-		endBlock.append(ib.TwoOp("mov", "$0", "%eax"))
-		#Restore the stack.
-		endBlock.append(ib.Instruction("leave"))
+		#Put our exit value in %rax
+		endBlock.append(ib.TwoOp("mov", "$0", "%rax"))
 		#Return
 		endBlock.append(ib.Instruction("ret"))
 
@@ -128,7 +118,7 @@ def selectInstructions(node, dest = None):
 		return code
 	
 	elif isinstance(node, ast.Name):
-		return "-{0:d}(%ebp)".format(v.getVarLoc(node.name))
+		return "{0:d}(%rsp)".format(v.getVarLoc(node.name))
 	
 	elif isinstance(node, ast.UnaryOp):
 		code = ib.Block()

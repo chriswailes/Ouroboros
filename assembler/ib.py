@@ -2,9 +2,10 @@
 Author:		Chris Wailes <chris.wailes@gmail.com>
 Project:		CSCI 5525 HW1
 Date:		2010/08/26
-Description:	Classes and functions for building instructions.
+Description:	General purpose classes and functions for building instructions.
 """
 
+from lib import ast
 from lib import util
 
 class Block(object):
@@ -146,9 +147,6 @@ class OneOp(Instruction):
 		self.name = name
 		self.suffix = suffix
 		
-		#Stupid hack to get around the lack of circular dependency resolution.
-		from lib import ast
-		
 		if isinstance(dest, ast.Name):
 			self.comment = "Var: " + dest.name
 		
@@ -164,9 +162,6 @@ class TwoOp(Instruction):
 		self.suffix = suffix
 		
 		self.src = str(src)
-		
-		#Stupid hack to get around the lack of circular dependency resolution.
-		from lib import ast
 		
 		if isinstance(src, ast.Name):
 			self.comment = "Var: " + src.name

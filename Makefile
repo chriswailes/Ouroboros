@@ -27,6 +27,6 @@ runtime-static:
 .PHONY: clean
 clean:
 	rm -f *.s
-	rm -f *.pyc
+	rm -f *.pyc *.pyo
 	
 	for sd in $(SUBDIRS); do (cd $$sd; make clean); done

@@ -5,89 +5,8 @@ Date:		2010/08/23
 Description:	Describes the abstract syntax tree used by my compiler for HW0.
 """
 
-import compiler
-import compiler.ast as oast
-
 import util
 import variables as v
-
-def toMyAST(oldAST, funcName = False):
-	if isinstance(oldAST, oast.Add):
-		left = toMyAST(oldAST.left)
-		right = toMyAST(oldAST.right)
-		
-		return Add(left, right)
-	
-	elif isinstance(oldAST, oast.Assign):
-		name = toMyAST(oldAST.nodes.pop())
-		expr = toMyAST(oldAST.expr)
-		
-		return Assign(name, expr)
-	
-	elif isinstance(oldAST, oast.AssName):
-		name = v.addUserVar(oldAST.name)
-		return Name(name)
-	
-	elif isinstance(oldAST, oast.CallFunc):
-		name = toMyAST(oldAST.node, True)
-		args = [toMyAST for a in oldAST.args]
-		
-		return FunctionCall(name, args)
-	
-	elif isinstance(oldAST, oast.Const):
-		return Integer(oldAST.value)
-	
-	elif isinstance(oldAST, oast.Discard):
-		return toMyAST(oldAST.expr)
-	
-	elif isinstance(oldAST, oast.Div):
-		left = toMyAST(oldAST.left)
-		right = toMyAST(oldAST.right)
-		
-		return Div(left, right)
-		
-	elif isinstance(oldAST, oast.Module):
-		children = util.flatten([toMyAST(n) for n in oldAST.getChildNodes()])
-		
-		return Module(children)
-	
-	elif isinstance(oldAST, oast.Mul):
-		left = toMyAST(oldAST.left)
-		right = toMyAST(oldAST.right)
-		
-		return Mul(left, right)
-	
-	elif isinstance(oldAST, oast.Name):
-		name = oldAST.name
-		if not funcName:
-			name = v.addUserVar(oldAST.name)
-		
-		return Name(name)
-		
-	elif isinstance(oldAST, oast.Printnl):
-		children = util.flatten([toMyAST(e) for e in oldAST.getChildNodes()])
-		
-		return FunctionCall(Name("print_int_nl"), children)
-		#return Print(children)
-		
-	elif isinstance(oldAST, oast.Stmt):
-		stmts = util.flatten([toMyAST(s) for s in oldAST.getChildNodes()])
-		
-		return stmts
-	
-	elif isinstance(oldAST, oast.Sub):
-		left = toMyAST(oldAST.left)
-		right = toMyAST(oldAST.right)
-		
-		return Sub(left, right)
-		
-	elif isinstance(oldAST, oast.UnarySub):
-		operand = toMyAST(oldAST.expr)
-		
-		return Negate(operand)
-	
-	else:
-		None
 
 class Node(object):
 	def __iter__(self):
