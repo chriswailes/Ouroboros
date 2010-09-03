@@ -7,6 +7,8 @@ CC		= gcc
 CFLAGS	= -O3 -Wall -fPIC -march=native
 LFLAGS	= -lm -Lruntime/ -lpyrun
 
+SUBDIRS	= assembler lib runtime transforms
+
 all: runtime
 
 s: runtime
@@ -31,4 +33,5 @@ runtime-static:
 clean:
 	rm -f *.s
 	rm -f *.pyc
-	cd runtime; make clean
+	
+	for sd in $(SUBDIRS); do (cd $$sd; make clean); done
