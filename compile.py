@@ -27,9 +27,7 @@ if len(args) == 0:
 	print('No input files specified.')
 	exit(0)
 
-inFile = open(args[0])
-
-outName = os.path.basename(args[0])[0:-3]
+inFile = open(config.inName)
 
 tokens = inFile.read()
 
@@ -78,15 +76,15 @@ if config.verbose:
 
 
 #Put the produced assembly into the output file.
-outFile = open(outName + '.s', "w")
+outFile = open(config.sName, 'w')
 outFile.write(str(assembly))
 outFile.close()
 
 if config.target_stage == 'full':
-	command = "gcc {0} -o {1} {2} {3} ".format(config.cflags, outName, outName + '.s', config.lflags)
+	command = "gcc {0} -o {1} {2} {3} ".format(config.cflags, config.outName, config.sName, config.lflags)
 	
 	if config.verbose:
 		print(command)
 	
 	os.system(command)
-	os.remove(outName + '.s')
+	os.remove(config.sName)

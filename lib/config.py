@@ -18,6 +18,10 @@ parser.add_option('-a', '--arch', dest = 'arch', default = 'x86',
 parser.add_option('-l', '--lib', dest = 'lib', default = runtimePath,
 	help = 'The path to the pycom runtime libraries.')
 
+parser.add_option('-o', '--output', dest = 'outName', default = None,
+	help = 'The file to produce as output.  The default is determined by\
+	name of the input file.')
+
 parser.add_option('-s', action = 'store_const', const = 'compile',
 	dest = 'target_stage', default = 'full',
 	help = 'Stop after compilation into assembly code.  Do not assemble.')
@@ -26,6 +30,15 @@ parser.add_option('-v', '--verbose', action = 'store_true',
 	dest = 'verbose', default = False, help = 'Print additional output.')
 
 config, args = parser.parse_args()
+
+inName = args[0]
+setattr(config, 'inName', inName)
+
+outName = config.outName or path.basename(args[0])[0:-3]
+setattr(config, 'outName', outName)
+
+sName = outName + '.s'
+setattr(config, 'sName', sName)
 
 cflags = "-O3 -Wall -fPIC -march=native -m32"
 lflags = "-lm -L\"{0}\" -lpyrun32".format(config.lib)

@@ -30,7 +30,7 @@ def discard(node):
 			else:
 				newStmts.append(stmt)
 		
-		node.stmts = newStmts
+		node.stmts = util.flatten(newStmts)
 		return node
 	
 	elif isinstance(node, ast.Name):

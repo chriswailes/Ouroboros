@@ -11,11 +11,6 @@ SUBDIRS	= assembler lib runtime transforms
 
 all: runtime
 
-s: runtime
-	for s in *.s; do \
-		$(CC) $(CFLAGS) -o $${s%\.*} $$s $(LFLAGS); \
-	done;
-
 .PHONY: runtime
 runtime: runtime-static
 
