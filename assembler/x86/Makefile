@@ -5,4 +5,4 @@
 
 .PHONY: clean
 clean:
-	rm *.pyc *.pyo
+	rm -f *.pyc *.pyo

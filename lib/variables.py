@@ -8,48 +8,26 @@ Description:	Functions and data structures for allocating space on the stack
 
 import ast
 
-stackSize = 0
-varNum = 0
-varLocs = {}
 
-def addUserVar(var):
-	global stackSize
-	global varLocs
-	global varNum
-	
-	var = userName(var)
-	
-	if not varLocs.has_key(var):
-		varNum += 1
-		varLocs[var] = varNum * 4
+class VFile(object):
+	def __init__(self):
+		self.tmpCount = 0
+		self.variables = []
+
+	def getVar(self):
+		self.tmpCount += 1
 		
-		stackSize += 4
-	
-	return var
+		var = ast.Name("tmp:{0:d}".format(self.tmpCount))
+		self.variables.append(var)
+		
+		return var
 
-def getStackSize():
-	global stackSize
-	
-	return stackSize
+	def userVar(self, var):
+		var = "user:{0}".format(var)
+		
+		if not var in self.variables:
+			self.variables.append(var)
+		
+		return var
 
-def getVar():
-	global stackSize
-	global varLocs
-	global varNum
-	
-	var = ast.Name("tmp:{0:d}".format(varNum))
-	
-	varNum += 1
-	varLocs[var.name] = varNum * 4
-	
-	stackSize += 4
-	
-	return var
-
-def getVarLoc(var):
-	global varLocs
-	
-	return varLocs[var]
-
-def userName(var):
-	return "user:{0}".format(var)
+v = VFile()

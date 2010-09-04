@@ -163,13 +163,8 @@ class TwoOp(Instruction):
 		
 		self.src = str(src)
 		
-		if isinstance(src, ast.Name):
-			self.comment = "Var: " + src.name
-		elif isinstance(dest, ast.Name):
-			self.comment = "Var: " + dest.name
-		
 		self.dest = str(dest)
 	
 	def __str__(self):
-		return self.pack("{0:5} {1}, {2}".format(self.getOp(), str(self.src), str(self.dest)))
+		return self.pack("{0:5} {1}, {2}".format(self.getOp(), self.src, self.dest))
 

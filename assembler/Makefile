@@ -3,10 +3,10 @@
 #Date		= 2010/09/03
 #Description	= Makefile for pycom/assembler
 
-SUBDIRS	= x86
+SUBDIRS	= x86 x86_64
 
 .PHONY: clean
 clean:
-	rm *.pyc *.pyo
+	rm -f *.pyc *.pyo
 	
 	for sd in $(SUBDIRS); do (cd $$sd; make clean); done

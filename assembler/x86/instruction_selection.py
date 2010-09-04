@@ -5,43 +5,57 @@ Date:		2010/09/02
 Description:	The instruction selection code for the x86 architecture.
 """
 
+from assembler.x86 import memloc
+
 from assembler import ib
 
 import registers
 
 from lib import ast
-from lib import variables as v
+
+r = registers.RegisterFile()
+s = memloc.Stack()
 
 def selectInstructions(node, dest = None):
-	r = registers.RegisterFile()
+	global r
+	global s
 	
 	if isinstance(node, ast.Assign):
+		dest = selectInstructions(node.var)
+		
 		if isinstance(node.exp, ast.Name):
 			code = ib.Block()
-			
 			reg = r.alloc()
-			code.append(ib.TwoOp("mov", selectInstructions(node.exp), reg))
-			code.append(ib.TwoOp("mov", reg, node.var))
+			
+			src = selectInstructions(node.exp)
+			
+			code.append(ib.TwoOp("mov", src, reg))
+			code.append(ib.TwoOp("mov", reg, dest))
 			r.free(reg)
 			
 			return code
 		elif isinstance(node.exp, ast.Integer):
-			return ib.TwoOp("mov", selectInstructions(node.exp), node.var)
+			src = selectInstructions(node.exp)
+			
+			return ib.TwoOp("mov", src, dest)
 		else:
-			return selectInstructions(node.exp, node.var)
+			return selectInstructions(node.exp, dest)
 	
 	elif isinstance(node, ast.BinOp) and not isinstance(node, ast.Div):
 		code = ib.Block()
 		reg = r.alloc()
 		
-		if isinstance(dest, ast.Name):
-			code.append(ib.TwoOp("mov", node.left, reg))
-			code.append(ib.TwoOp(node.opInstr(), node.right, reg))
+		left = selectInstructions(node.left)
+		right = selectInstructions(node.right)
+		
+		if isinstance(dest, memloc.Mem):
+			code.append(ib.TwoOp("mov", left, reg))
+			code.append(ib.TwoOp(node.opInstr(), right, reg))
 			code.append(ib.TwoOp("mov", reg, dest))
 		else:
 			#In this case the destination is a register.
-			code.append(ib.TwoOp("mov", node.left, dest))
-			code.append(ib.TwoOp("mov", node.right, reg))
+			code.append(ib.TwoOp("mov", left, dest))
+			code.append(ib.TwoOp("mov", right, reg))
 			code.append(ib.TwoOp(node.opInstr(), reg, dest))
 		
 		r.free(reg)
@@ -54,7 +68,7 @@ def selectInstructions(node, dest = None):
 		reg1 = r.alloc("%ebx")
 		reg2 = r.alloc("%edx")
 		
-		if isinstance(dest, ast.Name):
+		if isinstance(dest, memloc.Mem):
 			code.append(ib.TwoOp("mov", node.left, reg0))
 			code.append(ib.TwoOp("mov", node.right, reg1))
 			code.append(ib.Instruction("cltd"))
@@ -78,7 +92,8 @@ def selectInstructions(node, dest = None):
 		code = ib.Block()
 		
 		for arg in node.args:
-			code.append(ib.OneOp("push", selectInstructions(arg)))
+			src = selectInstructions(arg)
+			code.append(ib.OneOp("push", src))
 		
 		code.append(ib.OneOp("call", node.name.name, None))
 		
@@ -95,6 +110,7 @@ def selectInstructions(node, dest = None):
 		return "${0:d}".format(node.value)
 	
 	elif isinstance(node, ast.Module):
+		stack = memloc.Stack()
 		subCode = ib.Block()
 		
 		code = ib.Block()
@@ -111,7 +127,7 @@ def selectInstructions(node, dest = None):
 			subCode.append(selectInstructions(stmt))
 		
 		#Expand the stack.
-		code.append(ib.TwoOp("sub", "$" + str(v.getStackSize()), "%esp"))
+		code.append(ib.TwoOp("sub", "$" + str(s.size), "%esp"))
 		
 		code.append(subCode)
 		
@@ -128,24 +144,27 @@ def selectInstructions(node, dest = None):
 		return code
 	
 	elif isinstance(node, ast.Name):
-		return "-{0:d}(%ebp)".format(v.getVarLoc(node.name))
+		return s.getAddr(node.name)
 	
 	elif isinstance(node, ast.UnaryOp):
 		code = ib.Block()
-
+		
+		src = selectInstructions(node.operand)
+		
 		if dest == None:
-			code.append(ib.OneOp(node.opInstr(), selectInstructions(node.operand)))
+			code.append(ib.OneOp(node.opInstr(), src))
 		else:
 			if isinstance(dest, ast.Name):
 				reg = r.alloc()
+				dest = selectInstructions(dest)
 				
-				code.append(ib.TwoOp("mov", selectInstructions(node.operand), reg))
+				code.append(ib.TwoOp("mov", src, reg))
 				code.append(ib.OneOp(node.opInstr(), reg))
 				code.append(ib.TwoOp("mov", reg, dest))
 				
 				r.free(reg)
 			else:
-				code.append(ib.TwoOp("mov", selectInstructions(node.operand), dest))
+				code.append(ib.TwoOp("mov", src, dest))
 				code.append(ib.OneOp(node.opInstr(), dest))
 		
 		return code

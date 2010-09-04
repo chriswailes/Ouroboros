@@ -7,7 +7,7 @@ Description:	A transformation that flattens the provided AST.
 
 from lib import ast
 from lib import util
-from lib import variables as v
+from lib.variables import v
 
 def flatten(node, inplace = False):
 	if isinstance(node, ast.Assign):

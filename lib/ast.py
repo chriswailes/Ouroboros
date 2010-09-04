@@ -6,7 +6,6 @@ Description:	Describes the abstract syntax tree used by my compiler for HW0.
 """
 
 import util
-import variables as v
 
 class Node(object):
 	def __iter__(self):
@@ -94,9 +93,6 @@ class Expression(Node):
 class Name(Expression):
 	def __init__(self, name):
 		self.name = name
-	
-	def __str__(self):
-		return "-{0:d}(%ebp)".format(v.getVarLoc(self.name))
 	
 	def __repr__(self):
 		return "Name({0})".format(repr(self.name))

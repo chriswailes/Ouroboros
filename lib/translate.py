@@ -11,7 +11,8 @@ import compiler.ast as oast
 
 import ast
 import util
-import variables as v
+
+from variables import v
 
 def translate(node, funcName = False):
 	if isinstance(node, oast.Add):
@@ -27,7 +28,7 @@ def translate(node, funcName = False):
 		return ast.Assign(name, expr)
 	
 	elif isinstance(node, oast.AssName):
-		name = v.addUserVar(node.name)
+		name = v.userVar(node.name)
 		return ast.Name(name)
 	
 	elif isinstance(node, oast.CallFunc):
@@ -62,7 +63,7 @@ def translate(node, funcName = False):
 	elif isinstance(node, oast.Name):
 		name = node.name
 		if not funcName:
-			name = v.addUserVar(node.name)
+			name = v.userVar(node.name)
 		
 		return ast.Name(name)
 		
