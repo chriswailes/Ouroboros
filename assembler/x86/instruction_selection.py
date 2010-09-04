@@ -154,9 +154,8 @@ def selectInstructions(node, dest = None):
 		if dest == None:
 			code.append(ib.OneOp(node.opInstr(), src))
 		else:
-			if isinstance(dest, ast.Name):
+			if isinstance(dest, memloc.Mem):
 				reg = r.alloc()
-				dest = selectInstructions(dest)
 				
 				code.append(ib.TwoOp("mov", src, reg))
 				code.append(ib.OneOp(node.opInstr(), reg))
