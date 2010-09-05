@@ -24,6 +24,10 @@ runtime-static:
 	cd runtime; make static-32
 	cd runtime; make static-64
 
+.PHONY: stats
+stats:
+	wc -w `find . -name \*.py`
+
 .PHONY: clean
 clean:
 	rm -f *.s
