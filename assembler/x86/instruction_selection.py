@@ -115,7 +115,7 @@ def selectInstructions(node, dest = None):
 		
 		if len(node.args) > 0:
 			size = str(len(node.args) * 4)
-			code.append(TwoOp("add", '$' + size, Register("esp")))
+			code.append(TwoOp("add", Immediate(size), Register("esp")))
 		
 		if dest:
 			code.append(TwoOp("mov", Register("eax"), dest))
@@ -123,7 +123,7 @@ def selectInstructions(node, dest = None):
 		return code
 	
 	elif isinstance(node, ast.Integer):
-		return "${0:d}".format(node.value)
+		return Immediate(node.value)
 	
 	elif isinstance(node, ast.Module):
 		stack = Stack()
@@ -143,13 +143,13 @@ def selectInstructions(node, dest = None):
 			subCode.append(selectInstructions(stmt))
 		
 		#Expand the stack.
-		code.append(TwoOp("sub", "$" + str(s.size), Register("esp")))
+		code.append(TwoOp("sub", Immediate(s.size), Register("esp")))
 		
 		code.append(subCode)
 		
 		endBlock = Block()
 		#Put our exit value in %eax
-		endBlock.append(TwoOp("mov", "$0", Register("eax")))
+		endBlock.append(TwoOp("mov", Immediate(0), Register("eax")))
 		#Restore the stack.
 		endBlock.append(Instruction("leave"))
 		#Return

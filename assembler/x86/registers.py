@@ -2,7 +2,7 @@
 Author:		Chris Wailes <chris.wailes@gmail.com>
 Project:		CSCI 5525 HW1
 Date:		2010/08/26
-Description:	Functions and data structures for allocating registers.
+Description:	Functions and data structures for allocating registers in x86.
 """
 
 class RegisterFile(object):

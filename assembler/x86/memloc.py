@@ -16,11 +16,8 @@ class Stack(object):
 			return var
 		else:
 			if not self.addrs.has_key(var):
-				print("Adding var {0}".format(var))
-				
 				self.addrs[var] = self.size
 				self.size += self.wordSize
-				print self.addrs
 				
 			return Mem(self.addrs[var], var)
 

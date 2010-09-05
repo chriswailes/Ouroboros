@@ -123,6 +123,13 @@ class Block(object):
 			if isinstance(i, Block):
 				i.reset()
 
+class Immediate(object):
+	def __init__(self, value):
+		self.value = value
+	
+	def __str__(self):
+		return '$' + str(self.value)
+
 class Instruction(object):
 	def __init__(self, name, suffix = None, comment = ""):
 		self.comment = comment
