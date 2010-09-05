@@ -12,15 +12,22 @@ class Stack(object):
 		self.wordSize = 4
 	
 	def getAddr(self, var):
-		if not self.addrs.has_key(var):
-			self.addrs[var] = self.size
-			self.size += self.wordSize
-			
-		return Mem(self.addrs[var])
+		if isinstance(var, Mem):
+			return var
+		else:
+			if not self.addrs.has_key(var):
+				print("Adding var {0}".format(var))
+				
+				self.addrs[var] = self.size
+				self.size += self.wordSize
+				print self.addrs
+				
+			return Mem(self.addrs[var], var)
 
 class Mem(object):
-	def __init__(self, offset):
+	def __init__(self, offset, name):
 		self.offset = offset
+		self.name = name
 	
 	def __str__(self):
 		return "-{0:d}(%ebp)".format(self.offset)

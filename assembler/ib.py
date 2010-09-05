@@ -142,29 +142,25 @@ class Instruction(object):
 		return "\t{0:21} # {1}\n".format(instr, self.comment)
 
 class OneOp(Instruction):
-	def __init__(self, name, dest = None, suffix = "l", comment = ""):
+	def __init__(self, name, dest = None, suffix = None, comment = ""):
 		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 		
-		if isinstance(dest, ast.Name):
-			self.comment = "Var: " + dest.name
-		
-		self.dest = str(dest)
+		self.dest = dest
 	
 	def __str__(self):
-		return self.pack("{0:5s} {1}".format(self.getOp(), self.dest))
+		return self.pack("{0:5s} {1}".format(self.getOp(), str(self.dest)))
 
 class TwoOp(Instruction):
-	def __init__(self, name, src = None, dest = None, suffix = "l", comment = ""):
+	def __init__(self, name, src = None, dest = None, suffix = None, comment = ""):
 		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 		
-		self.src = str(src)
-		
-		self.dest = str(dest)
+		self.src = src
+		self.dest = dest
 	
 	def __str__(self):
-		return self.pack("{0:5} {1}, {2}".format(self.getOp(), self.src, self.dest))
+		return self.pack("{0:5} {1}, {2}".format(self.getOp(), str(self.src), str(self.dest)))
 
