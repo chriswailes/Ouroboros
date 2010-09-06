@@ -124,7 +124,9 @@ def selectInstructions(node, dest = None):
 		
 		if dest:
 			code.append(TwoOp("mov", Register("rax"), dest))
-
+		
+		r.freeArgRegs()
+		
 		return code
 	
 	elif isinstance(node, ast.Integer):

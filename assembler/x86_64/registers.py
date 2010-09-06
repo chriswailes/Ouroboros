@@ -5,6 +5,8 @@ Date:		2010/08/26
 Description:	Functions and data structures for allocating registers in x86_64.
 """
 
+from assembler.registers import Register
+
 class RegisterFile(object):
 	def __init__(self):
 		self.allocated = []
@@ -52,10 +54,3 @@ class RegisterFile(object):
 			return Register(self.arg_regs.pop(0))
 		else:
 			None
-
-class Register(object):
-	def __init__(self, name):
-		self.name = name
-	
-	def __str__(self):
-		return '%' + self.name

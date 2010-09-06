@@ -9,7 +9,30 @@ from lib import ast
 from lib import util
 
 def redundantNegations(node):
-	if isinstance(node, ast.Assign):
+	if isinstance(node, ast.Add):
+		node.left = redundantNegations(node.left)
+		node.right = redundantNegations(node.right)
+		
+		if isinstance(node.right, ast.Negate):
+			op = node.right.operand
+			
+			if isinstance(op, ast.Add):
+				newRight = redundantNegations(ast.Sub(op.left, op.right))
+				return ast.Sub(node.left, newRight)
+				
+			elif isinstance(op, ast.Sub):
+				newRight = redundantNegations(ast.Add(op.left,op.right))
+				return ast.Sub(node.left, newRight)
+				
+			elif isinstance(op, ast.Integer) or isinstance(op, ast.Name) or isinstance(op, ast.FunctionCall):
+				return ast.Sub(node.left, op)
+				
+			else:
+				return node
+		else:
+			return node
+	
+	elif isinstance(node, ast.Assign):
 		node.exp = redundantNegations(node.exp)
 		return node
 			

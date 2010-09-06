@@ -6,31 +6,16 @@ Description:	Removes redundant move operations from the generated assembly
 			code.
 """
 
+from lib.config import config
+
 import ib
 
 def redundantMoves(code):
-	while (not code.atEnd()):
-		cur = code.getCurInst()
-		
-		if cur.name == "mov":
-			index = code.pos + 1
-			ahead = code.getInst(index)
-			
-			while ahead:
-				if cur.src == "%eax" and (ahead.name == "mul" or ahead.name == "imul"):
-					break
-				elif cur.src == "%eax" and (ahead.name == "div" or ahead.name == "idiv"):
-					break
-				elif cur.src == "%eax" and ahead.name == "call":
-					break
-				elif isinstance(ahead, ib.OneOp) and cur.src == ahead.dest:
-					break
-				elif isinstance(ahead, ib.TwoOp) and cur.src == ahead.dest and ahead.src != cur.dest:
-					break
-				elif ahead.name == "mov" and cur.dest == ahead.src and cur.src == ahead.dest:
-					code.removeInst(index)
-				
-				index += 1
-				ahead = code.getInst(index)
-		
-		code.next()
+	if config.arch == 'x86':
+		from x86 import redundant_moves as arch
+	elif config.arch == 'x86_64':
+		from x86_64 import redundant_moves as arch
+	else:
+		raise Exception("Unknown architecture.")
+	
+	return arch.redundantMoves(code)

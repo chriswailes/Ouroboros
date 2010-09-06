@@ -5,6 +5,8 @@ Date:		2010/08/26
 Description:	Functions and data structures for allocating registers in x86.
 """
 
+from assembler.registers import Register
+
 class RegisterFile(object):
 	def __init__(self):
 		self.allocated = []
@@ -42,10 +44,3 @@ class RegisterFile(object):
 			self.available.sort()
 		else:
 			raise Exception("Attempting to free an un-allocated register: {0}".format(reg))
-
-class Register(object):
-	def __init__(self, name):
-		self.name = name
-	
-	def __str__(self):
-		return '%' + self.name
