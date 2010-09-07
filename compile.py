@@ -42,7 +42,6 @@ if config.startStage == 'python':
 
 	#Run the AST transformation passes
 	tree = discard(tree)
-	tree = redundantNegations(tree)
 	tree = foldConstants(tree)
 	tree = flatten(tree)
 
@@ -60,7 +59,7 @@ if config.startStage == 'python':
 		print("Flat:")
 		print(tree.toPython())
 		print("\n")
-
+	
 	#Compile the AST.
 	assembly = selectInstructions(tree)
 

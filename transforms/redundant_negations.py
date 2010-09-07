@@ -9,11 +9,15 @@ from lib import ast
 from lib import util
 
 def redundantNegations(node):
-	if isinstance(node, ast.Add):
+	if isinstance(node, ast.Assign):
+		node.exp = redundantNegations(node.exp)
+		return node
+			
+	elif isinstance(node, ast.BinOp):
 		node.left = redundantNegations(node.left)
 		node.right = redundantNegations(node.right)
 		
-		if isinstance(node.right, ast.Negate):
+		if isinstance(node, ast.Add) and isinstance(node.right, ast.Negate):
 			op = node.right.operand
 			
 			if isinstance(op, ast.Add):
@@ -29,18 +33,12 @@ def redundantNegations(node):
 				
 			else:
 				return node
+		
+		elif isinstance(node, ast.Sub) and isinstance(node.right, ast.Negate):
+			return ast.Add(node.left, node.right.operand)
+		
 		else:
 			return node
-	
-	elif isinstance(node, ast.Assign):
-		node.exp = redundantNegations(node.exp)
-		return node
-			
-	elif isinstance(node, ast.BinOp) and not isinstance(node, ast.Sub):
-		node.left = redundantNegations(node.left)
-		node.right = redundantNegations(node.right)
-		
-		return node
 	
 	elif isinstance(node, ast.FunctionCall):
 		newArgs = []
@@ -72,15 +70,6 @@ def redundantNegations(node):
 			return redundantNegations(node.operand.operand)
 		else:
 			node.operand = redundantNegations(node.operand)
-			return node
-	
-	elif isinstance(node, ast.Sub):
-		node.left = redundantNegations(node.left)
-		node.right = redundantNegations(node.right)
-		
-		if isinstance(node.right, ast.Negate):
-			return ast.Add(node.left, node.right.operand)
-		else:
 			return node
 	
 	elif isinstance(node, ast.UnaryOp):

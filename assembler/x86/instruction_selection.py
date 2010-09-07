@@ -69,7 +69,7 @@ def selectInstructions(node, dest = None):
 				else:
 					code.append(TwoOp('mov', right, dest))
 					code.append(OneOp('inc', dest))
-				
+			
 			elif isinstance(right, Immediate) and right.value == 1:
 				if isinstance(dest, Mem):
 					code.append(TwoOp('mov', left, reg))
@@ -78,6 +78,7 @@ def selectInstructions(node, dest = None):
 				else:
 					code.append(TwoOp('mov', left, dest))
 					code.append(OneOp('inc', dest))
+			
 			else:
 				if isinstance(dest, Mem):
 					code.append(TwoOp('mov', left, reg))
@@ -127,7 +128,19 @@ def selectInstructions(node, dest = None):
 				r.free(reg2)
 		
 		elif isinstance(node, ast.Mul):
-			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
+			if isinstance(left, Immediate) and (left.value % 2) == 0 and (left.value / 2) < 31:
+				#We can shift to the left instead of multiplying.
+				dist = left.value / 2
+				
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', right, reg))
+					code.append(TwoOp('sal', Immediate(dist), reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', right, dest))
+					code.append(TwoOp('sal', Immediate(dist), dest))
+			
+			elif isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
 				#We can shift to the left instead of multiplying.
 				dist = right.value / 2
 				
@@ -142,12 +155,12 @@ def selectInstructions(node, dest = None):
 			else:
 				if isinstance(dest, Mem):
 					code.append(TwoOp('mov', left, reg))
-					code.append(TwoOp('mul', right, reg))
+					code.append(TwoOp('imul', right, reg))
 					code.append(TwoOp('mov', reg, dest))
 				else:
 					code.append(TwoOp('mov', left, dest))
 					code.append(TwoOp('mov', right, reg))
-					code.append(TwoOp('mul', reg, dest))
+					code.append(TwoOp('imul', reg, dest))
 		
 		elif isinstance(node, ast.Sub):
 			if isinstance(right, Immediate) and right.value == 1:

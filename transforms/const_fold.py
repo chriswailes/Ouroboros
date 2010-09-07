@@ -5,47 +5,61 @@ Date:		2010/09/01
 Description:	A transformation that folds constants.
 """
 
-from lib import ast
+from lib.ast import *
 
 def foldConstants(node):
-	if isinstance(node, ast.Assign):
+	if isinstance(node, Assign):
 		node.exp = foldConstants(node.exp)
 		
 		return node
 	
-	elif isinstance(node, ast.BinOp):
+	elif isinstance(node, BinOp):
 		#Fold the left and right operands.
 		node.left = foldConstants(node.left)
 		node.right = foldConstants(node.right)
 		
 		#Move constant values to the left when we can.
-		if isinstance(node, ast.Add) or isinstance(node, ast.Mul):
-			if isinstance(node.right, ast.Integer):
+		if isinstance(node, Add) or isinstance(node, Mul):
+			if isinstance(node.right, Integer):
 				tmp = node.left
 				node.left = node.right
 				node.right = tmp
 		
-		if isinstance(node.left, ast.Integer):
+		#Swap operators if our right hand value is a negation.
+		if isinstance(node, Add) and isinstance(node.right, Negate):
+			node = Sub(node.left, node.right.operand)
+		
+		elif isinstance(node, Sub) and isinstance(node.right, Negate):
+			node = Add(node.left, node.right.operand)	
+		
+		#Calcluate constant values.
+		if isinstance(node.left, Integer):
 			#If they are both Integers, calculate their value.
-			if isinstance(node.right, ast.Integer):
+			if isinstance(node.right, Integer):
 				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.value))
-				return ast.Integer(value)
+				return Integer(value)
 			
 			#If they aren't both integers we might be able to lift an integer from the right side.
-			elif isinstance(node.right, ast.BinOp) and isinstance(node.right.left, ast.Integer):
-				foldOK  = isinstance(node, ast.Add) and (isinstance(node, ast.Add) or isinstance(node, ast.Sub))
-				foldOK |= isinstance(node, ast.Sub) and (isinstance(node, ast.Add) or isinstance(node, ast.Sub))
-				foldOK |= isinstance(node, ast.Mul) and isinstance(node.right, ast.Mul)
+			elif isinstance(node.right, BinOp) and isinstance(node.right.left, Integer):
+				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.left.value))
 				
-				if foldOK:
-					value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.left.value))
+				cond  = isinstance(node, Add) and (isinstance(node.right, Add) or isinstance(node.right, Sub))
+				cond |= isinstance(node, Mul) and isinstance(node.right, Mul)
+				
+				if cond:
+					node.right.left = Integer(value)
+					node = node.right
+				
+				elif isinstance(node, Sub):
+					if isinstance(node.right, Add):
+						node = Sub(Integer(value), node.right.right)
 					
-					node.right.left = ast.Integer(value)
-					return node.right
+					elif isinstance(node.right, Sub):
+						node = Add(Integer(value), node.right.right)
 		
 		return node
 	
-	elif isinstance(node, ast.FunctionCall):
+	elif isinstance(node, FunctionCall):
 		newArgs = []
 		
 		for arg in node.args:
@@ -55,10 +69,10 @@ def foldConstants(node):
 		
 		return node
 	
-	elif isinstance(node, ast.Integer):
+	elif isinstance(node, Integer):
 		return node
 	
-	elif isinstance(node, ast.Module):
+	elif isinstance(node, Module):
 		newStmts = []
 		
 		for stmt in node.stmts:
@@ -68,14 +82,40 @@ def foldConstants(node):
 		
 		return node
 	
-	elif isinstance(node, ast.Name):
+	elif isinstance(node, Name):
 		return node
 	
-	elif isinstance(node, ast.UnaryOp):
+	elif isinstance(node, Negate):
 		node.operand = foldConstants(node.operand)
 		
-		if isinstance(node.operand, ast.Integer):
-			value = eval("{0} {1}".format(node.operator, node.operand.value))
-			return ast.Integer(value)
+		if isinstance(node.operand, Add):
+			op = node.operand
+			if isinstance(op.left, Negate) or isinstance(op.right, Negate):
+				newNode = Add(Negate(op.left), Negate(op.right))
+				return foldConstants(newNode)
+			
+			else:
+				return node
 		
-		return node
+		elif isinstance(node.operand, Integer):
+			value = eval("-{0}".format(node.operand.value))
+			return Integer(value)
+		
+		elif isinstance(node.operand, Negate):
+			return foldConstants(node.operand.operand)
+		
+		elif isinstance(node.operand, Sub):
+			op = node.operand
+			
+			cond  = isinstance(op.left, Negate) or isinstance(op.left, Integer)
+			cond |= isinstance(op.right, Negate) or isinstance(op.right, Integer)
+			
+			if cond:
+				newNode = Sub(Negate(op.left), Negate(op.right))
+				return foldConstants(newNode)
+			
+			else:
+				return node
+		
+		else:
+			return node

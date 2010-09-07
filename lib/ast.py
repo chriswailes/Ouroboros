@@ -158,7 +158,7 @@ class UnaryOp(Expression):
 		pass
 	
 	def toPython(self):
-		return "{0}{1}".format(self.operator, self.operand.toPython())
+		return "{0}({1})".format(self.operator, self.operand.toPython())
 
 class Negate(UnaryOp):
 	def __init__(self, operand):
