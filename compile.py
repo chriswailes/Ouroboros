@@ -21,7 +21,6 @@ from lib.config import config, args
 from transforms.const_fold import foldConstants
 from transforms.discard import discard
 from transforms.flatten import flatten
-from transforms.redundant_negations import redundantNegations
 
 if len(args) == 0:
 	print('No input files specified.')
