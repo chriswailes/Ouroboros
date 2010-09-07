@@ -5,6 +5,9 @@ Date:		2010/08/26
 Description:	General purpose classes and functions for building instructions.
 """
 
+from assembler.memloc import Mem
+from assembler.registers import Register
+
 from lib import ast
 from lib import util
 
@@ -154,6 +157,9 @@ class OneOp(Instruction):
 		self.name = name
 		self.suffix = suffix
 		
+		if not (isinstance(dest, mem) or isinstance(dest, Register))
+			raise Exception("Invalid destination.")
+		
 		self.dest = dest
 	
 	def __str__(self):
@@ -164,6 +170,11 @@ class TwoOp(Instruction):
 		self.comment = comment
 		self.name = name
 		self.suffix = suffix
+		
+		if not (isinstance(src, Mem) or isinstance(src, Register)):
+			raise Exception("Invalid source.")
+		elif not (isinstance(dest, Mem) or isinstance(dest, Register)):
+			raise Exception("Invalid destination.")
 		
 		self.src = src
 		self.dest = dest

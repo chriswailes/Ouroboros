@@ -46,7 +46,7 @@ def selectInstructions(node, dest = None):
 			#representing the variable's location as the destination.
 			return selectInstructions(node.exp, dest)
 	
-	elif isinstance(node, ast.BinOp) and not isinstance(node, ast.Div):
+	elif isinstance(node, ast.BinOp):
 		code = Block()
 		reg = r.alloc()
 		
@@ -54,6 +54,47 @@ def selectInstructions(node, dest = None):
 		#destination is already a Mem object or a register.
 		left = selectInstructions(node.left)
 		right = selectInstructions(node.right)
+		
+		if isinstance(node, ast.Add):
+			if isinstance(left, Immediate) and left.value == 1:
+				code.append(OneOp('inc', right))
+			elif isinstance(right, Immediate) and right.value == 1:
+				code.append(OneOp('inc', left))
+			else:
+				if isinstance(dest, Mem):
+					code.append(TwoOp("mov", left, reg))
+					code.append(TwoOp("add", right, reg))
+					code.append(TwoOp("mov", reg, dest))
+				else:
+					#In this case the destination is a register.  If it
+					#isn't, the error will be caught by the ib module.
+					code.append(TwoOp("mov", left, dest))
+					code.append(TwoOp("mov", right, reg))
+					code.append(TwoOp("add", reg, dest))
+			
+		elif isinstance(node, ast.Div):
+			if isinstance(right, Immediate) and right.value < 31:
+				#We can shift to the right instead of dividing.
+		elif isinstance(node, ast.Mul):
+			pass
+		elif isinstance(node, ast.Sub):
+			if isinstance(left, Immediate) and left.value == 1:
+				code.append(OneOp('dec', right))
+			elif isinstance(right, Immediate) and right.value == 1:
+				code.append(OneOp('dec', left))
+			else:
+				if isinstance(dest, Mem):
+					code.append(TwoOp("mov", left, reg))
+					code.append(TwoOp("sub", right, reg))
+					code.append(TwoOp("mov", reg, dest))
+				else:
+					#In this case the destination is a register.  If it
+					#isn't, the error will be caught by the ib module.
+					code.append(TwoOp("mov", left, dest))
+					code.append(TwoOp("mov", right, reg))
+					code.append(TwoOp("sub", reg, dest))
+		
+		##################################################
 		
 		if isinstance(dest, Mem):
 			code.append(TwoOp("mov", left, reg))
