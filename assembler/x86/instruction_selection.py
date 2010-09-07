@@ -18,6 +18,11 @@ def selectInstructions(node, dest = None):
 	global r
 	global s
 	
+	#Make sure we aren't accidentally passing in some odd value for the desired
+	#destination.
+	if not (dest == None or isinstance(dest, Mem) or isinstance(dest, Register)):
+		raise Exception('Invalid destination.')
+	
 	if isinstance(node, ast.Assign):
 		#The destination is going to be a name, so we need to translate it
 		#into a Mem object.
@@ -57,92 +62,113 @@ def selectInstructions(node, dest = None):
 		
 		if isinstance(node, ast.Add):
 			if isinstance(left, Immediate) and left.value == 1:
-				code.append(OneOp('inc', right))
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', right, reg))
+					code.append(OneOp('inc', reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', right, dest))
+					code.append(OneOp('inc', dest))
+				
 			elif isinstance(right, Immediate) and right.value == 1:
-				code.append(OneOp('inc', left))
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(OneOp('inc', reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(OneOp('inc', dest))
 			else:
 				if isinstance(dest, Mem):
-					code.append(TwoOp("mov", left, reg))
-					code.append(TwoOp("add", right, reg))
-					code.append(TwoOp("mov", reg, dest))
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('add', right, reg))
+					code.append(TwoOp('mov', reg, dest))
 				else:
 					#In this case the destination is a register.  If it
 					#isn't, the error will be caught by the ib module.
-					code.append(TwoOp("mov", left, dest))
-					code.append(TwoOp("mov", right, reg))
-					code.append(TwoOp("add", reg, dest))
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('mov', right, reg))
+					code.append(TwoOp('add', reg, dest))
 			
 		elif isinstance(node, ast.Div):
-			if isinstance(right, Immediate) and right.value < 31:
+			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
 				#We can shift to the right instead of dividing.
+				dist = right.value / 2
+				
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('sar', Immediate(dist), reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('sar', Immediate(dist), dest))
+			else:
+				#This is broken for now.  Fixing it doesn't make sense until
+				#register allocation is working.
+				
+				reg0 = r.alloc("eax")
+				reg1 = r.alloc("ebx")
+				reg2 = r.alloc("edx")
+				
+				if isinstance(dest, Mem):
+					code.append(TwoOp("mov", left, reg0))
+					code.append(TwoOp("mov", right, reg1))
+					code.append(Instruction("cltd"))
+					
+					code.append(OneOp(node.opInstr(), reg1))
+					code.append(TwoOp("mov", reg0, dest))
+				else:
+					code.append(TwoOp("mov", node.left, dest))
+					code.append(TwoOp("mov", node.right, reg0))
+					code.append(OneOp(node.opInstr(), dest))
+				
+				r.free(reg0)
+				r.free(reg1)
+				r.free(reg2)
+		
 		elif isinstance(node, ast.Mul):
-			pass
-		elif isinstance(node, ast.Sub):
-			if isinstance(left, Immediate) and left.value == 1:
-				code.append(OneOp('dec', right))
-			elif isinstance(right, Immediate) and right.value == 1:
-				code.append(OneOp('dec', left))
+			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
+				#We can shift to the left instead of multiplying.
+				dist = right.value / 2
+				
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('sal', Immediate(dist), reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('sal', Immediate(dist), dest))
+			
 			else:
 				if isinstance(dest, Mem):
-					code.append(TwoOp("mov", left, reg))
-					code.append(TwoOp("sub", right, reg))
-					code.append(TwoOp("mov", reg, dest))
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('mul', right, reg))
+					code.append(TwoOp('mov', reg, dest))
 				else:
-					#In this case the destination is a register.  If it
-					#isn't, the error will be caught by the ib module.
-					code.append(TwoOp("mov", left, dest))
-					code.append(TwoOp("mov", right, reg))
-					code.append(TwoOp("sub", reg, dest))
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('mov', right, reg))
+					code.append(TwoOp('mul', reg, dest))
 		
-		##################################################
-		
-		if isinstance(dest, Mem):
-			code.append(TwoOp("mov", left, reg))
-			code.append(TwoOp(node.opInstr(), right, reg))
-			code.append(TwoOp("mov", reg, dest))
-		elif isinstance(dest, Register):
-			#In this case the destination is a register.
-			code.append(TwoOp("mov", left, dest))
-			code.append(TwoOp("mov", right, reg))
-			code.append(TwoOp(node.opInstr(), reg, dest))
-		else:
-			raise Exception("Invalid destination.")
+		elif isinstance(node, ast.Sub):
+			if isinstance(right, Immediate) and right.value == 1:
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(OneOp('dec', reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(OneOp('dec', dest))
+			else:
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('sub', right, reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('mov', right, reg))
+					code.append(TwoOp('sub', reg, dest))
 		
 		r.free(reg)
-		return code
-	
-	elif isinstance(node, ast.Div):
-		code = Block()
-
-		reg0 = r.alloc("eax")
-		reg1 = r.alloc("ebx")
-		reg2 = r.alloc("edx")
-		
-		#The left and right operands need to be translated, but the
-		#destination is already a Mem object or a register.
-		left = selectInstructions(node.left)
-		right = selectInstructions(node.right)
-		
-		if isinstance(dest, Mem):
-			code.append(TwoOp("mov", left, reg0))
-			code.append(TwoOp("mov", right, reg1))
-			code.append(Instruction("cltd"))
-			
-			code.append(OneOp(node.opInstr(), reg1))
-			code.append(TwoOp("mov", reg0, dest))
-		elif isinstance(dest, Register):
-			#This is broken for now.  Fixing it doesn't make sense until
-			#register allocation is working.
-			code.append(TwoOp("mov", node.left, dest))
-			code.append(TwoOp("mov", node.right, reg0))
-			code.append(OneOp(node.opInstr(), dest))
-		else:
-			raise Exception("Invalid destination.")
-		
-		r.free(reg0)
-		r.free(reg1)
-		r.free(reg2)
-		
 		return code
 	
 	elif isinstance(node, ast.FunctionCall):

@@ -33,9 +33,9 @@ def foldConstants(node):
 			
 			#If they aren't both integers we might be able to lift an integer from the right side.
 			elif isinstance(node.right, ast.BinOp) and isinstance(node.right.left, ast.Integer):
-				foldOK = isinstance(node, ast.Add) and (isinstance(node, ast.Add) or isinstance(node, ast.Sub))
-				foldOK = foldOK or isinstance(node, ast.Sub) and (isinstance(node, ast.Add) or isinstance(node, ast.Sub))
-				foldOK = foldOK or (isinstance(node, ast.Mul) and isinstance(node.right, ast.Mul))
+				foldOK  = isinstance(node, ast.Add) and (isinstance(node, ast.Add) or isinstance(node, ast.Sub))
+				foldOK |= isinstance(node, ast.Sub) and (isinstance(node, ast.Add) or isinstance(node, ast.Sub))
+				foldOK |= isinstance(node, ast.Mul) and isinstance(node.right, ast.Mul)
 				
 				if foldOK:
 					value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.left.value))

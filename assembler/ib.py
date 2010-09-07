@@ -157,7 +157,12 @@ class OneOp(Instruction):
 		self.name = name
 		self.suffix = suffix
 		
-		if not (isinstance(dest, mem) or isinstance(dest, Register))
+		destOK  = isinstance(dest, Mem)
+		destOK |= isinstance(dest, Register)
+		destOK |= isinstance(dest, Immediate)
+		destOK |= isinstance(dest, str)
+		
+		if not destOK:
 			raise Exception("Invalid destination.")
 		
 		self.dest = dest
@@ -171,7 +176,7 @@ class TwoOp(Instruction):
 		self.name = name
 		self.suffix = suffix
 		
-		if not (isinstance(src, Mem) or isinstance(src, Register)):
+		if not (isinstance(src, Mem) or isinstance(src, Register) or isinstance(src, Immediate)):
 			raise Exception("Invalid source.")
 		elif not (isinstance(dest, Mem) or isinstance(dest, Register)):
 			raise Exception("Invalid destination.")
