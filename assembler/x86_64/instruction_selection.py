@@ -46,7 +46,7 @@ def selectInstructions(node, dest = None):
 			#representing the variable's location as the destination.
 			return selectInstructions(node.exp, dest)
 	
-	elif isinstance(node, ast.BinOp) and not isinstance(node, ast.Div):
+	elif isinstance(node, ast.BinOp):
 		code = Block()
 		reg = r.alloc()
 		
@@ -55,53 +55,126 @@ def selectInstructions(node, dest = None):
 		left = selectInstructions(node.left)
 		right = selectInstructions(node.right)
 		
-		if isinstance(dest, Mem):
-			code.append(TwoOp("mov", left, reg))
-			code.append(TwoOp(node.opInstr(), right, reg))
-			code.append(TwoOp("mov", reg, dest))
-		elif isinstance(dest, Register):
-			#In this case the destination is a register.
-			code.append(TwoOp("mov", left, dest))
-			code.append(TwoOp("mov", right, reg))
-			code.append(TwoOp(node.opInstr(), reg, dest))
-		else:
-			raise Exception("Invalid destination.")
+		if isinstance(node, ast.Add):
+			if isinstance(left, Immediate) and left.value == 1:
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', right, reg))
+					code.append(OneOp('inc', reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', right, dest))
+					code.append(OneOp('inc', dest))
+			
+			elif isinstance(right, Immediate) and right.value == 1:
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(OneOp('inc', reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(OneOp('inc', dest))
+			
+			else:
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('add', right, reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('mov', right, reg))
+					code.append(TwoOp('add', reg, dest))
+			
+		elif isinstance(node, ast.Div):
+			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 63:
+				#We can shift to the right instead of dividing.
+				dist = right.value / 2
+				
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('sar', Immediate(dist), reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('sar', Immediate(dist), dest))
+			else:
+				#This is broken for now.  Fixing it doesn't make sense until
+				#register allocation is working.
+				
+				reg0 = r.alloc("rax")
+				reg1 = r.alloc("rbx")
+				reg2 = r.alloc("rdx")
+				
+				if isinstance(dest, Mem):
+					code.append(TwoOp("mov", left, reg0))
+					code.append(TwoOp("mov", right, reg1))
+					code.append(Instruction("cltd"))
+					
+					code.append(OneOp(node.opInstr(), reg1))
+					code.append(TwoOp("mov", reg0, dest))
+				else:
+					code.append(TwoOp("mov", node.left, dest))
+					code.append(TwoOp("mov", node.right, reg0))
+					code.append(OneOp(node.opInstr(), dest))
+				
+				r.free(reg0)
+				r.free(reg1)
+				r.free(reg2)
+		
+		elif isinstance(node, ast.Mul):
+			if isinstance(left, Immediate) and (left.value % 2) == 0 and (left.value / 2) < 63:
+				#We can shift to the left instead of multiplying.
+				dist = left.value / 2
+				
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', right, reg))
+					code.append(TwoOp('sal', Immediate(dist), reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', right, dest))
+					code.append(TwoOp('sal', Immediate(dist), dest))
+			
+			elif isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 63:
+				#We can shift to the left instead of multiplying.
+				dist = right.value / 2
+				
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('sal', Immediate(dist), reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('sal', Immediate(dist), dest))
+			
+			else:
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('imul', right, reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('mov', right, reg))
+					code.append(TwoOp('imul', reg, dest))
+		
+		elif isinstance(node, ast.Sub):
+			if isinstance(right, Immediate) and right.value == 1:
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(OneOp('dec', reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(OneOp('dec', dest))
+			else:
+				if isinstance(dest, Mem):
+					code.append(TwoOp('mov', left, reg))
+					code.append(TwoOp('sub', right, reg))
+					code.append(TwoOp('mov', reg, dest))
+				else:
+					code.append(TwoOp('mov', left, dest))
+					code.append(TwoOp('mov', right, reg))
+					code.append(TwoOp('sub', reg, dest))
 		
 		r.free(reg)
-		return code
-	
-	elif isinstance(node, ast.Div):
-		code = Block()
-
-		reg0 = r.alloc("rax")
-		reg1 = r.alloc("rbx")
-		reg2 = r.alloc("rdx")
-		
-		#The left and right operands need to be translated, but the
-		#destination is already a Mem object or a register.
-		left = selectInstructions(node.left)
-		right = selectInstructions(node.right)
-		
-		if isinstance(dest, Mem):
-			code.append(TwoOp("mov", node.left, reg0))
-			code.append(TwoOp("mov", node.right, reg1))
-			code.append(Instruction("cltd"))
-			
-			code.append(OneOp(node.opInstr(), reg1))
-			code.append(TwoOp("mov", reg0, dest))
-		elif isinstance(dest, Register):
-			#This is broken for now.  Fixing it doesn't make sense until
-			#register allocation is working.
-			code.append(TwoOp("mov", node.left, dest))
-			code.append(TwoOp("mov", node.right, reg0))
-			code.append(OneOp(node.opInstr(), dest))
-		else:
-			raise Exception("Invalid destination.")
-		
-		r.free(reg0)
-		r.free(reg1)
-		r.free(reg2)
-		
 		return code
 	
 	elif isinstance(node, ast.FunctionCall):
@@ -136,7 +209,7 @@ def selectInstructions(node, dest = None):
 		code = Block()
 		code.header  = "# x86_64\n"
 		code.header += ".globl main\n"
-		code.header += "main:"
+		code.header += "main:\n"
 		
 		for stmt in node.stmts:
 			code.append(selectInstructions(stmt))
