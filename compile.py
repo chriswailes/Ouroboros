@@ -11,6 +11,8 @@ import compiler
 
 import os
 
+from frontend.parser import parser
+
 from assembler.redundant_moves import redundantMoves
 from assembler.instruction_selection import selectInstructions
 
@@ -33,6 +35,7 @@ if config.startStage == 'python':
 
 	#Generate my AST
 	tree = translate(compiler.parse(tokens))
+	#tree = parser.parse(tokens)
 
 	if config.verbose:
 		#Print my AST

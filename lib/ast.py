@@ -29,7 +29,7 @@ class Module(Node):
 		return "Module({0})".format(repr(self.stmts))
 	
 	def getChildren(self):
-		return self.statements
+		return self.stmts
 	
 	def toGraph(self):
 		pass
