@@ -35,7 +35,6 @@ if config.startStage == 'python':
 
 	#Generate my AST
 	tree = translate(compiler.parse(tokens))
-	#tree = parser.parse(tokens)
 
 	if config.verbose:
 		#Print my AST

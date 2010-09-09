@@ -30,12 +30,12 @@ t_PLUS			= r'\+'
 
 t_NEG			= r'-'
 
-t_ignore_COMMENT	= '\#[^\n]*\n'
+t_ignore_COMMENT	= r'\#.*'
 
 t_ignore			= ' \t'
 
 def t_NAME(t):
-	r'[a-zA-Z][a-zA-Z0-9_]*'
+	r'[a-zA-Z_][a-zA-Z0-9_]*'
 	
 	t.type = reserved.get(t.value, 'NAME')    # Check for reserved words
 	return t

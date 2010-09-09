@@ -32,19 +32,19 @@ def p_module1(t):
 ##############
 
 def p_statement0(t):
-	'statement : PRINT arg_list0 NEWLINE'
+	'statement : PRINT arg_list0 newlines'
 	t[0] = FunctionCall(Name('print_int_nl'), t[2])
 
 def p_statement1(t):
-	'statement : PRINT LPAREN arg_list0 RPAREN NEWLINE'
+	'statement : PRINT LPAREN arg_list0 RPAREN newlines'
 	t[0] = FunctionCall(Name('print_int_nl'), t[3])
 
 def p_statement2(t):
-	'statement : NAME ASSIGN expression NEWLINE'
+	'statement : NAME ASSIGN expression newlines'
 	t[0] = Assign(Name(t[1]), t[3])
 
 def p_statement3(t):
-	'statement : expression NEWLINE'
+	'statement : expression newlines'
 	t[0] = t[1]
 
 ###############
@@ -78,6 +78,11 @@ def p_expression5(t):
 ########
 # Util #
 ########
+
+def p_newlines(t):
+	'''newlines	: empty
+				| NEWLINE newlines'''
+	pass
 
 def p_stmt_list0(t):
 	'statement_list : empty'
@@ -124,4 +129,4 @@ def p_error(t):
 	print "Syntax error at '{0}', line number {1}".format(t.value, t.lineno)
 
 import ply.yacc as yacc
-parser = yacc.yacc()
+parser = yacc.yacc(debug=None)
