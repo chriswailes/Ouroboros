@@ -25,10 +25,10 @@ def discard(node):
 		newStmts = []
 		
 		for stmt in node.stmts:
-			if isinstance(stmt, ast.Expression):
-				newStmts.append(extractStmts(stmt))
-			else:
+			if isinstance(stmt, ast.FunctionCall) or isinstance(stmt, ast.Statement):
 				newStmts.append(stmt)
+			else:
+				newStmts.append(extractStmts(stmt))
 		
 		node.stmts = util.flatten(newStmts)
 		return node

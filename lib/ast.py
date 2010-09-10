@@ -62,7 +62,10 @@ class Assign(Statement):
 	def toPython(self):
 		return "{0} = {1}".format(self.var.toPython(), self.exp.toPython())
 
-class FunctionCall(Statement):
+class Expression(Node):
+	pass
+
+class FunctionCall(Expression):
 	def __init__(self, name, args):
 		self.name = name
 		self.args = args
@@ -85,10 +88,7 @@ class FunctionCall(Statement):
 		if len(self.args) > 0:
 			call = call[0:-2]
 		
-		return call + ")"
-
-class Expression(Node):
-	pass
+		return call + ")"	
 
 class Name(Expression):
 	def __init__(self, name):

@@ -5,17 +5,17 @@ Date:		2010/09/01
 Description:	A transformation that flattens the provided AST.
 """
 
-from lib import ast
+from lib.ast import *
 from lib import util
 from lib.variables import v
 
 def flatten(node, inplace = False):
-	if isinstance(node, ast.Assign):
+	if isinstance(node, Assign):
 		preStmts, node.exp = flatten(node.exp, True)
 		
 		return preStmts, node
 	
-	elif isinstance(node, ast.BinOp):
+	elif isinstance(node, BinOp):
 		leftPreStmts, node.left = flatten(node.left)
 		rightPreStmts, node.right = flatten(node.right)
 		
@@ -25,10 +25,10 @@ def flatten(node, inplace = False):
 			return preStmts, node
 		else:
 			var = v.getVar()
-			preStmts.append(ast.Assign(var, node))
+			preStmts.append(Assign(var, node))
 			return preStmts, var
 	
-	elif isinstance(node, ast.FunctionCall):
+	elif isinstance(node, FunctionCall):
 		preStmts = []
 		newArgs = []
 		
@@ -45,13 +45,13 @@ def flatten(node, inplace = False):
 			return preStmts, node
 		else:
 			var = v.getVar()
-			preStmts.append(ast.Assign(var, node))
+			preStmts.append(Assign(var, node))
 			return preStmts, var
 	
-	elif isinstance(node, ast.Integer):
+	elif isinstance(node, Integer):
 		return [], node
 	
-	elif isinstance(node, ast.Module):
+	elif isinstance(node, Module):
 		newStmts = []
 		
 		for s in node.stmts:
@@ -63,16 +63,16 @@ def flatten(node, inplace = False):
 		node.stmts = util.flatten(newStmts)
 		return node
 	
-	elif isinstance(node, ast.Name):
+	elif isinstance(node, Name):
 		return [], node
 	
-	elif isinstance(node, ast.UnaryOp):
+	elif isinstance(node, UnaryOp):
 		preStmts, node.operand = flatten(node.operand)
 		
 		if inplace:
 			return util.flatten(preStmts), node
 		else:
 			var = v.getVar()
-			preStmts.append(ast.Assign(var, node))
+			preStmts.append(Assign(var, node))
 			return util.flatten(preStmts), var
 

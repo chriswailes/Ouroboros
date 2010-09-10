@@ -32,8 +32,8 @@ if config.startStage == 'python':
 	tokens = inFile.read()
 
 	#Generate my AST
-	print(compiler.parse(tokens))
-	exit(0)
+	#print(compiler.parse(tokens))
+	#exit(0)
 	tree = translate(compiler.parse(tokens))
 
 	if config.verbose:
