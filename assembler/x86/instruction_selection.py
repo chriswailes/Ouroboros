@@ -51,6 +51,14 @@ def selectInstructions(node, dest = None):
 			#representing the variable's location as the destination.
 			return selectInstructions(node.exp, dest)
 	
+	elif isinstance(node, ast.BasicBlock):
+		code = Block()
+		
+		for child in node:
+			code.append(selectInstructions(child))
+		
+		return code
+	
 	elif isinstance(node, ast.BinOp):
 		code = Block()
 		reg = r.alloc()
@@ -207,7 +215,6 @@ def selectInstructions(node, dest = None):
 	
 	elif isinstance(node, ast.Module):
 		stack = Stack()
-		subCode = Block()
 		
 		code = Block()
 		code.header  = "# x86\n"
@@ -219,8 +226,7 @@ def selectInstructions(node, dest = None):
 		#Make the old stack pointer the new base pointer.
 		code.append(TwoOp("mov", Register("esp"), Register("ebp")))
 		
-		for stmt in node.stmts:
-			subCode.append(selectInstructions(stmt))
+		subCode = selectInstructions(node.block)
 		
 		#Expand the stack.
 		code.append(TwoOp("sub", Immediate(s.size), Register("esp")))

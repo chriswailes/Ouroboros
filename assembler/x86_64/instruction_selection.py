@@ -46,6 +46,14 @@ def selectInstructions(node, dest = None):
 			#representing the variable's location as the destination.
 			return selectInstructions(node.exp, dest)
 	
+	elif isinstance(node, ast.BasicBlock):
+		code = Block()
+		
+		for child in node:
+			code.append(selectInstructions(child))
+		
+		return code
+	
 	elif isinstance(node, ast.BinOp):
 		code = Block()
 		reg = r.alloc()
@@ -211,8 +219,7 @@ def selectInstructions(node, dest = None):
 		code.header += ".globl main\n"
 		code.header += "main:\n"
 		
-		for stmt in node.stmts:
-			code.append(selectInstructions(stmt))
+		code.append(selectInstructions(node.block))
 		
 		endBlock = Block()
 		#Put our exit value in %rax

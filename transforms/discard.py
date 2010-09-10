@@ -11,6 +11,18 @@ from lib import util
 def discard(node):
 	if isinstance(node, ast.Assign):
 		return node
+	
+	elif isinstance(node, ast.BasicBlock):
+		newChildren = []
+		
+		for child in node:
+			if isinstance(child, ast.FunctionCall) or isinstance(child, ast.Statement):
+				newChildren.append(child)
+			else:
+				newChildren.append(extractStmts(child))
+		
+		node.children = util.flatten(newChildren)
+		return node
 			
 	elif isinstance(node, ast.BinOp):
 		return node
@@ -18,21 +30,18 @@ def discard(node):
 	elif isinstance(node, ast.FunctionCall):
 		return node
 	
+	elif isinstance(node, ast.If):
+		node.then = discard(node.then)
+		node.els = discard(node.els)
+		
+		return node
+	
 	elif isinstance(node, ast.Integer):
 		return node
 	
 	elif isinstance(node, ast.Module):
-		newStmts = []
+		node.block = discard(node.block)
 		
-		for stmt in node.stmts:
-			if isinstance(stmt, ast.FunctionCall) or isinstance(stmt, ast.Statement):
-				print("Keeping function call or statement.")
-				newStmts.append(stmt)
-			else:
-				print("Dropping expression from module.")
-				newStmts.append(extractStmts(stmt))
-		
-		node.stmts = util.flatten(newStmts)
 		return node
 	
 	elif isinstance(node, ast.Name):

@@ -15,6 +15,19 @@ def flatten(node, inplace = False):
 		
 		return preStmts, node
 	
+	elif isinstance(node, BasicBlock):
+		newChildren = []
+		
+		for child in node:
+			preChildren, newChild = flatten(child, True)
+			
+			newChildren.append(preChildren)
+			newChildren.append(newChild)
+		
+		node.children = util.flatten(newChildren)
+		
+		return [], node
+	
 	elif isinstance(node, BinOp):
 		leftPreStmts, node.left = flatten(node.left)
 		rightPreStmts, node.right = flatten(node.right)
@@ -48,19 +61,19 @@ def flatten(node, inplace = False):
 			preStmts.append(Assign(var, node))
 			return preStmts, var
 	
+	elif isinstance(node, If):
+		preNodes, node.cond = flatten(node.cond)
+		discard, node.then = flatten(node.then)
+		discard, node.els = flatten(node.els)
+		
+		return preNodes, node
+	
 	elif isinstance(node, Integer):
 		return [], node
 	
 	elif isinstance(node, Module):
-		newStmts = []
+		discard, node.block = flatten(node.block)
 		
-		for s in node.stmts:
-			preStmts, newStmt = flatten(s, True)
-			
-			newStmts.append(preStmts)
-			newStmts.append(newStmt)
-		
-		node.stmts = util.flatten(newStmts)
 		return node
 	
 	elif isinstance(node, Name):

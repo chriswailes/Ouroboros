@@ -18,7 +18,7 @@ class Node(object):
 	def isSimple(self):
 		False
 	
-	def pad(level = 0):
+	def pad(self, level = 0):
 		ret = ""
 		
 		for i in range(0, level):
@@ -29,26 +29,39 @@ class Node(object):
 	def setAttr(self, key, value):
 		self.attributes[key] = value
 
-class Module(Node):
-	def __init__(self, stmts):
-		self.stmts = stmts
+class BasicBlock(Node):
+	def __init__(self, children):
+		self.children = children
 	
 	def __repr__(self):
-		return "Module({0})".format(repr(self.stmts))
+		return "BasicBlock(" + repr(self.children) + ")"
 	
 	def getChildren(self):
-		return self.stmts
+		return self.children
+	
+	def toPython(self, level = 0):
+		ret = ''
+		
+		for node in self.children:
+			ret += self.pad(level) + node.toPython() + "\n"
+		
+		return ret
+
+class Module(Node):
+	def __init__(self, block):
+		self.block = block
+	
+	def __repr__(self):
+		return "Module({0})".format(repr(self.block))
+	
+	def getChildren(self):
+		return self.block
 	
 	def toGraph(self):
 		pass
 	
 	def toPython(self):
-		module = ""
-		
-		for s in self.stmts:
-			module += s.toPython() + "\n"
-		
-		return module
+		return self.block.toPython()
 
 class Statement(Node):
 	pass
@@ -76,11 +89,15 @@ class Assign(Statement):
 class If(Statement):
 	def __init__(self, cond, then, els):
 		self.cond = cond
-		self.then = then
-		self.els  = els
+		
+		if isinstance(then, BasicBlock) and isinstance(els, BasicBlock):
+			self.then = then
+			self.els  = els
+		else:
+			raise Exception("Not a basic block.")
 	
 	def __repr__(self):
-		return "If({0}, {1})".format(repr(self.then,), repr(self.els))
+		return "If(Cond: {0}, Then: {1}, Else: {2})".format(repr(self.cond), repr(self.then), repr(self.els))
 	
 	def getChildren(self):
 		return [self.then, self.els]
@@ -116,11 +133,11 @@ class FunctionCall(Expression):
 		pass
 	
 	def toPython(self, level = 0):
-		ret  = pad(level)
+		ret  = self.pad(level)
 		ret += self.name.toPython() + '('
 		
 		for arg in self.args:
-			ret += arg.toPython() + ','
+			ret += arg.toPython() + ', '
 		
 		if len(self.args) > 0:
 			ret = ret[0:-2]
@@ -181,7 +198,7 @@ class BinOp(Expression):
 		pass
 	
 	def toPython(self, level = 0):
-		ret  = pad(level)
+		ret  = self.pad(level)
 		ret += "{0} {1} {2}".format(self.left.toPython(), self.operator, self.right.toPython())
 		
 		return ret

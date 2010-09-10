@@ -50,10 +50,25 @@ def translate(node, funcName = False):
 		return ast.Div(left, right)
 	
 	elif isinstance(node, oast.If):
+		tests = node.tests
+		cond, then = tests.pop(0)
 		
+		cond = translate(cond)
+		then = ast.BasicBlock(translate(then))
+		
+		els = None
+		
+		if len(tests) > 0:
+			els = translate(oast.If(tests, node.else_))
+		else:
+			els = translate(node.else_)
+		
+		els = ast.BasicBlock(els)
+		
+		return ast.If(cond, then, els)
 		
 	elif isinstance(node, oast.Module):
-		children = util.flatten([translate(n) for n in node.getChildNodes()])
+		children = ast.BasicBlock(translate(node.node))
 		
 		return ast.Module(children)
 	
@@ -76,9 +91,9 @@ def translate(node, funcName = False):
 		return ast.FunctionCall(ast.Name("print_int_nl"), children)
 		
 	elif isinstance(node, oast.Stmt):
-		stmts = util.flatten([translate(s) for s in node.getChildNodes()])
+		stmts = [translate(s) for s in node.getChildNodes()]
 		
-		return stmts
+		return util.flatten(stmts)
 	
 	elif isinstance(node, oast.Sub):
 		left = translate(node.left)

@@ -13,6 +13,15 @@ def foldConstants(node):
 		
 		return node
 	
+	elif isinstance(node, BasicBlock):
+		newChildren = []
+		
+		for child in node:
+			newChildren.append(foldConstants(child))
+		
+		node.children = newChildren
+		return node
+	
 	elif isinstance(node, BinOp):
 		#Fold the left and right operands.
 		node.left = foldConstants(node.left)
@@ -69,16 +78,18 @@ def foldConstants(node):
 		
 		return node
 	
+	elif isinstance(node, If):
+		node.cond = foldConstants(node.cond)
+		node.then = foldConstants(node.then)
+		node.els  = foldConstants(node.els )
+		
+		return node
+	
 	elif isinstance(node, Integer):
 		return node
 	
 	elif isinstance(node, Module):
-		newStmts = []
-		
-		for stmt in node.stmts:
-			newStmts.append(foldConstants(stmt))
-		
-		node.stmts = newStmts
+		node.block = foldConstants(node.block)
 		
 		return node
 	
