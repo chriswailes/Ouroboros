@@ -48,6 +48,9 @@ def translate(node, funcName = False):
 		right = translate(node.right)
 		
 		return ast.Div(left, right)
+	
+	elif isinstance(node, oast.If):
+		
 		
 	elif isinstance(node, oast.Module):
 		children = util.flatten([translate(n) for n in node.getChildNodes()])

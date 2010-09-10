@@ -18,6 +18,14 @@ class Node(object):
 	def isSimple(self):
 		False
 	
+	def pad(level = 0):
+		ret = ""
+		
+		for i in range(0, level):
+			ret += "\t"
+		
+		return ret
+	
 	def setAttr(self, key, value):
 		self.attributes[key] = value
 
@@ -59,8 +67,36 @@ class Assign(Statement):
 	def toGraph(self):
 		pass
 	
-	def toPython(self):
-		return "{0} = {1}".format(self.var.toPython(), self.exp.toPython())
+	def toPython(self, level = 0):
+		ret  = self.pad(level)
+		ret += "{0} = {1}".format(self.var.toPython(), self.exp.toPython())
+		
+		return ret
+
+class If(Statement):
+	def __init__(self, cond, then, els):
+		self.cond = cond
+		self.then = then
+		self.els  = els
+	
+	def __repr__(self):
+		return "If({0}, {1})".format(repr(self.then,), repr(self.els))
+	
+	def getChildren(self):
+		return [self.then, self.els]
+	
+	def toGraph(self):
+		pass
+	
+	def toPython(self, level = 0):
+		ret  = pad(level)
+		ret += "if {0}:\n".format(self.cond.toPython())
+		ret += self.then.toPython(level + 1)
+		ret += pad(level)
+		ret += "else:\n"
+		ret += self.els.toPython(level + 1)
+		
+		return ret
 
 class Expression(Node):
 	pass
@@ -79,16 +115,17 @@ class FunctionCall(Expression):
 	def toGraph(self):
 		pass
 	
-	def toPython(self):
-		call = self.name.toPython() + "("
+	def toPython(self, level = 0):
+		ret  = pad(level)
+		ret += self.name.toPython() + '('
 		
 		for arg in self.args:
-			call += arg.toPython() + ", "
+			ret += arg.toPython() + ','
 		
 		if len(self.args) > 0:
-			call = call[0:-2]
+			ret = ret[0:-2]
 		
-		return call + ")"	
+		return ret + ')'
 
 class Name(Expression):
 	def __init__(self, name):
@@ -106,7 +143,7 @@ class Name(Expression):
 	def toGraph(self):
 		pass
 	
-	def toPython(self):
+	def toPython(self, level = 0):
 		return self.name
 
 class Integer(Expression):
@@ -128,7 +165,7 @@ class Integer(Expression):
 	def toGraph(self):
 		pass
 	
-	def toPython(self):
+	def toPython(self, level = 0):
 		return "{0:d}".format(self.value)
 
 class BinOp(Expression):
@@ -143,8 +180,11 @@ class BinOp(Expression):
 	def toGraph(self):
 		pass
 	
-	def toPython(self):
-		return "{0} {1} {2}".format(self.left.toPython(), self.operator, self.right.toPython())
+	def toPython(self, level = 0):
+		ret  = pad(level)
+		ret += "{0} {1} {2}".format(self.left.toPython(), self.operator, self.right.toPython())
+		
+		return ret
 
 class UnaryOp(Expression):
 	def __init__(self, operator, operand):
@@ -157,8 +197,11 @@ class UnaryOp(Expression):
 	def toGraph(self):
 		pass
 	
-	def toPython(self):
-		return "{0}({1})".format(self.operator, self.operand.toPython())
+	def toPython(self, level = 0):
+		ret  = pad(level)
+		ret += "{0}({1})".format(self.operator, self.operand.toPython())
+		
+		return ret
 
 class Negate(UnaryOp):
 	def __init__(self, operand):

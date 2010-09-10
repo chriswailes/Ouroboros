@@ -8,7 +8,6 @@ Description:	Functions and data structures for allocating space on the stack
 
 import ast
 
-
 class VFile(object):
 	def __init__(self):
 		self.tmpCount = 0

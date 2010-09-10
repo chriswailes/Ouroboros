@@ -26,8 +26,10 @@ def discard(node):
 		
 		for stmt in node.stmts:
 			if isinstance(stmt, ast.FunctionCall) or isinstance(stmt, ast.Statement):
+				print("Keeping function call or statement.")
 				newStmts.append(stmt)
 			else:
+				print("Dropping expression from module.")
 				newStmts.append(extractStmts(stmt))
 		
 		node.stmts = util.flatten(newStmts)
@@ -43,12 +45,12 @@ def extractStmts(exp):
 	if isinstance(exp, ast.BinOp):
 		stmts = []
 		
-		if isinstance(exp.left, ast.Statement):
+		if isinstance(exp.left, ast.FunctionCall) or isinstance(exp.left, ast.Statement):
 			stmts.append(exp.left)
 		else:
 			stmts.append(extractStmts(exp.left))
 		
-		if isinstance(exp.right, ast.Statement):
+		if isinstance(exp.right, ast.FunctionCall) or isinstance(exp.right, ast.Statement):
 			stmts.append(exp.right)
 		else:
 			stmts.append(extractStmts(exp.right))
@@ -62,7 +64,7 @@ def extractStmts(exp):
 		return []
 	
 	elif isinstance(exp, ast.UnaryOp):
-		if isinstance(exp.operand, ast.Statement):
+		if isinstance(exp.operand, ast.FunctionCall) or isinstance(exp.operand, ast.Statement):
 			return [exp.operand]
 		else:
 			return util.flatten(extractStmts(exp.operand))
