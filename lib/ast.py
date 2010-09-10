@@ -5,7 +5,9 @@ Date:		2010/08/23
 Description:	Describes the abstract syntax tree used by my compiler for HW0.
 """
 
-import util
+from util import *
+
+
 
 class Node(object):
 	def __iter__(self):
@@ -17,14 +19,6 @@ class Node(object):
 	
 	def isSimple(self):
 		False
-	
-	def pad(self, level = 0):
-		ret = ""
-		
-		for i in range(0, level):
-			ret += "\t"
-		
-		return ret
 	
 	def setAttr(self, key, value):
 		self.attributes[key] = value
@@ -43,7 +37,7 @@ class BasicBlock(Node):
 		ret = ''
 		
 		for node in self.children:
-			ret += self.pad(level) + node.toPython() + "\n"
+			ret += pad(level) + node.toPython() + "\n"
 		
 		return ret
 
@@ -81,7 +75,7 @@ class Assign(Statement):
 		pass
 	
 	def toPython(self, level = 0):
-		ret  = self.pad(level)
+		ret  = pad(level)
 		ret += "{0} = {1}".format(self.var.toPython(), self.exp.toPython())
 		
 		return ret
@@ -133,7 +127,7 @@ class FunctionCall(Expression):
 		pass
 	
 	def toPython(self, level = 0):
-		ret  = self.pad(level)
+		ret  = pad(level)
 		ret += self.name.toPython() + '('
 		
 		for arg in self.args:
@@ -198,7 +192,7 @@ class BinOp(Expression):
 		pass
 	
 	def toPython(self, level = 0):
-		ret  = self.pad(level)
+		ret  = pad(level)
 		ret += "{0} {1} {2}".format(self.left.toPython(), self.operator, self.right.toPython())
 		
 		return ret

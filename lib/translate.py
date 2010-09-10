@@ -59,7 +59,7 @@ def translate(node, funcName = False):
 		els = None
 		
 		if len(tests) > 0:
-			els = translate(oast.If(tests, node.else_))
+			els = [translate(oast.If(tests, node.else_))]
 		else:
 			els = translate(node.else_)
 		

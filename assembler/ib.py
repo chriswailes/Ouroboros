@@ -23,6 +23,9 @@ class Block(object):
 		
 		for i in self.insts:
 			code += str(i)
+			
+			if isinstance(i, Label):
+				code += ":\n"
 		
 		return code
 
@@ -73,8 +76,6 @@ class Block(object):
 			return localIndex, pos
 		else:
 			return None, None
-		
-		
 	
 	def getNextInst(self):
 		return self.lookahead()
@@ -126,6 +127,22 @@ class Block(object):
 			if isinstance(i, Block):
 				i.reset()
 
+class Labeler(object):
+	def __init__(self):
+		self.cur = -1
+	
+	def nextLabel(self):
+		self.cur += 1
+		return Label(self.cur)
+
+class Label(object):
+	def __init__(self, num):
+		self.num = num
+		self.name = "L{0}".format(self.num)
+	
+	def __str__(self):
+		return self.name
+
 class Immediate(object):
 	def __init__(self, value):
 		self.value = value
@@ -160,6 +177,7 @@ class OneOp(Instruction):
 		destOK  = isinstance(dest, Mem)
 		destOK |= isinstance(dest, Register)
 		destOK |= isinstance(dest, Immediate)
+		destOK |= isinstance(dest, Label)
 		destOK |= isinstance(dest, str)
 		
 		if not destOK:

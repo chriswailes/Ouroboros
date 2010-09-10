@@ -6,7 +6,7 @@ Description:	Classes and functions for building x86 instructions.
 """
 
 from assembler import ib
-from assembler.ib import Block, Immediate, Instruction
+from assembler.ib import Block, Immediate, Instruction, Labeler, Label
 
 from assembler.x86.memloc import Mem
 

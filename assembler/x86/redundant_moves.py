@@ -20,7 +20,9 @@ def redundantMoves(code):
 			ahead = code.getInst(index)
 			
 			while ahead:
-				if cur.src == Register('eax') and (ahead.name == 'mul' or ahead.name == 'imul'):
+				if cur.name[0] == 'j':
+					break
+				elif cur.src == Register('eax') and (ahead.name == 'mul' or ahead.name == 'imul'):
 					break
 				elif cur.src == Register('eax') and (ahead.name == 'div' or ahead.name == 'idiv'):
 					break

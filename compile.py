@@ -30,11 +30,14 @@ if config.startStage == 'python':
 	inFile = open(config.inName)
 
 	tokens = inFile.read()
-
-	#Generate my AST
-	print(compiler.parse(tokens))
-	print("")
-	tree = translate(compiler.parse(tokens))
+	tree = compiler.parse(tokens)
+	
+	if config.verbose:
+		print(tree)
+		print("")
+	
+	#Generate my AST	
+	tree = translate(tree)
 	
 	if config.verbose:
 		#Print my AST
@@ -47,16 +50,8 @@ if config.startStage == 'python':
 	tree = flatten(tree)
 	
 	if config.verbose:
-		#Print my AST
-		print(tree)
-		print("")
-	
-	#exit(0)
-	
-	if config.verbose:
 		#Print my flattened (and folded) AST
 		print(tree)
-		
 		print("\n")
 		
 		#Print out the original program.

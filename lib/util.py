@@ -15,3 +15,11 @@ def flatten(seq):
 		else:
 			l.append(elt)
 	return l
+
+def pad(level):
+		ret = ""
+		
+		for i in range(0, level):
+			ret += "\t"
+		
+		return ret

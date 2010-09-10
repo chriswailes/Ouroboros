@@ -11,6 +11,7 @@ from assembler.x86.ib import *
 
 from lib import ast
 
+l = Labeler()
 r = RegisterFile()
 s = Stack()
 
@@ -197,18 +198,46 @@ def selectInstructions(node, dest = None):
 		
 		for arg in node.args:
 			src = selectInstructions(arg)
-			code.append(OneOp("push", src))
+			code.append(OneOp('push', src))
 		
-		code.append(OneOp("call", node.name.name, None))
+		code.append(OneOp('call', node.name.name, None))
 		
 		if len(node.args) > 0:
 			size = str(len(node.args) * 4)
-			code.append(TwoOp("add", Immediate(size), Register("esp")))
+			code.append(TwoOp('add', Immediate(size), Register('esp')))
 		
 		if dest:
 			code.append(TwoOp("mov", Register("eax"), dest))
 
 		return code
+	
+	elif isinstance(node, ast.If):
+		if isinstance(node.cond, ast.Integer):
+			if node.cond.value != 0:
+				return selectInstructions(node.then)
+			else:
+				return selectInstructions(node.els)
+		else:
+			#In this case the condition is a variable.
+			code = Block()
+			elsLabel = l.nextLabel()
+			endLabel = l.nextLabel()
+			
+			cond = selectInstructions(node.cond)
+			
+			code.append(TwoOp('cmp', Immediate(0), cond))
+			code.append(OneOp('jz', elsLabel, None))
+			
+			#Now the then case
+			code.append(selectInstructions(node.then))
+			code.append(OneOp('jmp', endLabel, None))
+			
+			#Now the label and the else case.
+			code.append(elsLabel)
+			code.append(selectInstructions(node.els))
+			code.append(endLabel)
+			
+			return code
 	
 	elif isinstance(node, ast.Integer):
 		return Immediate(node.value)
