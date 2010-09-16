@@ -7,7 +7,7 @@ Description:	Describes the abstract syntax tree used by my compiler for HW0.
 
 from util import *
 
-
+import variables
 
 class Node(object):
 	def __iter__(self):
@@ -24,8 +24,9 @@ class Node(object):
 		self.attributes[key] = value
 
 class BasicBlock(Node):
-	def __init__(self, children):
+	def __init__(self, children, v = variables.VFile):
 		self.children = children
+		self.v = v
 	
 	def __repr__(self):
 		return "BasicBlock(" + repr(self.children) + ")"
@@ -37,7 +38,7 @@ class BasicBlock(Node):
 		ret = ''
 		
 		for node in self.children:
-			ret += pad(level) + node.toPython() + "\n"
+			ret += node.toPython(level) + "\n"
 		
 		return ret
 

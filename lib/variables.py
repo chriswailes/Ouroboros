@@ -9,24 +9,14 @@ Description:	Functions and data structures for allocating space on the stack
 import ast
 
 class VFile(object):
-	def __init__(self):
-		self.tmpCount = 0
-		self.variables = []
-
-	def getVar(self):
-		self.tmpCount += 1
+	def __init__(self, variables = {}):
+		self.variables = variables.copy()
+	
+	def getVar(self, name = '!', increment = False):
+		if self.variables.has_key(name):
+			if increment:
+				self.variables[name] += 1
+		else:
+			self.variables[name] = 0
 		
-		var = ast.Name("tmp:{0:d}".format(self.tmpCount))
-		self.variables.append(var)
-		
-		return var
-
-	def userVar(self, var):
-		var = "user:{0}".format(var)
-		
-		if not var in self.variables:
-			self.variables.append(var)
-		
-		return var
-
-v = VFile()
+		return "{0}:{1:d}".format(name, self.variables[name])

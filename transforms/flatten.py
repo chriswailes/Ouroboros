@@ -7,11 +7,10 @@ Description:	A transformation that flattens the provided AST.
 
 from lib.ast import *
 from lib import util
-from lib.variables import v
 
-def flatten(node, inplace = False):
+def flatten(node, v = None, inplace = False):
 	if isinstance(node, Assign):
-		preStmts, node.exp = flatten(node.exp, True)
+		preStmts, node.exp = flatten(node.exp, v, True)
 		
 		return preStmts, node
 	
@@ -19,7 +18,7 @@ def flatten(node, inplace = False):
 		newChildren = []
 		
 		for child in node:
-			preChildren, newChild = flatten(child, True)
+			preChildren, newChild = flatten(child, node.v, True)
 			
 			newChildren.append(preChildren)
 			newChildren.append(newChild)
@@ -29,15 +28,15 @@ def flatten(node, inplace = False):
 		return [], node
 	
 	elif isinstance(node, BinOp):
-		leftPreStmts, node.left = flatten(node.left)
-		rightPreStmts, node.right = flatten(node.right)
+		leftPreStmts, node.left = flatten(node.left, v)
+		rightPreStmts, node.right = flatten(node.right, v)
 		
 		preStmts = util.flatten([leftPreStmts, rightPreStmts])
 		
 		if inplace:
 			return preStmts, node
 		else:
-			var = v.getVar()
+			var = Name(v.getVar(increment = True))
 			preStmts.append(Assign(var, node))
 			return preStmts, var
 	
@@ -46,7 +45,7 @@ def flatten(node, inplace = False):
 		newArgs = []
 		
 		for arg in node.args:
-			tmpPreStmts, newArg = flatten(arg)
+			tmpPreStmts, newArg = flatten(arg, v)
 			
 			preStmts.append(tmpPreStmts)
 			newArgs.append(newArg)
@@ -57,12 +56,14 @@ def flatten(node, inplace = False):
 		if inplace:
 			return preStmts, node
 		else:
-			var = v.getVar()
+			var = Name(v.getVar(increment = True))
 			preStmts.append(Assign(var, node))
 			return preStmts, var
 	
 	elif isinstance(node, If):
-		preNodes, node.cond = flatten(node.cond)
+		preNodes, node.cond = flatten(node.cond, v)
+		
+		#These two nodes are BasicBlocks and will supply their own VFiles
 		discard, node.then = flatten(node.then)
 		discard, node.els = flatten(node.els)
 		
@@ -72,6 +73,7 @@ def flatten(node, inplace = False):
 		return [], node
 	
 	elif isinstance(node, Module):
+		#The BasicBlock will have its own VFile.
 		discard, node.block = flatten(node.block)
 		
 		return node
@@ -80,12 +82,12 @@ def flatten(node, inplace = False):
 		return [], node
 	
 	elif isinstance(node, UnaryOp):
-		preStmts, node.operand = flatten(node.operand)
+		preStmts, node.operand = flatten(node.operand, v)
 		
 		if inplace:
 			return util.flatten(preStmts), node
 		else:
-			var = v.getVar()
+			var = Name(v.getVar(increment = True))
 			preStmts.append(Assign(var, node))
 			return util.flatten(preStmts), var
 
