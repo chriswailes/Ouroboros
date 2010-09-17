@@ -15,16 +15,13 @@ class SymbolTable(object):
 			self.symbols = {}
 	
 	def getSymbol(self, name = '!', assign = False):
-		#Right value = next assignment
-		#Left value  = current read
+		#Left value  -> next assignment
+		#Right value -> current read
 		
 		if self.symbols.has_key(name):
 			if assign:
-				a, b = self.symbols[name]
+				a, _ = self.symbols[name]
 				self.symbols[name] = (a + 1, a + 1)
-				
-				#~ if b == 0:
-					#~ raise Exception('First assignment')
 		else:
 			self.symbols[name] = (0, 0)
 		

@@ -27,8 +27,9 @@ def translate(node, st = None, jn = None, funcName = False):
 		expr = translate(node.expr, st, jn)
 		name = translate(node.nodes.pop(), st, jn)
 		
-		#Add this new assignment to the join node.
-		jn.addSymbol(name.name, st)
+		if jn:
+			#Add this new assignment to the join node.
+			jn.addSymbol(name.name, st)
 		
 		return ast.Assign(name, expr)
 	
@@ -65,7 +66,10 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		#A new SymbolTable needs to be constructed for the then branch.
 		stThen = SymbolTable(st)
-		then = ast.BasicBlock(translate(then, stThen, jn), stThen, jn)
+		then = ast.BasicBlock(translate(then, stThen, jn), stThen)
+		
+		#Merge any Join nodes in the then clause into our current Join node.
+		mergeJoins(jn, then)
 		
 		els = None
 		
@@ -79,19 +83,21 @@ def translate(node, st = None, jn = None, funcName = False):
 		else:
 			els = translate(node.else_, stElse, jn)
 		
-		els = ast.BasicBlock(els, stElse, jn)
+		els = ast.BasicBlock(els, stElse)
+		
+		#Merge any Join nodes in the els clause into our current Join node.
+		mergeJoins(jn, els)
 		
 		#Update the current SymbolTable
 		st.update(stElse)
 		st.update(jn)
 		
-		return ast.If(cond, then, els)
+		return ast.If(cond, then, els, jn)
 		
 	elif isinstance(node, oast.Module):
 		#Create a new SymbolTable for this module.
 		st = SymbolTable()
-		jn = ast.Join()
-		children = ast.BasicBlock(translate(node.node, st, jn), st, jn)
+		children = ast.BasicBlock(translate(node.node, st, jn), st)
 		
 		return ast.Module(children)
 	
@@ -131,3 +137,11 @@ def translate(node, st = None, jn = None, funcName = False):
 	
 	else:
 		None
+
+def mergeJoins(jn0, block):
+	for n in block:
+		if isinstance(n, ast.If):
+			for t in n.jn.getTargets():
+				#Symbols that don't exist in the scope of jn0 won't be added
+				#because we don't provide a StateTable to addSymbol.
+				jn0.addSymbol(t)

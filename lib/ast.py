@@ -41,7 +41,7 @@ class Join(Node):
 	def __repr__(self):
 		return 'Join(' + repr(self.phis) + ')'
 	
-	def addSymbol(self, symbol, st):
+	def addSymbol(self, symbol, st = None):
 		phi0 = None
 		
 		for phi1 in self.phis:
@@ -51,19 +51,26 @@ class Join(Node):
 		
 		if phi0:
 			phi0.addSrc(symbol)
-		else:
+		elif st:
 			target = st.getSymbol(symbol.name, True)
 			phi0 = Phi(target, [symbol])
 			self.phis.append(phi0)
+	
+	def getTargets(self):
+		targets = []
+		
+		for phi in self.phis:
+			targets.append(phi.target)
+		
+		return targets
 
 class BasicBlock(Node):
-	def __init__(self, children, st = SymbolTable(), jn = Join()):
+	def __init__(self, children, st = SymbolTable()):
 		self.children = children
-		self.jn = jn
 		self.st = st
 	
 	def __repr__(self):
-		return 'BasicBlock(' + repr(self.children) + ', ' + repr(self.jn) + ')'
+		return 'BasicBlock(' + repr(self.children) + ')'
 	
 	def getChildren(self):
 		return self.children
@@ -116,8 +123,9 @@ class Assign(Statement):
 		return ret
 
 class If(Statement):
-	def __init__(self, cond, then, els):
+	def __init__(self, cond, then, els, jn):
 		self.cond = cond
+		self.jn = jn
 		
 		if isinstance(then, BasicBlock) and isinstance(els, BasicBlock):
 			self.then = then
@@ -126,7 +134,7 @@ class If(Statement):
 			raise Exception("Not a basic block.")
 	
 	def __repr__(self):
-		return "If(Cond: {0}, Then: {1}, Else: {2})".format(repr(self.cond), repr(self.then), repr(self.els))
+		return "If(Cond: {0}, Then: {1}, Else: {2}, Join: {3})".format(repr(self.cond), repr(self.then), repr(self.els), repr(self.jn))
 	
 	def getChildren(self):
 		return [self.then, self.els]
