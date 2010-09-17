@@ -8,9 +8,9 @@ Description:	A transformation that flattens the provided AST.
 from lib.ast import *
 from lib import util
 
-def flatten(node, v = None, inplace = False):
+def flatten(node, st = None, inplace = False):
 	if isinstance(node, Assign):
-		preStmts, node.exp = flatten(node.exp, v, True)
+		preStmts, node.exp = flatten(node.exp, st, True)
 		
 		return preStmts, node
 	
@@ -18,7 +18,7 @@ def flatten(node, v = None, inplace = False):
 		newChildren = []
 		
 		for child in node:
-			preChildren, newChild = flatten(child, node.v, True)
+			preChildren, newChild = flatten(child, node.st, True)
 			
 			newChildren.append(preChildren)
 			newChildren.append(newChild)
@@ -28,15 +28,15 @@ def flatten(node, v = None, inplace = False):
 		return [], node
 	
 	elif isinstance(node, BinOp):
-		leftPreStmts, node.left = flatten(node.left, v)
-		rightPreStmts, node.right = flatten(node.right, v)
+		leftPreStmts, node.left = flatten(node.left, st)
+		rightPreStmts, node.right = flatten(node.right, st)
 		
 		preStmts = util.flatten([leftPreStmts, rightPreStmts])
 		
 		if inplace:
 			return preStmts, node
 		else:
-			var = Name(v.getVar(increment = True))
+			var = Name(v.getSymbol(assign = True))
 			preStmts.append(Assign(var, node))
 			return preStmts, var
 	
@@ -45,7 +45,7 @@ def flatten(node, v = None, inplace = False):
 		newArgs = []
 		
 		for arg in node.args:
-			tmpPreStmts, newArg = flatten(arg, v)
+			tmpPreStmts, newArg = flatten(arg, st)
 			
 			preStmts.append(tmpPreStmts)
 			newArgs.append(newArg)
@@ -56,12 +56,12 @@ def flatten(node, v = None, inplace = False):
 		if inplace:
 			return preStmts, node
 		else:
-			var = Name(v.getVar(increment = True))
+			var = Name(st.getSymbol(assign = True))
 			preStmts.append(Assign(var, node))
 			return preStmts, var
 	
 	elif isinstance(node, If):
-		preNodes, node.cond = flatten(node.cond, v)
+		preNodes, node.cond = flatten(node.cond, st)
 		
 		#These two nodes are BasicBlocks and will supply their own VFiles
 		discard, node.then = flatten(node.then)
@@ -82,12 +82,12 @@ def flatten(node, v = None, inplace = False):
 		return [], node
 	
 	elif isinstance(node, UnaryOp):
-		preStmts, node.operand = flatten(node.operand, v)
+		preStmts, node.operand = flatten(node.operand, st)
 		
 		if inplace:
 			return util.flatten(preStmts), node
 		else:
-			var = Name(v.getVar(increment = True))
+			var = Name(v.getSymbol(assign = True))
 			preStmts.append(Assign(var, node))
 			return util.flatten(preStmts), var
 

@@ -63,6 +63,8 @@ if config.startStage == 'python':
 		print(tree.toPython())
 		print("\n")
 	
+	exit(0)
+	
 	#Compile the AST.
 	assembly = selectInstructions(tree)
 

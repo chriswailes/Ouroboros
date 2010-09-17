@@ -7,7 +7,7 @@ Description:	Describes the abstract syntax tree used by my compiler for HW0.
 
 from util import *
 
-import variables
+from symbol_table import SymbolTable
 
 class Node(object):
 	def __iter__(self):
@@ -23,10 +23,26 @@ class Node(object):
 	def setAttr(self, key, value):
 		self.attributes[key] = value
 
+class Phi(object):
+	def __init__(self, target):
+		self.target = target
+		self.srcs = []
+
+class Join(Node):
+	def __init__(self):
+		self.phis = []
+	
+	def __repr__(self):
+		return 'Join(' + repr(self.phis) + ')'
+	
+	def addSymbol(symbol):
+		pass
+
 class BasicBlock(Node):
-	def __init__(self, children, v = variables.VFile):
+	def __init__(self, children, st = SymbolTable(), jn = Join()):
 		self.children = children
-		self.v = v
+		self.jn = jn
+		self.st = st
 	
 	def __repr__(self):
 		return "BasicBlock(" + repr(self.children) + ")"
@@ -144,7 +160,7 @@ class Name(Expression):
 		self.name = name
 	
 	def __repr__(self):
-		return "Name({0})".format(repr(self.name))
+		return "Name({0})".format(str(self.name))
 	
 	def getChildren(self):
 		return []
@@ -156,7 +172,7 @@ class Name(Expression):
 		pass
 	
 	def toPython(self, level = 0):
-		return self.name
+		return str(self.name)
 
 class Integer(Expression):
 	def __init__(self, value):
