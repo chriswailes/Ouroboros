@@ -18,15 +18,21 @@ class Node(object):
 		return self.attributes[key]
 	
 	def isSimple(self):
-		False
+		return False
 	
 	def setAttr(self, key, value):
 		self.attributes[key] = value
 
-class Phi(object):
-	def __init__(self, target):
+class Phi(Node):
+	def __init__(self, target, srcs = []):
 		self.target = target
-		self.srcs = []
+		self.srcs = srcs
+	
+	def __repr__(self):
+		return 'Phi(' + repr(self.target) + ', ' + repr(self.srcs) + ')'
+	
+	def addSrc(self, src):
+		self.srcs.append(src)
 
 class Join(Node):
 	def __init__(self):
@@ -35,8 +41,20 @@ class Join(Node):
 	def __repr__(self):
 		return 'Join(' + repr(self.phis) + ')'
 	
-	def addSymbol(symbol):
-		pass
+	def addSymbol(self, symbol, st):
+		phi0 = None
+		
+		for phi1 in self.phis:
+			if phi1.target.name == symbol.name:
+				phi0 = phi1
+				break
+		
+		if phi0:
+			phi0.addSrc(symbol)
+		else:
+			target = st.getSymbol(symbol.name, True)
+			phi0 = Phi(target, [symbol])
+			self.phis.append(phi0)
 
 class BasicBlock(Node):
 	def __init__(self, children, st = SymbolTable(), jn = Join()):
@@ -45,7 +63,7 @@ class BasicBlock(Node):
 		self.st = st
 	
 	def __repr__(self):
-		return "BasicBlock(" + repr(self.children) + ")"
+		return 'BasicBlock(' + repr(self.children) + ', ' + repr(self.jn) + ')'
 	
 	def getChildren(self):
 		return self.children

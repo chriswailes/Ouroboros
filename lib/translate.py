@@ -27,6 +27,9 @@ def translate(node, st = None, jn = None, funcName = False):
 		expr = translate(node.expr, st, jn)
 		name = translate(node.nodes.pop(), st, jn)
 		
+		#Add this new assignment to the join node.
+		jn.addSymbol(name.name, st)
+		
 		return ast.Assign(name, expr)
 	
 	elif isinstance(node, oast.AssName):
@@ -80,6 +83,7 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		#Update the current SymbolTable
 		st.update(stElse)
+		st.update(jn)
 		
 		return ast.If(cond, then, els)
 		
