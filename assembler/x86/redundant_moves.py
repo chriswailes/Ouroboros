@@ -28,7 +28,7 @@ def redundantMoves(code):
 					break
 				elif cur.src == Register('eax') and ahead.name == 'call':
 					break
-				elif isinstance(ahead, ib.OneOp) and cur.src == ahead.dest:
+				elif isinstance(ahead, ib.OneOp) and cur.src == ahead.operand:
 					break
 				elif isinstance(ahead, ib.TwoOp) and cur.src == ahead.dest:
 					if ahead.src != cur.dest:

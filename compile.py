@@ -11,6 +11,8 @@ import compiler
 
 import os
 
+from analysis.stats import *
+
 from assembler.redundant_moves import redundantMoves
 from assembler.instruction_selection import selectInstructions
 
@@ -63,6 +65,8 @@ if config.startStage == 'python':
 		print(tree.toPython())
 		print("\n")
 	
+	count = countReads(tree)
+	print(count)
 	exit(0)
 	
 	#Compile the AST.

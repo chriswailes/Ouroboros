@@ -11,11 +11,11 @@ from assembler.ib import Block, Immediate, Instruction, Labeler, Label
 from assembler.x86.memloc import Mem
 
 class OneOp(ib.OneOp):
-	def __init__(self, name, dest = None, suffix = "l", comment = ""):
+	def __init__(self, name, operand = None, suffix = "l", comment = ""):
 		if isinstance(dest, Mem):
 			comment = comment or "Var: " + dest.name
 		
-		super(OneOp, self).__init__(name, dest, suffix, comment)
+		super(OneOp, self).__init__(name, operand, suffix, comment)
 
 class TwoOp(ib.TwoOp):
 	def __init__(self, name, src = None, dest = None, suffix = "l", comment = ""):

@@ -155,6 +155,9 @@ class Instruction(object):
 		self.comment = comment
 		self.name = name
 		self.suffix = suffix
+		
+		self.pre_alive = []
+		self.post_alive = []
 	
 	def __str__(self):
 		return self.pack(self.getOp())
@@ -169,21 +172,21 @@ class Instruction(object):
 		return "\t{0:21} # {1}\n".format(instr, self.comment)
 
 class OneOp(Instruction):
-	def __init__(self, name, dest = None, suffix = None, comment = ""):
+	def __init__(self, name, operand = None, suffix = None, comment = ""):
 		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 		
-		destOK  = isinstance(dest, Mem)
-		destOK |= isinstance(dest, Register)
-		destOK |= isinstance(dest, Immediate)
-		destOK |= isinstance(dest, Label)
-		destOK |= isinstance(dest, str)
+		opOK  = isinstance(operand, Mem)
+		opOK |= isinstance(operand, Register)
+		opOK |= isinstance(operand, Immediate)
+		opOK |= isinstance(operand, Label)
+		opOK |= isinstance(operand, str)
 		
-		if not destOK:
+		if not opOK:
 			raise Exception("Invalid destination.")
 		
-		self.dest = dest
+		self.operand = operand
 	
 	def __str__(self):
 		return self.pack("{0:5s} {1}".format(self.getOp(), str(self.dest)))

@@ -9,19 +9,13 @@ from util import *
 
 from symbol_table import SymbolTable
 
-class Node(object):
+class Node(dict):
 	def __iter__(self):
 		for n in self.getChildren():
 			yield n
 	
-	def getAttr(self, key):
-		return self.attributes[key]
-	
 	def isSimple(self):
 		return False
-	
-	def setAttr(self, key, value):
-		self.attributes[key] = value
 
 class Phi(Node):
 	def __init__(self, target, srcs = []):
@@ -91,7 +85,7 @@ class Module(Node):
 		return "Module({0})".format(repr(self.block))
 	
 	def getChildren(self):
-		return self.block
+		return [self.block]
 	
 	def toGraph(self):
 		pass
@@ -137,7 +131,7 @@ class If(Statement):
 		return "If(Cond: {0}, Then: {1}, Else: {2}, Join: {3})".format(repr(self.cond), repr(self.then), repr(self.els), repr(self.jn))
 	
 	def getChildren(self):
-		return [self.then, self.els]
+		return [self.cond, self.then, self.els]
 	
 	def toGraph(self):
 		pass

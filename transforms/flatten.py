@@ -36,7 +36,7 @@ def flatten(node, st = None, inplace = False):
 		if inplace:
 			return preStmts, node
 		else:
-			var = Name(v.getSymbol(assign = True))
+			var = Name(st.getSymbol(assign = True))
 			preStmts.append(Assign(var, node))
 			return preStmts, var
 	
@@ -87,7 +87,7 @@ def flatten(node, st = None, inplace = False):
 		if inplace:
 			return util.flatten(preStmts), node
 		else:
-			var = Name(v.getSymbol(assign = True))
+			var = Name(st.getSymbol(assign = True))
 			preStmts.append(Assign(var, node))
 			return util.flatten(preStmts), var
 
