@@ -11,22 +11,40 @@ class SymbolTable(object):
 	def __init__(self, other = None):
 		if other:
 			self.symbols = other.symbols.copy()
+			self.singletons = list(other.singletons)
+			self.funSymbols = list(other.funSymbol)
 		else:
 			self.symbols = {}
-		
-		self.singletons = []
+			self.singletons = []
+			self.funSymbols = []
 	
 	def getSingleton(self, name, version):
 		sym0 = None
+		
+		print self.singletons
 		
 		for sym1 in self.singletons:
 			if sym1.name == name and sym1.version == version:
 				sym0 = sym1
 				break
 		
-		if not sym0:
+		if sym0 == None:
 			sym0 = Symbol(name, version)
 			self.singletons.append(sym0)
+		
+		return sym0
+	
+	def getFunSymbol(self, name):
+		sym0 = None
+		
+		for sym1 in self.funSymbols:
+			if sym1.name == name:
+				sym0 = sym1
+				break
+		
+		if not sym0:
+			sym0 = FunSymbol(name)
+			self.funSymbols.append(sym0)
 		
 		return sym0
 	
@@ -61,17 +79,50 @@ class SymbolTable(object):
 					
 					self.symbols[phi.target.name] = (a0, b1)
 
-class Symbol(object):
+class FunSymbol(dict):
 	def __init__(self, name, version):
-		self.color = None
+		self.name = name
+	
+	def __eq__(self, other):
+		if isinstance(other, FunSymbol):
+			return self.name == other.name
+		else:
+			return False
+	
+	def __hash__(self):
+		return hash(str(self))
+	
+	def __ne__(self, other):
+		if isinstance(other, FunSymbol):
+			return self.name != other.name
+		else:
+			return True
+	
+	def __repr__(self):
+		return str(self)
+	
+	def __str__(self):
+		return self.name
+
+class Symbol(dict):
+	def __init__(self, name, version):
 		self.name = name
 		self.version = version
 	
 	def __eq__(self, other):
-		return self.name == other.name and self.version == other.version
+		if isinstance(other, Symbol):
+			return self.name == other.name and self.version == other.version
+		else:
+			return False
+	
+	def __hash__(self):
+		return hash(str(self))
 	
 	def __ne__(self, other):
-		return self.name != other.name or self.version != other.version
+		if isinstance(other, Symbol):
+			return self.name != other.name or self.version != other.version
+		else:
+			return True
 	
 	def __repr__(self):
 		return str(self)

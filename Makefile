@@ -7,7 +7,7 @@ CC		= gcc
 CFLAGS	= -O3 -Wall -fPIC -march=native
 LFLAGS	= -lm -Lruntime/ -lpyrun
 
-SUBDIRS	= assembler lib runtime transforms
+SUBDIRS	= analysis assembler lib runtime transforms
 
 all: runtime
 

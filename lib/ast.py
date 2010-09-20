@@ -14,6 +14,14 @@ class Node(dict):
 		for n in self.getChildren():
 			yield n
 	
+	def collectSymbols(self):
+		symbols = set([])
+		
+		for n in self:
+			symbols |= n.collectSymbols()
+		
+		return symbols
+	
 	def isSimple(self):
 		return False
 
@@ -65,6 +73,14 @@ class BasicBlock(Node):
 	
 	def __repr__(self):
 		return 'BasicBlock(' + repr(self.children) + ')'
+	
+	def collectSymbols(self):
+		symbols = set(self.st.singletons)
+		
+		for n in self:
+			symbols |= n.collectSymbols()
+		
+		return symbols
 	
 	def getChildren(self):
 		return self.children
@@ -176,11 +192,11 @@ class FunctionCall(Expression):
 		return ret + ')'
 
 class Name(Expression):
-	def __init__(self, name):
-		self.name = name
+	def __init__(self, symbol):
+		self.symbol = symbol
 	
 	def __repr__(self):
-		return "Name({0})".format(str(self.name))
+		return "Name({0})".format(str(self.symbol))
 	
 	def getChildren(self):
 		return []
@@ -192,7 +208,7 @@ class Name(Expression):
 		pass
 	
 	def toPython(self, level = 0):
-		return str(self.name)
+		return str(self.symbol)
 
 class Integer(Expression):
 	def __init__(self, value):

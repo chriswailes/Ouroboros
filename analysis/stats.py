@@ -7,22 +7,32 @@ Description:	Basic statistical anlysis methods.
 
 from lib.ast import *
 
-def countReads(node, count = {}):
+def countReads(node):
 	for n in node:
-			countReads(n, count)
+		countReads(n)
 	
-	if isinstance(node, Module):
-		return count
+	if isinstance(node, Assign):
+		node.var.symbol['reads'] = 0
 	
 	elif isinstance(node, Name):
-		if count.has_key(node.name):
-			count[node.name] += 1
-		else:
-			count[node.name] = 1
+		node.symbol['reads'] += 1
 
-def markReads(node, count):
-	for n in node:
-		markReads(n, count)
+def calculateSpans(node, count = 0, alive = {}):
+	inc = 1
 	
-	if isinstance(node, Name):
-		node['reads'] = count[node.name]
+	if isinstance(node, Assign):
+		#Due to SSA form we know this variable isn't already alive.
+		if node.var.symbol in node['post-alive']:
+			alive[node.var.symbol] = count
+	
+	for n in node:
+		inc += calculateSpans(n)
+	
+	count += inc
+	
+	for sym in alive:
+		if not sym in node['post-alive']:
+			sym['span'] = count - alive[sym]
+			del alive[sym]
+	
+	return inc

@@ -12,7 +12,7 @@ import compiler.ast as oast
 import ast
 import util
 
-from symbol_table import SymbolTable
+from symbol_table import SymbolTable, Symbol
 
 def translate(node, st = None, jn = None, funcName = False):
 	if isinstance(node, oast.Add):
@@ -97,7 +97,9 @@ def translate(node, st = None, jn = None, funcName = False):
 	elif isinstance(node, oast.Module):
 		#Create a new SymbolTable for this module.
 		st = SymbolTable()
-		children = ast.BasicBlock(translate(node.node, st, jn), st)
+		children = translate(node.node, st)
+		
+		children = ast.BasicBlock(children, st)
 		
 		return ast.Module(children)
 	
@@ -108,16 +110,19 @@ def translate(node, st = None, jn = None, funcName = False):
 		return ast.Mul(left, right)
 	
 	elif isinstance(node, oast.Name):
-		name = node.name
-		if not funcName:
-			name = st.getSymbol(name)
+		symbol = node.name
+		if funcName:
+			symbol = st.getFunSymbol(symbol)
+		else:
+			symbol = st.getSymbol(symbol)
 		
-		return ast.Name(name)
+		return ast.Name(symbol)
 		
 	elif isinstance(node, oast.Printnl):
 		children = util.flatten([translate(e, st, jn) for e in node.getChildNodes()])
 		
-		return ast.FunctionCall(ast.Name("print_int_nl"), children)
+		symbol = st.getFunSymbol('print_int_nl')
+		return ast.FunctionCall(ast.Name(symbol), children)
 		
 	elif isinstance(node, oast.Stmt):
 		stmts = [translate(s, st, jn) for s in node.getChildNodes()]

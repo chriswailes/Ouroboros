@@ -11,6 +11,7 @@ import compiler
 
 import os
 
+from analysis.liveness import *
 from analysis.stats import *
 
 from assembler.redundant_moves import redundantMoves
@@ -65,9 +66,15 @@ if config.startStage == 'python':
 		print(tree.toPython())
 		print("\n")
 	
-	count = countReads(tree)
-	print(count)
+	countReads(tree)
+	livenessAST(tree)
+	
 	exit(0)
+	
+	calculateSpans(tree)
+	
+	for sym in tree.collectSymbols():
+		print("{0} -> {1:d}".format(str(sym), sym['reads']))
 	
 	#Compile the AST.
 	assembly = selectInstructions(tree)

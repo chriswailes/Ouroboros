@@ -7,24 +7,31 @@ Description:	Determines the liveness of varaibles at every node in the AST.
 
 from lib.ast import *
 
-def livenessAST(node, counts, alive = []):
+def livenessAST(node, alive = []):
 	node['pre-alive'] = set(alive)
 	
 	if isinstance(node, Assign):
-		sym = node.var.name
-		if counts[sym] > 0:
-			alive.append(node.var.name)
+		sym = node.var.symbol
+		sym['tmp'] = sym['reads']
+		
+		if sym['tmp'] > 0:
+			alive.append(sym)
 	
 	elif isinstance(node, Name):
-		counts[name.name] -= 1
-		if counts[name.name] == 0:
-			alive.remove(name.name)
+		node.symbol['tmp'] -= 1
+		
+		if node.symbol['tmp'] == 0:
+			alive.remove(name.symbol)
 	
 	else:
 		for n in node:
-			livenessAST(n, counts, alive)
+			livenessAST(n, alive)
 	
 	node['post-alive'] = set(alive)
+	
+	print("pre-alive: " + str(node['pre-alive']))
+	print("post-alive: " + str(node['post-alive']))
+	print('')
 
 
 def livenessAssembly(block):
