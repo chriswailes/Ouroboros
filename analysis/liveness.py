@@ -21,17 +21,12 @@ def livenessAST(node, alive = []):
 		node.symbol['tmp'] -= 1
 		
 		if node.symbol['tmp'] == 0:
-			alive.remove(name.symbol)
+			alive.remove(node.symbol)
 	
-	else:
-		for child in node:
-			livenessAST(child, alive)
+	for child in node:
+		livenessAST(child, alive)
 	
 	node['post-alive'] = set(alive)
-	
-	#~ print("pre-alive: " + str(node['pre-alive']))
-	#~ print("post-alive: " + str(node['post-alive']))
-	#~ print('')
 
 
 def livenessAssembly(block):
