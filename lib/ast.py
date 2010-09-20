@@ -80,14 +80,6 @@ class BasicBlock(Node):
 	def __repr__(self):
 		return 'BasicBlock(' + repr(self.children) + ')'
 	
-	def collectSymbols(self):
-		symbols = set(self.st.singletons)
-		
-		for n in self:
-			symbols |= n.collectSymbols()
-		
-		return symbols
-	
 	def getChildren(self):
 		return self.children
 	
@@ -223,6 +215,9 @@ class Name(Expression):
 	
 	def isSimple(self):
 		return True
+	
+	def collectSymbols(self):
+		return set([self.symbol])
 	
 	def toGraph(self):
 		pass

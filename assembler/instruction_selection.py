@@ -7,7 +7,7 @@ Description:	The wrapper for our instruction selection code.
 
 from lib.config import config
 
-def selectInstructions(tree):
+def selectInstructions(tree, stackSize):
 	if config.arch == 'x86':
 		from x86 import instruction_selection as arch
 	elif config.arch == 'x86_64':
@@ -15,4 +15,4 @@ def selectInstructions(tree):
 	else:
 		raise Exception("Unknown architecture.")
 	
-	return arch.selectInstructions(tree)
+	return arch.selectInstructions(tree, stackSize = stackSize)

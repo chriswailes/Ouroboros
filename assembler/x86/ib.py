@@ -12,7 +12,7 @@ from assembler.x86.memloc import Mem
 
 class OneOp(ib.OneOp):
 	def __init__(self, name, operand = None, suffix = "l", comment = ""):
-		if isinstance(dest, Mem):
+		if isinstance(operand, Mem):
 			comment = comment or "Var: " + dest.name
 		
 		super(OneOp, self).__init__(name, operand, suffix, comment)

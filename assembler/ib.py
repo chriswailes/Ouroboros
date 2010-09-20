@@ -5,9 +5,6 @@ Date:		2010/08/26
 Description:	General purpose classes and functions for building instructions.
 """
 
-from assembler.memloc import Mem
-from assembler.registers import Register
-
 from lib import ast
 from lib import util
 
@@ -177,30 +174,16 @@ class OneOp(Instruction):
 		self.name = name
 		self.suffix = suffix
 		
-		opOK  = isinstance(operand, Mem)
-		opOK |= isinstance(operand, Register)
-		opOK |= isinstance(operand, Immediate)
-		opOK |= isinstance(operand, Label)
-		opOK |= isinstance(operand, str)
-		
-		if not opOK:
-			raise Exception("Invalid destination.")
-		
 		self.operand = operand
 	
 	def __str__(self):
-		return self.pack("{0:5s} {1}".format(self.getOp(), str(self.dest)))
+		return self.pack("{0:5s} {1}".format(self.getOp(), str(self.operand)))
 
 class TwoOp(Instruction):
 	def __init__(self, name, src = None, dest = None, suffix = None, comment = ""):
 		self.comment = comment
 		self.name = name
 		self.suffix = suffix
-		
-		if not (isinstance(src, Mem) or isinstance(src, Register) or isinstance(src, Immediate)):
-			raise Exception("Invalid source.")
-		elif not (isinstance(dest, Mem) or isinstance(dest, Register)):
-			raise Exception("Invalid destination.")
 		
 		self.src = src
 		self.dest = dest

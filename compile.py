@@ -12,6 +12,7 @@ import compiler
 import os
 
 from analysis.liveness import *
+from analysis.related import *
 from analysis.stats import *
 
 from assembler.redundant_moves import redundantMoves
@@ -21,10 +22,11 @@ from lib import ast, util
 from lib.translate import translate
 from lib.config import config, args
 
-from transforms.fixedpoint import fixedpoint
+from transforms.coloring import color
 from transforms.const_fold import foldConstants
 from transforms.const_prop import propigateConstants
 from transforms.discard import discard
+from transforms.fixedpoint import fixedpoint
 from transforms.flatten import flatten
 
 if len(args) == 0:
@@ -50,7 +52,7 @@ if config.startStage == 'python':
 		print("")
 	
 	#Run the AST transformation passes
-	fixedpoint(tree, propigateConstants, discard, foldConstants)
+	#fixedpoint(tree, propigateConstants, discard, foldConstants)
 	flatten(tree)
 	
 	if config.verbose:
@@ -67,16 +69,16 @@ if config.startStage == 'python':
 		print(tree.toPython())
 		print("\n")
 	
+	#Run the AST analysis passes
 	countReads(tree)
 	livenessAST(tree)
 	calculateSpans(tree)
+	findRelatedAST(tree)
 	
-	
-	
-	exit(0)
+	stackSize = color(tree)
 	
 	#Compile the AST.
-	assembly = selectInstructions(tree)
+	assembly = selectInstructions(tree, stackSize)
 
 	if config.verbose:
 		#Print out the pre-assembly passes code.
@@ -84,7 +86,7 @@ if config.startStage == 'python':
 		print(assembly)
 
 	#Run the instruction passes.
-	redundantMoves(assembly)
+	#redundantMoves(assembly)
 
 	if config.verbose:
 		#Print out the post-assembly passes code.

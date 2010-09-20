@@ -22,10 +22,14 @@ def calculateSpans(node, count = 0, alive = {}):
 	
 	if isinstance(node, Assign):
 		#Due to SSA form we know this variable isn't already alive.
-		if node.var.symbol in node['post-alive']:
-			alive[node.var.symbol] = count
+		
+		sym = node.var.symbol
+		
+		if sym in node['post-alive']:
+			alive[sym] = count
 		else:
-			node.var.symbol['span'] = 0
+			sym['span-start'] = sym['span-end'] = count
+			sym['span'] = 0
 	
 	for child in node:
 		subInc = calculateSpans(child, count)
@@ -35,11 +39,19 @@ def calculateSpans(node, count = 0, alive = {}):
 	deletes = []
 	
 	for sym in alive:
-		if not sym in node['post-alive']:
+		if (not sym in node['post-alive']) or isinstance(node, Module):
+			sym['span-start'] = alive[sym]
+			sym['span-end'  ] = count
 			sym['span'] = count - alive[sym]
 			deletes.append(sym)
 	
 	for sym in deletes:
 		del alive[sym]
+	
+	#~if isinstance(node, Module):
+		#~for sym in alive:
+			#~sym['span-start'] = alive[sym]
+			#~sym['span-end'  ] = count
+			#~sym['span'] = count - alive[sym]
 		
 	return inc
