@@ -17,8 +17,6 @@ def propigateConstants(tree):
 def collectConsts(node):
 	consts = {}
 	
-	#~ print node.__class__.__name__
-	
 	for child in node:
 		consts.update(collectConsts(child))
 	

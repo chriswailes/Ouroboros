@@ -24,8 +24,8 @@ def livenessAST(node, alive = []):
 			alive.remove(name.symbol)
 	
 	else:
-		for n in node:
-			livenessAST(n, alive)
+		for child in node:
+			livenessAST(child, alive)
 	
 	node['post-alive'] = set(alive)
 	

@@ -8,8 +8,8 @@ Description:	Basic statistical anlysis methods.
 from lib.ast import *
 
 def countReads(node):
-	for n in node:
-		countReads(n)
+	for child in node:
+		countReads(child)
 	
 	if isinstance(node, Assign):
 		node.var.symbol['reads'] = 0
@@ -25,8 +25,8 @@ def calculateSpans(node, count = 0, alive = {}):
 		if node.var.symbol in node['post-alive']:
 			alive[node.var.symbol] = count
 	
-	for n in node:
-		inc += calculateSpans(n)
+	for child in node:
+		inc += calculateSpans(child)
 	
 	count += inc
 	
