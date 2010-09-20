@@ -5,6 +5,8 @@ Date:		2010/09/20
 Description:	Finds a fixed point in a series of AST transformations.
 """
 
+INF = -1
+
 def fixedpoint(tree, *transforms):
 	before = ''
 	after  = repr(tree)

@@ -50,8 +50,8 @@ if config.startStage == 'python':
 		print("")
 	
 	#Run the AST transformation passes
-	#tree = fixedpoint(tree, discard, propigateConstants, foldConstants)
-	tree = flatten(tree)
+	fixedpoint(tree, propigateConstants, discard, foldConstants)
+	flatten(tree)
 	
 	if config.verbose:
 		#Print my flattened (and folded) AST
@@ -71,21 +71,9 @@ if config.startStage == 'python':
 	livenessAST(tree)
 	calculateSpans(tree)
 	
-	#~for line in tree.block:
-		#~print line.toPython()
-		#~print("pre-alive: " + str(line['pre-alive']))
-		#~print("post-alive: " + str(line['post-alive']))
-		#~print('')
 	
-	for sym in tree.collectSymbols():
-		print("{0}: {1}".format(str(sym), str(sym['span'])))
 	
 	exit(0)
-	
-	calculateSpans(tree)
-	
-	for sym in tree.collectSymbols():
-		print("{0} -> {1:d}".format(str(sym), sym['reads']))
 	
 	#Compile the AST.
 	assembly = selectInstructions(tree)
