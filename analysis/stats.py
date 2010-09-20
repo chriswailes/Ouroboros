@@ -28,16 +28,14 @@ def calculateSpans(node, count = 0, alive = {}):
 			node.var.symbol['span'] = 0
 	
 	for child in node:
-		inc += calculateSpans(child, count)
-		count += inc
-	
-	print("{0}: {1:d}".format(node.__class__.__name__, inc))
+		subInc = calculateSpans(child, count)
+		inc   += subInc
+		count += subInc
 	
 	deletes = []
 	
 	for sym in alive:
 		if not sym in node['post-alive']:
-			print("Calculating span ({0}). Start: {1:d} End: {2:d}".format(str(sym), alive[sym], count))
 			sym['span'] = count - alive[sym]
 			deletes.append(sym)
 	
