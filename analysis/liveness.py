@@ -1,7 +1,7 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
 Project:		CSCI 5525 HW1
-Date:		2010/09/018
+Date:		2010/09/18
 Description:	Determines the liveness of varaibles at every node in the AST.
 """
 
@@ -29,9 +29,9 @@ def livenessAST(node, alive = []):
 	
 	node['post-alive'] = set(alive)
 	
-	print("pre-alive: " + str(node['pre-alive']))
-	print("post-alive: " + str(node['post-alive']))
-	print('')
+	#~ print("pre-alive: " + str(node['pre-alive']))
+	#~ print("post-alive: " + str(node['post-alive']))
+	#~ print('')
 
 
 def livenessAssembly(block):

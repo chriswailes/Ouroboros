@@ -21,7 +21,9 @@ from lib import ast, util
 from lib.translate import translate
 from lib.config import config, args
 
+from transforms.fixedpoint import fixedpoint
 from transforms.const_fold import foldConstants
+from transforms.const_prop import propigateConstants
 from transforms.discard import discard
 from transforms.flatten import flatten
 
@@ -48,8 +50,7 @@ if config.startStage == 'python':
 		print("")
 	
 	#Run the AST transformation passes
-	tree = discard(tree)
-	tree = foldConstants(tree)
+	tree = fixedpoint(tree, discard, propigateConstants, foldConstants)
 	tree = flatten(tree)
 	
 	if config.verbose:

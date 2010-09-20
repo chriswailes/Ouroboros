@@ -22,6 +22,12 @@ class Node(dict):
 		
 		return symbols
 	
+	def getChildren(self):
+		return []
+	
+	def setChildren(self, children):
+		pass
+	
 	def isSimple(self):
 		return False
 
@@ -85,6 +91,9 @@ class BasicBlock(Node):
 	def getChildren(self):
 		return self.children
 	
+	def setChildren(self, children):
+		self.children = children
+	
 	def toPython(self, level = 0):
 		ret = ''
 		
@@ -102,6 +111,9 @@ class Module(Node):
 	
 	def getChildren(self):
 		return [self.block]
+	
+	def setChildren(self, children):
+		self.block = children[0]
 	
 	def toGraph(self):
 		pass
@@ -122,6 +134,9 @@ class Assign(Statement):
 	
 	def getChildren(self):
 		return [self.exp]
+	
+	def setChildren(self, children):
+		self.exp = children[0]
 	
 	def toGraph(self):
 		pass
@@ -148,6 +163,11 @@ class If(Statement):
 	
 	def getChildren(self):
 		return [self.cond, self.then, self.els]
+	
+	def setChildren(self, children):
+		self.cond = children[0]
+		self.then = children[1]
+		self.els  = children[2]
 	
 	def toGraph(self):
 		pass
@@ -179,6 +199,9 @@ class FunctionCall(Expression):
 	def toGraph(self):
 		pass
 	
+	def setChildren(self, children):
+		self.args = children
+	
 	def toPython(self, level = 0):
 		ret  = pad(level)
 		ret += self.name.toPython() + '('
@@ -197,9 +220,6 @@ class Name(Expression):
 	
 	def __repr__(self):
 		return "Name({0})".format(str(self.symbol))
-	
-	def getChildren(self):
-		return []
 	
 	def isSimple(self):
 		return True
@@ -220,9 +240,6 @@ class Integer(Expression):
 	def __str__(self):
 		return "${0:d}".format(self.value)
 	
-	def getChildren(self):
-		return []
-	
 	def isSimple(self):
 		return True
 	
@@ -241,6 +258,10 @@ class BinOp(Expression):
 	def getChildren(self):
 		return [self.left, self.right]
 	
+	def setChildren(self, children):
+		self.left  = children[0]
+		self.right = children[1]
+	
 	def toGraph(self):
 		pass
 	
@@ -257,6 +278,9 @@ class UnaryOp(Expression):
 	
 	def getChildren(self):
 		return [self.operand]
+	
+	def setChildren(self, children):
+		self.operand = children[0]
 	
 	def toGraph(self):
 		pass

@@ -21,8 +21,6 @@ class SymbolTable(object):
 	def getSingleton(self, name, version):
 		sym0 = None
 		
-		print self.singletons
-		
 		for sym1 in self.singletons:
 			if sym1.name == name and sym1.version == version:
 				sym0 = sym1
@@ -80,7 +78,7 @@ class SymbolTable(object):
 					self.symbols[phi.target.name] = (a0, b1)
 
 class FunSymbol(dict):
-	def __init__(self, name, version):
+	def __init__(self, name):
 		self.name = name
 	
 	def __eq__(self, other):

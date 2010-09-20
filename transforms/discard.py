@@ -5,6 +5,8 @@ Date:		2010/09/03
 Description:	Removes expressions whos values aren't stored.
 """
 
+from analysis.stats import countReads
+
 from lib import ast
 from lib import util
 
@@ -16,8 +18,13 @@ def discard(node):
 		newChildren = []
 		
 		for child in node:
-			if isinstance(child, ast.FunctionCall) or isinstance(child, ast.Statement):
+			if isinstance(child, ast.Assign):
+				if child.var.symbol['reads'] != 0:
+					newChildren.append(child)
+			
+			elif isinstance(child, ast.FunctionCall) or isinstance(child, ast.Statement):
 				newChildren.append(child)
+			
 			else:
 				newChildren.append(extractStmts(child))
 		
@@ -40,6 +47,9 @@ def discard(node):
 		return node
 	
 	elif isinstance(node, ast.Module):
+		#Count symbol reads so we can discard varaibles that are never read.
+		countReads(node)
+		
 		node.block = discard(node.block)
 		
 		return node
