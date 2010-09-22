@@ -5,34 +5,30 @@ Date:		2010/09/02
 Description:	The instruction selection code for the x86 architecture.
 """
 
+from assembler.coloring import *
 from assembler.x86.ib import *
-from assembler.x86.coloring import *
 
 from lib import ast
 
 l = Labeler()
 
-def selectInstructions(node, dest = None, stackSize = None):
+def selectInstructions(node, cf, dest = None):
 	global l
 	
-	#Make sure we aren't accidentally passing in some odd value for the desired
-	#destination.
-	if not (dest == None or isinstance(dest, Mem) or isinstance(dest, Register)):
-		raise Exception('Invalid destination.')
+	if not isinstance(node, ast.Name):
+		tmpColor = cf.getColor(node['pre-alive'], test = Register)
 	
 	if isinstance(node, ast.Assign):
 		#The destination is a name, so we need to translate it.
-		dest = selectInstructions(node.var)
+		dest = selectInstructions(node.var, cf)
 		
 		if isinstance(node.exp, ast.Name):
 			code = Block()
 			
 			#The source is a name, so we need to translate it.
-			src = selectInstructions(node.exp)
+			src = selectInstructions(node.exp, cf)
 			
 			if isinstance(src, Mem) and isinstance(dest, Mem):
-				tmpColor = node['temp-colors'][0]
-					
 				code.append(TwoOp('mov', src, tmpColor))
 				code.append(TwoOp('mov', tmpColor, dest))
 			
@@ -41,20 +37,20 @@ def selectInstructions(node, dest = None, stackSize = None):
 			
 			return code
 		elif isinstance(node.exp, ast.Integer):
-			src = selectInstructions(node.exp)
+			src = selectInstructions(node.exp, cf)
 			
 			return TwoOp('mov', src, dest)
 		else:
 			#Here the right side of the assignment is a complex expression.
 			#We will select instructions for it, giving the Symbol
 			#representing the variable's location as the destination.
-			return selectInstructions(node.exp, dest)
+			return selectInstructions(node.exp, cf, dest)
 	
 	elif isinstance(node, ast.BasicBlock):
 		code = Block()
 		
 		for child in node:
-			code.append(selectInstructions(child))
+			code.append(selectInstructions(child, cf))
 		
 		return code
 	
@@ -63,12 +59,13 @@ def selectInstructions(node, dest = None, stackSize = None):
 		
 		#The left and right operands need to be translated, but the
 		#destination is already a Symbol,
-		left = selectInstructions(node.left)
-		right = selectInstructions(node.right)
-		
-		tmpColor = node['temp-colors'][0]
+		left = selectInstructions(node.left, cf)
+		right = selectInstructions(node.right, cf)
 		
 		if isinstance(node, ast.Add):
+			#The right value is never going to be an immediate due to our
+			#constant folding transformation.
+			
 			if isinstance(left, Immediate) and left.value == 1:
 				if isinstance(dest, Mem):
 					code.append(TwoOp('mov', right, tmpColor))
@@ -77,16 +74,6 @@ def selectInstructions(node, dest = None, stackSize = None):
 				
 				else:
 					code.append(TwoOp('mov', right, dest))
-					code.append(OneOp('inc', dest))
-			
-			elif isinstance(right, Immediate) and right.value == 1:
-				if isinstance(dest, Mem):
-					code.append(TwoOp('mov', left, tmpColor))
-					code.append(OneOp('inc', tmpColor))
-					code.append(TwoOp('mov', tmpColor, dest))
-				
-				else:
-					code.append(TwoOp('mov', left, dest))
 					code.append(OneOp('inc', dest))
 			
 			else:
@@ -136,6 +123,7 @@ def selectInstructions(node, dest = None, stackSize = None):
 					code.append(TwoOp('mov', right, tmpColor))
 					code.append(TwoOp('sal', Immediate(dist), tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
+				
 				else:
 					code.append(TwoOp('mov', right, dest))
 					code.append(TwoOp('sal', Immediate(dist), dest))
@@ -144,7 +132,7 @@ def selectInstructions(node, dest = None, stackSize = None):
 				#We can shift to the left instead of multiplying.
 				dist = right.value / 2
 				
-				if isinstance(dest['color'], Mem):
+				if isinstance(dest, Mem):
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('sal', Immediate(dist), tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -154,15 +142,14 @@ def selectInstructions(node, dest = None, stackSize = None):
 					code.append(TwoOp('sal', Immediate(dist), dest))
 			
 			else:
-				if isinstance(dest['color'], Mem):
+				if isinstance(dest, Mem):
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('imul', right, tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
 				
 				else:
 					code.append(TwoOp('mov', left, dest))
-					code.append(TwoOp('mov', right, tmpColor))
-					code.append(TwoOp('imul', tmpColor, dest))
+					code.append(TwoOp('imul', right, dest))
 		
 		elif isinstance(node, ast.Sub):
 			if isinstance(right, Immediate) and right.value == 1:
@@ -183,8 +170,7 @@ def selectInstructions(node, dest = None, stackSize = None):
 				
 				else:
 					code.append(TwoOp('mov', left, dest))
-					code.append(TwoOp('mov', right, tmpColor))
-					code.append(TwoOp('sub', tmpColor, dest))
+					code.append(TwoOp('sub', right, dest))
 		
 		return code
 	
@@ -192,7 +178,7 @@ def selectInstructions(node, dest = None, stackSize = None):
 		code = Block()
 		
 		for arg in node.args:
-			src = selectInstructions(arg)
+			src = selectInstructions(arg, cf)
 			code.append(OneOp('push', src))
 		
 		code.append(OneOp('call', node.name.symbol, None))
@@ -209,9 +195,9 @@ def selectInstructions(node, dest = None, stackSize = None):
 	elif isinstance(node, ast.If):
 		if isinstance(node.cond, ast.Integer):
 			if node.cond.value != 0:
-				return selectInstructions(node.then)
+				return selectInstructions(node.then, cf)
 			else:
-				return selectInstructions(node.els)
+				return selectInstructions(node.els, cf)
 		
 		else:
 			#In this case the condition is a variable.
@@ -219,18 +205,18 @@ def selectInstructions(node, dest = None, stackSize = None):
 			elsLabel = l.nextLabel()
 			endLabel = l.nextLabel()
 			
-			cond = selectInstructions(node.cond)
+			cond = selectInstructions(node.cond, cf)
 			
 			code.append(TwoOp('cmp', Immediate(0), cond))
 			code.append(OneOp('jz', elsLabel, None))
 			
 			#Now the then case
-			code.append(selectInstructions(node.then))
+			code.append(selectInstructions(node.then, cf))
 			code.append(OneOp('jmp', endLabel, None))
 			
 			#Now the label and the else case.
 			code.append(elsLabel)
-			code.append(selectInstructions(node.els))
+			code.append(selectInstructions(node.els, cf))
 			code.append(endLabel)
 			
 			return code
@@ -250,11 +236,11 @@ def selectInstructions(node, dest = None, stackSize = None):
 		code.append(TwoOp('mov', Register('esp'), Register('ebp')))
 		
 		#Expand the stack.
-		if stackSize > 0:
-			code.append(TwoOp('sub', Immediate(stackSize), Register('esp')))
+		if cf.offset > 0:
+			code.append(TwoOp('sub', cf.offset, Register('esp')))
 		
 		#Append the module's code.
-		code.append(selectInstructions(node.block))
+		code.append(selectInstructions(node.block, cf))
 		
 		endBlock = Block()
 		#Put our exit value in %eax
@@ -277,14 +263,12 @@ def selectInstructions(node, dest = None, stackSize = None):
 	elif isinstance(node, ast.UnaryOp):
 		code = Block()
 		
-		src = selectInstructions(node.operand)
+		src = selectInstructions(node.operand, cf)
 		
 		if dest == None:
 			code.append(OneOp(node.opInstr(), src))
 		
 		else:
-			tmpColor = node['temp-colors'][0]
-			
 			if isinstance(dest, Mem):
 				code.append(TwoOp("mov", src, tmpColor))
 				code.append(OneOp(node.opInstr(), tmpColor))

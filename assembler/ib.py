@@ -8,6 +8,8 @@ Description:	General purpose classes and functions for building instructions.
 from lib import ast
 from lib import util
 
+from coloring import Color
+
 class Block(object):
 	def __init__(self, header = "\n"):
 		self.header = header
@@ -27,7 +29,8 @@ class Block(object):
 		return code
 
 	def append(self, inst):
-		self.insts.append(inst)
+		if isinstance(inst, Block) or isinstance(inst, Instruction) or isinstance(inst, Label):
+			self.insts.append(inst)
 	
 	def atEnd(self):
 		return self.pos == self.getNumInsts()
@@ -170,24 +173,36 @@ class Instruction(object):
 
 class OneOp(Instruction):
 	def __init__(self, name, operand = None, suffix = None, comment = ""):
-		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 		
 		self.operand = operand
+		
+		#~if isinstance(operand, Color):
+			#~comment = comment or "Operand: {0}".format(operand.symbol)
+		
+		self.comment = comment
 	
 	def __str__(self):
-		return self.pack("{0:5s} {1}".format(self.getOp(), str(self.operand)))
+		return self.pack("{0:5s} {1}".format(self.getOp(), self.operand))
 
 class TwoOp(Instruction):
 	def __init__(self, name, src = None, dest = None, suffix = None, comment = ""):
-		self.comment = comment
 		self.name = name
 		self.suffix = suffix
 		
 		self.src = src
 		self.dest = dest
+		
+		#~if comment == "":
+			#~if isinstance(src, Color):
+				#~comment  = "Src: {0} ".format(src.symbol)
+			#~
+			#~if isinstance(dest, Color):
+				#~comment += "Dest: {0}".format(dest.symbol)
+		
+		self.comment = comment
 	
 	def __str__(self):
-		return self.pack("{0:5} {1}, {2}".format(self.getOp(), str(self.src), str(self.dest)))
+		return self.pack("{0:5} {1}, {2}".format(self.getOp(), self.src, self.dest))
 

@@ -6,48 +6,54 @@ Description:	x86 specific coloring code and data structures.
 """
 
 from assembler.coloring import Register
-from assembler.coloring import ColorFactory as SuperColorFactory
-from assembler.coloring import Mem as SuperMem
 
 from lib.ast import *
 from lib.symbol_table import Symbol
 
-colorStrings = ['eax', 'ebx', 'ecx', 'edx', 'esi', 'edi']
-colors = [Register(r) for r in colorStrings]
+##########
+# Colors #
+##########
 
-#Symbols used for cause interference across function cals.
-alex = Symbol('alex', -1)
-alex['color'] = Register('eax')
+eax = Register('eax')
+ebx = Register('ebx')
+ecx = Register('ecx')
+edx = Register('edx')
+edi = Register('edi')
+esi = Register('esi')
+colors = [eax, ebx, ecx, edx, edi, esi]
 
-chuck = Symbol('chuck', -1)
-chuck['color'] = Register('ecx')
+########################
+# Interference Symbols #
+########################
 
-dave = Symbol('dave', -1)
-dave['color'] = Register('edx')
+interSym0 = Symbol('!INTERFERE0', -1)
+interSym0['color'] = eax
 
-jerks = set([alex, chuck, dave])
+interSym1 = Symbol('!INTERFERE1', -1)
+interSym1['color'] = ecx
 
-class ColorFactory(SuperColorFactory):
-	def __init__(self):
-		super(ColorFactory, self).__init__(4, colors)
-	
-	def makeColor(self, symbol = None):
-		return Mem(self.offset, symbol)
+interSym2 = Symbol('!INTERFERE2', -1)
+interSym2['color'] = edx
 
-class Mem(SuperMem):
-	def __str__(self):
-		return "-{0:d}(%ebp)".format(self.offset)
+interference = set([interSym0, interSym1, interSym2])
 
-def interfere(node, ig):
-	#Alex, Chuck, and Dave will be doing our interfering today.
-	global jerks
+###########################
+# ColorFactory Parameters #
+###########################
+
+wordSize = 4
+memFormatString = "-{0:d}(%ebp)"
+
+##################################
+# Architecture Specific Coloring #
+##################################
+
+def precolor(tree, ig):
+	global interference
 	
 	if isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
-			ig[sym] = ig[sym] | jerks
+			ig[sym] = ig[sym] | interference
 	
 	for child in node:
-		interfere(child, ig)
-
-def precolor(tree):
-	pass
+		precolor(child, ig)

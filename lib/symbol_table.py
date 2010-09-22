@@ -11,24 +11,22 @@ class SymbolTable(object):
 	def __init__(self, other = None):
 		if other:
 			self.symbols = other.symbols.copy()
-			self.singletons = list(other.singletons)
+			self.singletons = other.singletons.copy()
 			self.funSymbols = list(other.funSymbol)
 		else:
 			self.symbols = {}
-			self.singletons = []
+			self.singletons = {}
 			self.funSymbols = []
 	
 	def getSingleton(self, name, version):
+		pair = (name, version)
 		sym0 = None
 		
-		for sym1 in self.singletons:
-			if sym1.name == name and sym1.version == version:
-				sym0 = sym1
-				break
-		
-		if sym0 == None:
+		if self.singletons.has_key(pair):
+			sym0 = self.singletons[pair]
+		else:
 			sym0 = Symbol(name, version)
-			self.singletons.append(sym0)
+			self.singletons[pair] = sym0
 		
 		return sym0
 	

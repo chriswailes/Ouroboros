@@ -8,8 +8,7 @@ Description:	Removes redundant move operations from the generated x86_64
 
 from assembler.x86_64 import ib
 
-from assembler.x86_64.memloc import Mem
-from assembler.x86_64.registers import Register
+from assembler.coloring import Mem, Register
 
 def redundantMoves(code):
 	while (not code.atEnd()):

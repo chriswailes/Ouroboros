@@ -52,7 +52,7 @@ if config.startStage == 'python':
 		print("")
 	
 	#Run the AST transformation passes
-	#fixedpoint(tree, propigateConstants, discard, foldConstants)
+	fixedpoint(tree, propigateConstants, discard, foldConstants)
 	flatten(tree)
 	
 	if config.verbose:
@@ -75,10 +75,10 @@ if config.startStage == 'python':
 	calculateSpans(tree)
 	findRelatedAST(tree)
 	
-	stackSize = color(tree)
+	cf = color(tree)
 	
 	#Compile the AST.
-	assembly = selectInstructions(tree, stackSize)
+	assembly = selectInstructions(tree, cf)
 
 	if config.verbose:
 		#Print out the pre-assembly passes code.
@@ -86,7 +86,7 @@ if config.startStage == 'python':
 		print(assembly)
 
 	#Run the instruction passes.
-	#redundantMoves(assembly)
+	redundantMoves(assembly)
 
 	if config.verbose:
 		#Print out the post-assembly passes code.

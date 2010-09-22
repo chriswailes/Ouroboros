@@ -7,7 +7,7 @@ Description:	The actual register allocation code.
 
 from analysis.related import findRelatedAST
 
-from assembler.coloring import getColorFactory, interfere, precolor
+from assembler.coloring import ColorFactory, interfere, precolor
 
 from lib.ast import *
 
@@ -15,47 +15,32 @@ def color(program):
 	if isinstance(program, Node):
 		findRelatedAST(program)
 		
-		cf = getColorFactory()
+		cf = ColorFactory()
 		ig = buildInterferenceGraph(program)
 		
-		interfere(program, ig)
+		precolor(program, ig)
 		
 		colorAST(program, cf, ig)
 		
-		return cf.offset
+		return cf
 	else:
 		raise Exception('Coloring anything besides a tree is unsupported.')
 
-def colorAST(node, cf, ig, available = []):
-	
-	#Get a new color if none are available.
-	if len(available) == 0:
-		available.append(cf.newColor())
+def colorAST(node, cf, ig):
 	
 	#Color new symbol.
 	if isinstance(node, Assign):
-		sym = node.var.symbol
+		sym0 = node.var.symbol
 		
-		if sym['related'] != None:
-			sym['color'] = sym['related']['color']
+		if sym0['related'] == None:
+			sym0['color'] = cf.getColor(ig[sym0], sym0)
+		
 		else:
-			sym['color'] = available.pop(0)
-		
-		print("Assigned color {0} to symbol {1}.".format(sym['color'], sym))
+			sym0['color'] = sym0['related']['color']
 	
 	#Color the node's children.
 	for child in node:
-		available = colorAST(child, cf, ig, available)
-	
-	#Mark the node with colors that are available for use as temporaries.
-	node['temp-colors'] = available
-	
-	#Free colors from dead symbols.
-	for sym in node['pre-alive']:
-		if not sym in node['post-alive']:
-			available.append(sym['color'])
-	
-	return available
+		colorAST(child, cf, ig)
 
 def buildInterferenceGraph(tree):
 	symbols = tree.collectSymbols()
@@ -67,7 +52,7 @@ def buildInterferenceGraph(tree):
 	for sym0 in symbols:
 		for sym1 in symbols:
 			if sym0 != sym1:
-				if sym0['span-start'] <= sym1['span-start'] and sym0['span-end'] >= sym1['span-start']:
+				if sym0['span-start'] <= sym1['span-start'] <= sym0['span-end']:
 					ig[sym0] = ig[sym0] | set([sym1])
 					ig[sym1] = ig[sym1] | set([sym0])
 	
