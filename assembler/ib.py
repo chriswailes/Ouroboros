@@ -178,8 +178,8 @@ class OneOp(Instruction):
 		
 		self.operand = operand
 		
-		#~if isinstance(operand, Color):
-			#~comment = comment or "Operand: {0}".format(operand.symbol)
+		if operand == None:
+			raise Exception('None passed as operand to instruction.')
 		
 		self.comment = comment
 	
@@ -194,12 +194,11 @@ class TwoOp(Instruction):
 		self.src = src
 		self.dest = dest
 		
-		#~if comment == "":
-			#~if isinstance(src, Color):
-				#~comment  = "Src: {0} ".format(src.symbol)
-			#~
-			#~if isinstance(dest, Color):
-				#~comment += "Dest: {0}".format(dest.symbol)
+		if src == None:
+			raise Exception('None passed as src to instruction.')
+		
+		if dest == None:
+			raise Exception('None passes as dest to instruction.')
 		
 		self.comment = comment
 	

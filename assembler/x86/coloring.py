@@ -53,7 +53,8 @@ def precolor(node, ig):
 	
 	if isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
-			ig[sym] = ig[sym] | interference
+			if sym in node['post-alive']:
+				ig[sym] = ig[sym] | interference
 	
 	for child in node:
 		precolor(child, ig)

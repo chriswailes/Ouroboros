@@ -39,24 +39,29 @@ class ColorFactory(object):
 		allocated = set(allocated)
 		free = self.colors - allocated
 		
-		if len(free) > 0:
+		if test != None:
+			filteredFree = []
+			
+			for color in free:
+				if isinstance(color, test):
+					filteredFree.append(free)
+			
+			free = filteredFree
+		
+		else:
 			free = list(free)
+		
+		if len(free) > 0:
 			free.sort()
 			color = free[0]
 		
-		else:
+		elif test != Register:
 			color = Mem(self.offset)
 			self.offset += self.wordSize
 			
 			self.colors = self.colors | set([color])
 		
-		if test:
-			if isinstance(color, test):
-				return color
-			else:
-				return None
-		else:
-			return color
+		return color
 
 class Color(object):
 	def __repr__(self):

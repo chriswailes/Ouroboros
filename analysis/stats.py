@@ -47,11 +47,5 @@ def calculateSpans(node, count = 0, alive = {}):
 	
 	for sym in deletes:
 		del alive[sym]
-	
-	#~if isinstance(node, Module):
-		#~for sym in alive:
-			#~sym['span-start'] = alive[sym]
-			#~sym['span-end'  ] = count
-			#~sym['span'] = count - alive[sym]
 		
 	return inc
