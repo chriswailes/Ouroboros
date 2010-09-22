@@ -16,7 +16,7 @@ def selectInstructions(node, cf, dest = None):
 	global l
 	
 	if not isinstance(node, ast.Name):
-		tmpColor = cf.getColor(node['pre-alive'], test = Register)
+		tmpColor = cf.getColor(node['pre-alive'], Register)
 	
 	if isinstance(node, ast.Assign):
 		#The destination is a name, so we need to translate it.
@@ -32,7 +32,7 @@ def selectInstructions(node, cf, dest = None):
 				code.append(TwoOp('mov', src, tmpColor))
 				code.append(TwoOp('mov', tmpColor, dest))
 			
-			else:
+			elif src != dest:
 				code.append(TwoOp('mov', src, dest))
 			
 			return code
@@ -83,8 +83,15 @@ def selectInstructions(node, cf, dest = None):
 					code.append(TwoOp('mov', tmpColor, dest))
 				
 				else:
-					code.append(TwoOp('mov', left, dest))
-					code.append(TwoOp('add', right, dest))
+					if left == dest:
+						code.append(TwoOp('add', right, dest))
+					
+					elif right == dest:
+						code.append(TwoOp('add', left, dest))
+					
+					else:
+						code.append(TwoOp('mov', left, dest))
+						code.append(TwoOp('add', right, dest))
 			
 		elif isinstance(node, ast.Div):
 			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
@@ -148,8 +155,15 @@ def selectInstructions(node, cf, dest = None):
 					code.append(TwoOp('mov', tmpColor, dest))
 				
 				else:
-					code.append(TwoOp('mov', left, dest))
-					code.append(TwoOp('imul', right, dest))
+					if left == dest:
+						code.append(TwoOp('imul', right, dest))
+					
+					elif right == dest:
+						code.append(TwoOp('imul', left, dest))
+					
+					else:
+						code.append(TwoOp('mov', left, dest))
+						code.append(TwoOp('imul', right, dest))
 		
 		elif isinstance(node, ast.Sub):
 			if isinstance(right, Immediate) and right.value == 1:
@@ -169,7 +183,9 @@ def selectInstructions(node, cf, dest = None):
 					code.append(TwoOp('mov', tmpColor, dest))
 				
 				else:
-					code.append(TwoOp('mov', left, dest))
+					if left != dest:
+						code.append(TwoOp('mov', left, dest))
+					
 					code.append(TwoOp('sub', right, dest))
 		
 		return code

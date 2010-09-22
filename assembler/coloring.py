@@ -27,7 +27,7 @@ class ColorFactory(object):
 		self.colors = set(colors)
 		self.wordSize = wordSize
 	
-	def getColor(self, interference = set([]), symbol = None, test = None):
+	def getColor(self, interference = set([]), test = None):
 		color = None
 		
 		allocated = []
@@ -45,7 +45,7 @@ class ColorFactory(object):
 			color = free[0]
 		
 		else:
-			color = Mem(self.offset, symbol)
+			color = Mem(self.offset)
 			self.offset += self.wordSize
 			
 			self.colors = self.colors | set([color])
@@ -63,9 +63,8 @@ class Color(object):
 		return str(self)
 
 class Mem(Color):
-	def __init__(self, offset, symbol):
+	def __init__(self, offset):
 		self.offset = offset
-		self.symbol = symbol
 		
 		if config.arch == 'x86':
 			from x86.coloring import memFormatString
@@ -130,9 +129,8 @@ class Mem(Color):
 		return self.formatString.format(self.offset)
 
 class Register(Color):
-	def __init__(self, name, symbol = None):
+	def __init__(self, name):
 		self.name = name
-		self.symbol = symbol
 	
 	def __eq__(self, other):
 		if isinstance(other, Register):

@@ -52,7 +52,8 @@ if config.startStage == 'python':
 		print("")
 	
 	#Run the AST transformation passes
-	fixedpoint(tree, propigateConstants, discard, foldConstants)
+	#fixedpoint(tree, propigateConstants, discard, foldConstants)
+	discard(tree)
 	flatten(tree)
 	
 	if config.verbose:

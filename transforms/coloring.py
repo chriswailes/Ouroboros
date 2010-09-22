@@ -7,7 +7,7 @@ Description:	The actual register allocation code.
 
 from analysis.related import findRelatedAST
 
-from assembler.coloring import ColorFactory, interfere, precolor
+from assembler.coloring import *
 
 from lib.ast import *
 
@@ -32,11 +32,16 @@ def colorAST(node, cf, ig):
 	if isinstance(node, Assign):
 		sym0 = node.var.symbol
 		
-		if sym0['related'] == None:
-			sym0['color'] = cf.getColor(ig[sym0], sym0)
+		if sym0['related'] != None and isinstance(sym0['related']['color'], Register):
+			#If the related variable is a register we definitely want to
+			#take it.
+			sym0['color'] = sym0['related']['color']
 		
 		else:
-			sym0['color'] = sym0['related']['color']
+			#If the related symbol isn't colored with a register then there
+			#might be something better available.  If not, the related
+			#symbol's color will still fall out of the ColorFactory.
+			sym0['color'] = cf.getColor(ig[sym0])
 	
 	#Color the node's children.
 	for child in node:

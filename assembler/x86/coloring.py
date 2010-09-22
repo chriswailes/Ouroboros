@@ -48,7 +48,7 @@ memFormatString = "-{0:d}(%ebp)"
 # Architecture Specific Coloring #
 ##################################
 
-def precolor(tree, ig):
+def precolor(node, ig):
 	global interference
 	
 	if isinstance(node, FunctionCall):
