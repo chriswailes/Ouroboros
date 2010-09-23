@@ -14,7 +14,9 @@ import os
 from analysis.liveness import *
 from analysis.related import *
 from analysis.stats import *
+from analysis.weight import *
 
+from assembler import *
 from assembler.redundant_moves import redundantMoves
 from assembler.instruction_selection import selectInstructions
 
@@ -22,7 +24,7 @@ from lib import ast, util
 from lib.translate import translate
 from lib.config import config, args
 
-from transforms.coloring import color
+from transforms.coloring import color, clearColoring, spill
 from transforms.const_fold import foldConstants
 from transforms.const_prop import propigateConstants
 from transforms.discard import discard
@@ -59,7 +61,7 @@ if config.startStage == 'python':
 	if config.verbose:
 		#Print my flattened (and folded) AST
 		print(tree)
-		print("\n")
+		print('')
 		
 		#Print out the original program.
 		print("Original:")
@@ -68,18 +70,44 @@ if config.startStage == 'python':
 		#Print out the Python code for my flattened AST
 		print("Flat:")
 		print(tree.toPython())
-		print("\n")
+		print('')
 	
 	#Run the AST analysis passes
 	countReads(tree)
 	livenessAST(tree)
 	calculateSpans(tree)
-	findRelatedAST(tree)
+	#findRelatedAST(tree, ig)
+	calculateWeight(tree)
+	
+	for sym in tree.collectSymbols():
+		print "Symbol: {0} Weight: {1}".format(sym, sym['weight'])
+	
+	print('')
 	
 	cf = color(tree)
 	
-	#Compile the AST.
-	assembly = selectInstructions(tree, cf)
+	while True:
+		try:
+			#Compile the AST.
+			assembly = selectInstructions(tree, cf)
+			break
+		
+		except Spill as s:
+			
+			print("Spills: {0}".format(s.symbols))
+			
+			spill(cf, tree, s.symbols)
+			
+			for sym in tree.collectSymbols():
+				print "Symbol: {0} Color: {1}".format(sym, sym['color'])
+			
+			print('')
+			
+			color(tree)
+			
+			for sym in tree.collectSymbols():
+				print "Symbol: {0} Color: {1}".format(sym, sym['color'])
+		
 
 	if config.verbose:
 		#Print out the pre-assembly passes code.

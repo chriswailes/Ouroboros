@@ -5,8 +5,10 @@ Date:		2010/09/02
 Description:	The instruction selection code for the x86 architecture.
 """
 
+from assembler import *
 from assembler.coloring import *
 from assembler.x86.ib import *
+from assembler.x86.coloring import eax, ebp, esp, ebx, esi, edi
 
 from lib import ast
 
@@ -14,9 +16,6 @@ l = Labeler()
 
 def selectInstructions(node, cf, dest = None):
 	global l
-	
-	if not isinstance(node, ast.Name):
-		tmpColor = cf.getColor(node['pre-alive'], Register)
 	
 	if isinstance(node, ast.Assign):
 		#The destination is a name, so we need to translate it.
@@ -29,6 +28,9 @@ def selectInstructions(node, cf, dest = None):
 			src = selectInstructions(node.exp, cf)
 			
 			if isinstance(src, Mem) and isinstance(dest, Mem):
+				
+				tmpColor = getTempColor(cf, node)
+				
 				code.append(TwoOp('mov', src, tmpColor))
 				code.append(TwoOp('mov', tmpColor, dest))
 			
@@ -68,6 +70,9 @@ def selectInstructions(node, cf, dest = None):
 			
 			if isinstance(left, Immediate) and left.value == 1:
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', right, tmpColor))
 					code.append(OneOp('inc', tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -78,6 +83,9 @@ def selectInstructions(node, cf, dest = None):
 			
 			else:
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('add', right, tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -127,6 +135,9 @@ def selectInstructions(node, cf, dest = None):
 				dist = left.value / 2
 				
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', right, tmpColor))
 					code.append(TwoOp('sal', Immediate(dist), tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -140,6 +151,9 @@ def selectInstructions(node, cf, dest = None):
 				dist = right.value / 2
 				
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('sal', Immediate(dist), tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -150,6 +164,9 @@ def selectInstructions(node, cf, dest = None):
 			
 			else:
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('imul', right, tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -168,6 +185,9 @@ def selectInstructions(node, cf, dest = None):
 		elif isinstance(node, ast.Sub):
 			if isinstance(right, Immediate) and right.value == 1:
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(OneOp('dec', tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -178,6 +198,11 @@ def selectInstructions(node, cf, dest = None):
 			
 			else:
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
+					print("\nTemporary color: {0}\n".format(tmpColor))
+					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('sub', right, tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -201,10 +226,10 @@ def selectInstructions(node, cf, dest = None):
 		
 		if len(node.args) > 0:
 			size = str(len(node.args) * 4)
-			code.append(TwoOp('add', Immediate(size), Register('esp')))
+			code.append(TwoOp('add', Immediate(size), esp))
 		
 		if dest:
-			code.append(TwoOp('mov', Register('eax'), dest))
+			code.append(TwoOp('mov', eax, dest))
 
 		return code
 	
@@ -247,21 +272,34 @@ def selectInstructions(node, cf, dest = None):
 		code.header += "main:\n"
 		
 		#Push the old base pointer onto the stack.
-		code.append(OneOp('push', Register('ebp')))
+		code.append(OneOp('push', ebp))
 		#Make the old stack pointer the new base pointer.
-		code.append(TwoOp('mov', Register('esp'), Register('ebp')))
+		code.append(TwoOp('mov', esp, ebp))
+		
+		code.append(OneOp('push', ebx))
+		code.append(OneOp('push', esi))
+		code.append(OneOp('push', edi))
 		
 		#Expand the stack.
 		if cf.offset > 0:
-			code.append(TwoOp('sub', cf.offset, Register('esp')))
+			code.append(TwoOp('sub', Immediate(cf.offset), esp))
 		
 		#Append the module's code.
 		code.append(selectInstructions(node.block, cf))
 		
 		endBlock = Block()
 		#Put our exit value in %eax
-		endBlock.append(TwoOp('mov', Immediate(0), Register('eax')))
+		endBlock.append(TwoOp('mov', Immediate(0), eax))
+		
 		#Restore the stack.
+		if cf.offset > 0:
+			code.append(TwoOp('add', Immediate(cf.offset), esp))
+		
+		code.append(OneOp('pop', edi))
+		code.append(OneOp('pop', esi))
+		code.append(OneOp('pop', ebx))
+		
+		#Restore the %esp and %ebp.
 		endBlock.append(Instruction('leave'))
 		#Return
 		endBlock.append(Instruction('ret'))
@@ -286,6 +324,9 @@ def selectInstructions(node, cf, dest = None):
 		
 		else:
 			if isinstance(dest, Mem):
+				
+				tmpColor = getTempColor(cf, node)
+				
 				code.append(TwoOp("mov", src, tmpColor))
 				code.append(OneOp(node.opInstr(), tmpColor))
 				code.append(TwoOp("mov", tmpColor, dest))
@@ -295,4 +336,13 @@ def selectInstructions(node, cf, dest = None):
 				code.append(OneOp(node.opInstr(), dest))
 		
 		return code
+
+def getTempColor(cf, node):
+	tmpColor = cf.getColor(node['pre-alive'], Register)
 	
+	if tmpColor == None:
+		raise Spill(node['pre-alive'])
+	
+	else:
+		return tmpColor
+

@@ -20,12 +20,23 @@ class ColorFactory(object):
 		self.offset = 0
 		
 		if config.arch == 'x86':
-			from x86.coloring import wordSize, colors
+			from x86.coloring import colors, preIncrement, wordSize
 		elif config.arch == 'x86_64':
-			from x86_64.coloring import wordSize, colors
+			from x86_64.coloring import colors, preIncrement, wordSize
 		
 		self.colors = set(colors)
+		self.preIncrement = preIncrement
 		self.wordSize = wordSize
+	
+	def clear(self):
+		regs = []
+		
+		for color in self.colors:
+			if isinstance(color, Register):
+				regs.append(color)
+		
+		self.colors = set(regs)
+		self.offset = 0
 	
 	def getColor(self, interference = set([]), test = None):
 		color = None
@@ -42,10 +53,12 @@ class ColorFactory(object):
 		if test != None:
 			filteredFree = []
 			
-			for color in free:
-				if isinstance(color, test):
-					filteredFree.append(free)
+			for colour in free:
+				if isinstance(colour, test):
+					filteredFree.append(colour)
 			
+			print("Filtered frees:")
+			print(filteredFree)
 			free = filteredFree
 		
 		else:
@@ -56,11 +69,21 @@ class ColorFactory(object):
 			color = free[0]
 		
 		elif test != Register:
+			
+			print("Creating new color")
+			
+			if self.preIncrement:
+				self.offset += self.wordSize
+			
 			color = Mem(self.offset)
-			self.offset += self.wordSize
+			
+			if not self.preIncrement:
+				self.offset += self.wordSize
 			
 			self.colors = self.colors | set([color])
 		
+		
+		print("Returning color {0}".format(color))
 		return color
 
 class Color(object):
@@ -134,12 +157,13 @@ class Mem(Color):
 		return self.formatString.format(self.offset)
 
 class Register(Color):
-	def __init__(self, name):
+	def __init__(self, name, weight):
 		self.name = name
+		self.weight = weight
 	
 	def __eq__(self, other):
 		if isinstance(other, Register):
-			return self.name == other.name
+			return self.weight == other.weight
 		else:
 			return False
 	
@@ -148,7 +172,7 @@ class Register(Color):
 			return False
 		
 		elif isinstance(other, Register):
-			return self.name >= other.name
+			return self.weight >= other.weight
 		
 		else:
 			return False
@@ -158,7 +182,7 @@ class Register(Color):
 			return False
 		
 		elif isinstance(other, Register):
-			return self.name > other.name
+			return self.weight > other.weight
 		
 		else:
 			return False
@@ -168,7 +192,7 @@ class Register(Color):
 			return True
 		
 		elif isinstance(other, Register):
-			return self.name < other.name
+			return self.weight < other.weight
 		
 		else:
 			return False
@@ -178,14 +202,14 @@ class Register(Color):
 			return True
 		
 		elif isinstance(other, Register):
-			return self.name <= other.name
+			return self.weight <= other.weight
 		
 		else:
 			return False
 	
 	def __ne__(self, other):
 		if isinstance(other, Register):
-			return self.name != other.name
+			return self.weight != other.weight
 		else:
 			return True
 	

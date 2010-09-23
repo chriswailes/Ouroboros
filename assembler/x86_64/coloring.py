@@ -70,6 +70,7 @@ interference = set([interSym0, interSym1, interSym2, interSym3, interSym4, inter
 ###########################
 
 wordSize = 8
+preIncrement = False
 memFormatString = "{0:d}(%rsp)"
 
 ##################################

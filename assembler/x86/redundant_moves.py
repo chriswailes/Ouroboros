@@ -6,9 +6,10 @@ Description:	Removes redundant move operations from the generated x86 assembly
 			code.
 """
 
-from assembler.x86 import ib
-
 from assembler.coloring import Mem, Register
+
+from assembler.x86 import ib
+from assembler.x86.coloring import eax
 
 def redundantMoves(code):
 	while (not code.atEnd()):
@@ -26,11 +27,11 @@ def redundantMoves(code):
 				while ahead:
 					if cur.name[0] == 'j':
 						break
-					elif cur.src == Register('eax') and (ahead.name == 'mul' or ahead.name == 'imul'):
+					elif cur.src == eax and (ahead.name == 'mul' or ahead.name == 'imul'):
 						break
-					elif cur.src == Register('eax') and (ahead.name == 'div' or ahead.name == 'idiv'):
+					elif cur.src == eax and (ahead.name == 'div' or ahead.name == 'idiv'):
 						break
-					elif cur.src == Register('eax') and ahead.name == 'call':
+					elif cur.src == eax and ahead.name == 'call':
 						break
 					elif isinstance(ahead, ib.OneOp) and cur.src == ahead.operand:
 						break

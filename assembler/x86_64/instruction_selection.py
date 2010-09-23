@@ -246,7 +246,7 @@ def selectInstructions(node, cf, dest = None):
 		
 		#Expand the stack.
 		if cf.offset > 0:
-			code.append(TwoOp('sub', cf.offset, Register('rsp')))
+			code.append(TwoOp('sub', Immediate(cf.offset), Register('rsp')))
 		
 		#Append the module's code.
 		code.append(selectInstructions(node.block, cf))

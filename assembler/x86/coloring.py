@@ -14,12 +14,15 @@ from lib.symbol_table import Symbol
 # Colors #
 ##########
 
-eax = Register('eax')
-ebx = Register('ebx')
-ecx = Register('ecx')
-edx = Register('edx')
-edi = Register('edi')
-esi = Register('esi')
+ebp = Register('ebp', 2)
+esp = Register('esp', 2)
+
+eax = Register('eax', 1)
+ebx = Register('ebx', 0)
+ecx = Register('ecx', 1)
+edx = Register('edx', 1)
+edi = Register('edi', 0)
+esi = Register('esi', 0)
 colors = [eax, ebx, ecx, edx, edi, esi]
 
 ########################
@@ -42,6 +45,7 @@ interference = set([interSym0, interSym1, interSym2])
 ###########################
 
 wordSize = 4
+preIncrement = True
 memFormatString = "-{0:d}(%ebp)"
 
 ##################################
@@ -53,7 +57,7 @@ def precolor(node, ig):
 	
 	if isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
-			if sym in node['post-alive']:
+			if not sym in node['post-alive']:
 				ig[sym] = ig[sym] | interference
 	
 	for child in node:
