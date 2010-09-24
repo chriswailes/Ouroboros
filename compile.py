@@ -11,10 +11,7 @@ import compiler
 
 import os
 
-from analysis.liveness import *
-from analysis.related import *
-from analysis.stats import *
-from analysis.weight import *
+from analysis.pass_manager import *
 
 from assembler import *
 from assembler.redundant_moves import redundantMoves
@@ -24,12 +21,12 @@ from lib import ast, util
 from lib.translate import translate
 from lib.config import config, args
 
-from transforms.coloring import color, clearColoring, spill
-from transforms.const_fold import foldConstants
-from transforms.const_prop import propigateConstants
-from transforms.discard import discard
-from transforms.fixedpoint import fixedpoint
-from transforms.flatten import flatten
+#~from transforms.coloring import color, clearColoring, spill
+#~from transforms.const_fold import foldConstants
+#~from transforms.const_prop import propigateConstants
+#~from transforms.discard import discard
+#~from transforms.fixedpoint import fixedpoint
+#~from transforms.flatten import flatten
 
 if len(args) == 0:
 	print('No input files specified.')
@@ -54,8 +51,8 @@ if config.startStage == 'python':
 		print("")
 	
 	#Run the AST transformation passes
-	fixedpoint(tree, propigateConstants, discard, foldConstants)
-	flatten(tree)
+	#fixedpoint(tree, propigateConstants, discard, foldConstants)
+	#flatten(tree)
 	
 	if config.verbose:
 		#Print my flattened (and folded) AST
@@ -72,11 +69,10 @@ if config.startStage == 'python':
 		print('')
 	
 	#Run the AST analysis passes
-	countReads(tree)
-	livenessAST(tree)
-	calculateSpans(tree)
-	#findRelatedAST(tree, ig)
-	calculateWeight(tree)
+	
+	print findReqs('reads')
+	
+	exit(0)
 	
 	spillSets = []
 	

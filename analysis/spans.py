@@ -1,23 +1,21 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
 Project:		CSCI 5525 HW1
-Date:		2010/09/018
-Description:	Basic statistical anlysis methods.
+Date:		2010/09/18
+Description:	Counts the span of each symbol.
 """
 
 from lib.ast import *
 
-def countReads(node):
-	for child in node:
-		countReads(child)
-	
-	if isinstance(node, Assign):
-		node.var.symbol['reads'] = 0
-	
-	elif isinstance(node, Name):
-		node.symbol['reads'] += 1
+args		= []
+prereqs	= ['liveness']
+result	= None
 
-def calculateSpans(node, count = 0, alive = {}):
+def init():
+	from analysis.pass_manager import register
+	register('spans', spans, args, prereqs, result)
+
+def spans(node, count = 0, alive = {}):
 	inc = 1
 	startCount = count
 	

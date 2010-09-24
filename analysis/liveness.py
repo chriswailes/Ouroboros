@@ -7,7 +7,15 @@ Description:	Determines the liveness of varaibles at every node in the AST.
 
 from lib.ast import *
 
-def livenessAST(node, alive = []):
+args		= []
+prereqs	= ['reads']
+result	= None
+
+def init():
+	from analysis.pass_manager import register
+	register('liveness', liveness, args, prereqs, result)
+
+def liveness(node, alive = []):
 	node['pre-alive'] = set(alive)
 	
 	if isinstance(node, Assign):
@@ -30,35 +38,3 @@ def livenessAST(node, alive = []):
 			livenessAST(child, alive)
 	
 	node['post-alive'] = set(alive)
-
-
-def livenessAssembly(block):
-	index = block.getNumInsts()
-	indexes = range(0,index)
-	indexes.reverse()
-	
-	alive = set([])
-	
-	for index in indexes:
-		inst = block.getInst(index)
-		
-		inst.post_alive = alive
-		
-		reads = None
-		writes = None
-		
-		if isinstance(inst, OneOp):
-			reads = set([inst.dest])
-		
-		elif isinstance(inst, TwoOp):
-			if inst.name == 'mov':
-				reads = set([inst.src])
-				writes = set([inst.dest])
-			
-			else:
-				reads = set([inst.src, inst.dest])
-				writes = set([inst.dest])
-		
-		alive = (alive - writes) | reads
-		
-		inst.pre_alive = alive

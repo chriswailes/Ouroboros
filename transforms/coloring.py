@@ -27,22 +27,6 @@ def color(program):
 	else:
 		raise Exception('Coloring anything besides a tree is unsupported.')
 
-def buildInterferenceGraph(tree):
-	symbols = tree.collectSymbols()
-	ig = {}
-	
-	for sym0 in symbols:
-		ig[sym0] = set([])
-	
-	for sym0 in symbols:
-		for sym1 in symbols:
-			if sym0 != sym1:
-				if sym0['span-start'] <= sym1['span-start'] <= sym0['span-end']:
-					ig[sym0] = ig[sym0] | set([sym1])
-					ig[sym1] = ig[sym1] | set([sym0])
-	
-	return ig
-
 def calculateMaxConstraint(chain, ig):
 	constraints = set([])
 	

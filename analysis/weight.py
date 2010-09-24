@@ -7,7 +7,15 @@ Description:	An analysis that calculates the weight of each symbol.
 
 from lib.ast import *
 
-def calculateWeight(node, depth = 0.0):
+args		= []
+prereqs	= ['reads', 'spans']
+result	= None
+
+def init():
+	from analysis.pass_manager import register
+	register('weight', weight, args, prereqs, result)
+
+def weight(node, depth = 0.0):
 	
 	if isinstance(node, Assign):
 		sym = node.var.symbol
