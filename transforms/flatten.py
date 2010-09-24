@@ -16,85 +16,42 @@ def init():
 	register('flatten', flatten, analysis, args)
 
 def flatten(node, st = None, inplace = False):
+	newChildren	= []
+	newInPlace	= False
+	preStmts		= []
+	ret			= node
+	
 	if isinstance(node, Assign):
-		preStmts, node.exp = flatten(node.exp, st, True)
-		
-		return preStmts, node
+		newInPlace = True
 	
 	elif isinstance(node, BasicBlock):
-		newChildren = []
+		st = node.st
+		newInPlace = True
+	
+	for child in node:
+		childPreStmts, newChild = flatten(child, st, newInPlace)
 		
-		for child in node:
-			preChildren, newChild = flatten(child, node.st, True)
-			
-			newChildren.append(preChildren)
+		if isinstance(node, BasicBlock):
+			newChildren.append(childPreStmts)
 			newChildren.append(newChild)
 		
-		node.children = util.flatten(newChildren)
-		
-		return [], node
-	
-	elif isinstance(node, BinOp):
-		leftPreStmts, node.left = flatten(node.left, st)
-		rightPreStmts, node.right = flatten(node.right, st)
-		
-		preStmts = util.flatten([leftPreStmts, rightPreStmts])
-		
-		if inplace:
-			return preStmts, node
 		else:
-			var = Name(st.getSymbol(assign = True))
-			preStmts.append(Assign(var, node))
-			return preStmts, var
+			preStmts.append(childPreStmts)
+			newChildren.append(newChild)
 	
-	elif isinstance(node, FunctionCall):
-		preStmts = []
-		newArgs = []
-		
-		for arg in node.args:
-			tmpPreStmts, newArg = flatten(arg, st)
-			
-			preStmts.append(tmpPreStmts)
-			newArgs.append(newArg)
-		
-		preStmts = util.flatten(preStmts)
-		node.args = newArgs
-		
-		if inplace:
-			return preStmts, node
-		else:
-			var = Name(st.getSymbol(assign = True))
-			preStmts.append(Assign(var, node))
-			return preStmts, var
+	#Flatten our collections.
+	newChildren = util.flatten(newChildren)
+	preStmts = util.flatten(preStmts)
 	
-	elif isinstance(node, If):
-		preNodes, node.cond = flatten(node.cond, st)
-		
-		#These two nodes are BasicBlocks and will supply their own VFiles
-		discard, node.then = flatten(node.then)
-		discard, node.els = flatten(node.els)
-		
-		return preNodes, node
+	#Set our children.
+	node.setChildren(newChildren)
 	
-	elif isinstance(node, Integer):
-		return [], node
+	if (isinstance(node, UnaryOp) or isinstance(node, BinOp) or isinstance(node, FunctionCall)) and not inplace:
+		ret = Name(st.getSymbol(assign = True))
+		preStmts.append(Assign(ret, node))
 	
-	elif isinstance(node, Module):
-		#The BasicBlock will have its own VFile.
-		discard, node.block = flatten(node.block)
-		
-		return node
+	if isinstance(node, Module):
+		return ret
 	
-	elif isinstance(node, Name):
-		return [], node
-	
-	elif isinstance(node, UnaryOp):
-		preStmts, node.operand = flatten(node.operand, st)
-		
-		if inplace:
-			return util.flatten(preStmts), node
-		else:
-			var = Name(st.getSymbol(assign = True))
-			preStmts.append(Assign(var, node))
-			return util.flatten(preStmts), var
-
+	else:
+		return preStmts, ret

@@ -55,6 +55,7 @@ if config.startStage == 'python':
 	#loop below.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
 	runTransform(tree, 'flatten')
+	cf = runTransform(tree, 'color', {'cf':None})
 	
 	if config.verbose:
 		#Print my flattened (and folded) AST
@@ -78,14 +79,17 @@ if config.startStage == 'python':
 	while True:
 		try:
 			#Compile the AST.
-			cf = runTransform(tree, 'color')
 			assembly = selectInstructions(tree, cf)
 			break
 		
 		except Spill as s:
+			if config.verbose:
+				print("Caught a spill.")
+			
 			spillSets.append(s.symbols)
 			
-			runTransform(tree, 'spill', {'spillSets':spillSets})
+			cf = runTransform(tree, 'spill', {'spillSets':spillSets})
+			runTransform(tree, 'color', {'cf':cf})
 
 	"""
 	if config.verbose:

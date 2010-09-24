@@ -15,21 +15,7 @@ def init():
 	register('const_fold', foldConstants, analysis, args)
 
 def foldConstants(node):
-	if isinstance(node, Assign):
-		node.exp = foldConstants(node.exp)
-		
-		return node
-	
-	elif isinstance(node, BasicBlock):
-		newChildren = []
-		
-		for child in node:
-			newChildren.append(foldConstants(child))
-		
-		node.children = newChildren
-		return node
-	
-	elif isinstance(node, BinOp):
+	if isinstance(node, BinOp):
 		#Fold the left and right operands.
 		node.left = foldConstants(node.left)
 		node.right = foldConstants(node.right)
@@ -72,36 +58,6 @@ def foldConstants(node):
 					
 					elif isinstance(node.right, Sub):
 						node = Add(Integer(value), node.right.right)
-		
-		return node
-	
-	elif isinstance(node, FunctionCall):
-		newArgs = []
-		
-		for arg in node.args:
-			newArgs.append(foldConstants(arg))
-		
-		node.args = newArgs
-		
-		return node
-	
-	elif isinstance(node, If):
-		node.cond = foldConstants(node.cond)
-		node.then = foldConstants(node.then)
-		node.els  = foldConstants(node.els )
-		
-		return node
-	
-	elif isinstance(node, Integer):
-		return node
-	
-	elif isinstance(node, Module):
-		node.block = foldConstants(node.block)
-		
-		return node
-	
-	elif isinstance(node, Name):
-		return node
 	
 	elif isinstance(node, Negate):
 		node.operand = foldConstants(node.operand)
@@ -110,17 +66,14 @@ def foldConstants(node):
 			op = node.operand
 			if isinstance(op.left, Negate) or isinstance(op.right, Negate):
 				newNode = Add(Negate(op.left), Negate(op.right))
-				return foldConstants(newNode)
-			
-			else:
-				return node
+				node = foldConstants(newNode)
 		
 		elif isinstance(node.operand, Integer):
 			value = eval("-{0}".format(node.operand.value))
-			return Integer(value)
+			node = Integer(value)
 		
 		elif isinstance(node.operand, Negate):
-			return foldConstants(node.operand.operand)
+			node = foldConstants(node.operand.operand)
 		
 		elif isinstance(node.operand, Sub):
 			op = node.operand
@@ -130,10 +83,14 @@ def foldConstants(node):
 			
 			if cond:
 				newNode = Sub(Negate(op.left), Negate(op.right))
-				return foldConstants(newNode)
-			
-			else:
-				return node
+				node = foldConstants(newNode)
+	
+	else:
+		newChildren = []
 		
-		else:
-			return node
+		for child in node:
+			newChildren.append(foldConstants(child))
+		
+		node.setChildren(newChildren)
+	
+	return node

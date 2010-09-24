@@ -10,7 +10,7 @@ from assembler.coloring import *
 from lib.ast import *
 
 analysis0	= ['interference', 'related', 'chains']
-args0	= ['ig', 'chains']
+args0	= ['ig', 'chains', 'cf']
 
 analysis1	= ['interference', 'related', 'weight']
 args1	= ['spillSets', 'ig']
@@ -24,8 +24,8 @@ def init():
 # Main Functions #
 ##################
 
-def color(tree, ig, chains):
-	cf = ColorFactory()
+def color(tree, ig, chains, cf = None):
+	cf = cf or ColorFactory()
 	
 	precolor(tree, ig)
 	colorPrime(tree, cf, ig, chains)
@@ -50,6 +50,8 @@ def spill(tree, spillSets, ig):
 		
 		kick['color'] = cf.getColor(ig[kick], Mem)
 		kicks.append(kick)
+	
+	return cf
 
 ####################
 # Helper Functions #
@@ -57,14 +59,14 @@ def spill(tree, spillSets, ig):
 
 def clearColoring(tree, cf, ig):
 	for sym in tree.collectSymbols():
-		sym['color'] = None
+		del sym['color']
 
 def colorPrime(node, cf, ig, chains):
 	#Color new symbol.
 	if isinstance(node, Assign):
 		sym = node.var.symbol
 		
-		if not sym.has_key('color') or sym['color'] in symsToColors(ig[sym]) or sym['color'] == None:
+		if not sym.has_key('color') or sym['color'] in symsToColors(ig[sym]):
 			#If the related symbol isn't colored with a register then there
 			#might be something better available.  If not, the related
 			#symbol's color will still fall out of the ColorFactory.

@@ -16,10 +16,7 @@ def init():
 	register('discard', discard, analysis, args)
 
 def discard(node):
-	if isinstance(node, ast.Assign):
-		return node
-	
-	elif isinstance(node, ast.BasicBlock):
+	if isinstance(node, ast.BasicBlock):
 		newChildren = []
 		
 		for child in node:
@@ -34,33 +31,12 @@ def discard(node):
 				newChildren.append(extractStmts(child))
 		
 		node.children = util.flatten(newChildren)
-		return node
-			
-	elif isinstance(node, ast.BinOp):
-		return node
 	
-	elif isinstance(node, ast.FunctionCall):
-		return node
+	else:
+		for child in node:
+			discard(child)
 	
-	elif isinstance(node, ast.If):
-		node.then = discard(node.then)
-		node.els = discard(node.els)
-		
-		return node
-	
-	elif isinstance(node, ast.Integer):
-		return node
-	
-	elif isinstance(node, ast.Module):
-		node.block = discard(node.block)
-		
-		return node
-	
-	elif isinstance(node, ast.Name):
-		return node
-	
-	elif isinstance(node, ast.UnaryOp):
-		return node
+	return node
 
 def extractStmts(exp):
 	if isinstance(exp, ast.BinOp):

@@ -45,13 +45,8 @@ def runPasses(ps, tree):
 		toRun = None
 		toRunName = ''
 		
-		print("Running a pass.")
-		print(run)
-		print(remaining)
-		
 		for tmp in remaining:
 			if len(passes[tmp].prereqs - run) == 0:
-				print("Running pass {0}".format(tmp))
 				toRun = passes[tmp]
 				toRunName = tmp
 				break
@@ -71,11 +66,6 @@ def runPasses(ps, tree):
 		
 		remaining = remaining - set([toRunName])
 		run = run | set([toRunName])
-		
-		print("Finnished running a pass.")
-		print(run)
-		print(remaining)
-		#exit(0)
 	
 	return results
 

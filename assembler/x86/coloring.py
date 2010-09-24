@@ -5,7 +5,7 @@ Date:		2010/09/20
 Description:	x86 specific coloring code and data structures.
 """
 
-from assembler.coloring import Register, CALLEE, CALLER, NOUSE
+from assembler.coloring import Register
 
 from lib.ast import *
 from lib.symbol_table import Symbol
@@ -14,15 +14,18 @@ from lib.symbol_table import Symbol
 # Colors #
 ##########
 
-ebp = Register('ebp', NOUSE)
-esp = Register('esp', NOUSE)
+ebp = Register('ebp', 2)
+esp = Register('esp', 2)
 
-eax = Register('eax', CALLER)
-ebx = Register('ebx', CALLEE)
-ecx = Register('ecx', CALLER)
-edx = Register('edx', CALLER)
-edi = Register('edi', CALLEE)
-esi = Register('esi', CALLEE)
+eax = Register('eax', 1)
+ebx = Register('ebx', 0)
+ecx = Register('ecx', 1)
+edx = Register('edx', 1)
+edi = Register('edi', 0)
+esi = Register('esi', 0)
+
+callee = [ebx, edi, esi]
+caller = [eax, ecx, edx]
 colors = [eax, ebx, ecx, edx, edi, esi]
 
 ########################
@@ -58,7 +61,7 @@ def precolor(node, ig):
 	if isinstance(node, Assign):
 		sym = node.var.symbol
 		
-		if isinstance(node.exp, FunctionCall):
+		if isinstance(node.exp, FunctionCall) and not sym.has_key('color'):
 			#Here we will pre-color the variable with %eax.  If another
 			#function call interferes with the variable the pre-color will be
 			#discarded and a new one will be selected.

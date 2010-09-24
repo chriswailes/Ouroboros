@@ -7,10 +7,6 @@ Description:	Generic assembler coloring classes and functions.
 
 from lib.config import config
 
-CALLEE = 0
-CALLER = 1
-NOUSE  = 2
-
 def precolor(tree, ig):
 	if config.arch == 'x86':
 		from x86.coloring import precolor
@@ -176,7 +172,7 @@ class Register(Color):
 			return False
 		
 		elif isinstance(other, Register):
-			return self.weight >= other.weight and self.name >= other.name
+			return self.weight >= other.weight or self.name >= other.name
 		
 		else:
 			return False
@@ -186,17 +182,7 @@ class Register(Color):
 			return False
 		
 		elif isinstance(other, Register):
-			return self.weight > other.weight and self.name > other.name
-		
-		else:
-			return False
-	
-	def __lt__(self, other):
-		if isinstance(other, Mem):
-			return True
-		
-		elif isinstance(other, Register):
-			return self.weight < other.weight and self.name == other.name
+			return self.weight > other.weight or self.name > other.name
 		
 		else:
 			return False
@@ -206,7 +192,17 @@ class Register(Color):
 			return True
 		
 		elif isinstance(other, Register):
-			return self.weight <= other.weight and self.name <= other.name
+			return self.weight <= other.weight or self.name <= other.name
+		
+		else:
+			return False
+	
+	def __lt__(self, other):
+		if isinstance(other, Mem):
+			return True
+		
+		elif isinstance(other, Register):
+			return self.weight < other.weight or self.name < other.name
 		
 		else:
 			return False
