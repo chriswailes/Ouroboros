@@ -77,14 +77,10 @@ def colorAST(node, cf, ig, chains):
 				color = None
 				
 				if sym.has_key('related') and sym['related'] != None:
-					print("{0} is related to {1}".format(sym, sym['related']))
-					
 					color = cf.getColor(calculateMaxConstraint(chains[sym], ig), Register, 0)
 					
 					if color == None:
 						color = cf.getColor(ig[sym])
-					else:
-						print("Found color ({0}) for {1} using maximum constraint.".format(color, sym))
 					
 					sym['color'] = color
 				

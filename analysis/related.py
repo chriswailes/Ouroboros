@@ -16,7 +16,6 @@ def findRelated(node, ig):
 			sym1 = node.exp.symbol
 			
 			if not sym1 in node['post-alive']:
-				print("Marking {0} as related to {1}".format(sym0, sym1))
 				sym0['related'] = sym1
 		
 		elif isinstance(node.exp, BinOp):
@@ -29,14 +28,12 @@ def findRelated(node, ig):
 				sym1 = node.exp.right.symbol
 			
 			if sym1 and not sym1 in node['post-alive']:
-				print("Marking {0} as related to {1}".format(sym0, sym1))
 				sym0['related'] = sym1
 		
 		elif isinstance(node.exp, UnaryOp) and isinstance(node.exp.operand, Name):
 			sym1 = node.exp.operand.symbol
 			
 			if not sym1 in node['post-alive']:
-				print("Marking {0} as related to {1}".format(sym0, sym1))
 				sym0['related'] = sym1
 	
 	for child in node:
@@ -62,10 +59,6 @@ def findRelationshipChains(tree):
 	for chain in chains:
 		for sym in chain:
 			chainDict[sym] = chain
-	
-	print("Relationship Chains:")
-	for sym in chainDict:
-		print("\t{0} -> {1}".format(sym, chainDict[sym]))
 	
 	return chainDict
 			
