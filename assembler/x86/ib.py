@@ -20,3 +20,15 @@ class TwoOp(ib.TwoOp):
 			raise Exception("Both operands are memory locations.")
 		
 		super(TwoOp, self).__init__(name, src, dest, suffix, comment)
+
+def restoreRegs(code, regs, inUse):
+	regs.reverse()
+	
+	for reg in regs:
+		if reg in inUse:
+			code.append(OneOp('pop', reg))
+
+def saveRegs(code, regs, inUse):
+	for reg in regs:
+		if reg in inUse:
+			code.append(OneOp('push', reg))

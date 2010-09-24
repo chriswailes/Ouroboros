@@ -26,7 +26,7 @@ runtime-static:
 
 .PHONY: stats
 stats:
-	wc -w `find . -name \*.py`
+	wc -l `find . -name \*.py`
 
 .PHONY: clean
 clean:

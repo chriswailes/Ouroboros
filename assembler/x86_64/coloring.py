@@ -14,23 +14,28 @@ from lib.symbol_table import Symbol
 # Colors #
 ##########
 
-rax = Register('rax')
-rbx = Register('rbx')
-rcx = Register('rcx')
-rdx = Register('rdx')
-rdi = Register('rdi')
-rsi = Register('rsi')
-rbp = Register('rbp')
-r8  = Register('r8' )
-r9  = Register('r9' )
-r10 = Register('r10')
-r11 = Register('r11')
-r12 = Register('r12')
-r13 = Register('r13')
-r14 = Register('r14')
-r15 = Register('r15')
-colors = [rax, rbx, rcx, rdx, rdi, rsi, rbp, r8, r9, r10, r11, r12, r13, r14, r15]
+rsp = Register('rsp', 2)
+
+rax = Register('rax', 1)
+rbx = Register('rbx', 0)
+rcx = Register('rcx', 0)
+rdx = Register('rdx', 0)
+rdi = Register('rdi', 0)
+rsi = Register('rsi', 0)
+rbp = Register('rbp', 1)
+r8  = Register('r8',  0)
+r9  = Register('r9',  0)
+r10 = Register('r10', 0)
+r11 = Register('r11', 0)
+r12 = Register('r12', 1)
+r13 = Register('r13', 1)
+r14 = Register('r14', 1)
+r15 = Register('r15', 1)
+
+callee = [rbx, rbp, r12, r13, r14, r15]
+caller = [rax, rcx, rdx, rdi, rsi, r8, r9, r10, r11]
 args   = [rdi, rsi, rdx, rcx, r8, r9]
+colors = [rax, rbx, rcx, rdx, rdi, rsi, rbp, r8, r9, r10, r11, r12, r13, r14, r15]
 
 ########################
 # Interference Symbols #
@@ -77,22 +82,39 @@ memFormatString = "{0:d}(%rsp)"
 # Architecture Specific Coloring #
 ##################################
 
-def precolor(tree, ig):
+def precolor(node, ig):
 	global args, interference
 	
-	if isinstance(node, FunctionCall):
+	if isinstance(node, Assign):
+		sym = node.var.symbol
+		
+		if isinstance(node.exp, FunctionCall) and not sym.has_key('color'):
+			#Here we will pre-color the variable with %rax.  If another
+			#function call interferes with the variable the pre-color will
+			#be discarded and a new one will be selected.
+			sym['color'] = rax
+		
+		else:
+			precolor(node.exp, ig)
+	
+	elif isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
-			ig[sym] = ig[sym] | interference
+			if sym in node['post-alive']:
+				ig[sym] = ig[sym] | interference
 		
 		index = 0
-		for sym in node.args:
-			if not sym in node['post-alive']:
-				sym['color'] = args[index]
+		for arg in node.args:
+			if isinstance(arg, Name):
+				sym = arg.symbol
+				if not (sym.has_key('color') or sym in node['post-alive']):
+					sym['color'] = args[index]
 			
 			index += 1
 			
 			if index == len(args):
 				break
 	
-	for child in node:
-		precolor(child, ig)
+	else:
+		for child in node:
+			precolor(child, ig)
+

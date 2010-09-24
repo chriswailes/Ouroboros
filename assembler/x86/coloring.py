@@ -63,8 +63,8 @@ def precolor(node, ig):
 		
 		if isinstance(node.exp, FunctionCall) and not sym.has_key('color'):
 			#Here we will pre-color the variable with %eax.  If another
-			#function call interferes with the variable the pre-color will be
-			#discarded and a new one will be selected.
+			#function call interferes with the variable the pre-color will
+			#be discarded and a new one will be selected.
 			sym['color'] = eax
 		
 		else:
@@ -78,3 +78,4 @@ def precolor(node, ig):
 	else:
 		for child in node:
 			precolor(child, ig)
+

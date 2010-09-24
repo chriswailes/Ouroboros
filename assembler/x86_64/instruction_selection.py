@@ -5,23 +5,22 @@ Date:		2010/09/02
 Description:	The instruction selection code for the x86 architecture.
 """
 
-from assembler.x86_64.memloc import *
-from assembler.x86_64.registers import *
+from assembler import *
+from assembler.coloring import *
 from assembler.x86_64.ib import *
+from assembler.x86_64.coloring import rax, rsp, args, callee, caller
 
 from lib import ast
+
+from transforms.coloring import symsToColors
 
 l = Labeler()
 
 def selectInstructions(node, cf, dest = None):
 	global l
 	
-	if not isinstance(node, ast.Name):
-		tmpColor = cf.getColor(node['pre-alive'], test = Register)
-	
 	if isinstance(node, ast.Assign):
-		#The destination is going to be a name, so we need to translate it
-		#into a Mem object.
+		#The destination is a name, so we need to translate it.
 		dest = selectInstructions(node.var, cf)
 		
 		if isinstance(node.exp, ast.Name):
@@ -31,10 +30,13 @@ def selectInstructions(node, cf, dest = None):
 			src = selectInstructions(node.exp, cf)
 			
 			if isinstance(src, Mem) and isinstance(dest, Mem):
+				
+				tmpColor = getTempColor(cf, node)
+				
 				code.append(TwoOp("mov", src, tmpColor))
 				code.append(TwoOp("mov", tmpColor, dest))
 			
-			else:
+			elif src != dest:
 				code.append(TwoOp('mov', src, dest))
 			
 			return code
@@ -44,7 +46,7 @@ def selectInstructions(node, cf, dest = None):
 			return TwoOp("mov", src, dest)
 		else:
 			#Here the right side of the assignment is a complex expression.
-			#We will select instructions for it, giving the Mem object
+			#We will select instructions for it, giving the Symbol
 			#representing the variable's location as the destination.
 			return selectInstructions(node.exp, cf, dest)
 	
@@ -60,9 +62,9 @@ def selectInstructions(node, cf, dest = None):
 		code = Block()
 		
 		#The left and right operands need to be translated, but the
-		#destination is already a Mem object or a register.
-		left = selectInstructions(node.left)
-		right = selectInstructions(node.right)
+		#destination is already a Symbol,
+		left = selectInstructions(node.left, cf)
+		right = selectInstructions(node.right, cf)
 		
 		if isinstance(node, ast.Add):
 			#The right value is never going to be an immediate due to our
@@ -70,18 +72,32 @@ def selectInstructions(node, cf, dest = None):
 			
 			if isinstance(left, Immediate) and left.value == 1:
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', right, tmpColor))
 					code.append(OneOp('inc', tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
+				
 				else:
 					code.append(TwoOp('mov', right, dest))
 					code.append(OneOp('inc', dest))
 			
 			else:
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('add', right, tmpColor))
 					code.append(TwoOp('mov', reg, dest))
+				
+				elif left == dest:
+					code.append(TwoOp('add', right, dest))
+					
+				elif right == dest:
+					code.append(TwoOp('add', left, dest))
+				
 				else:
 					code.append(TwoOp('mov', left, dest))
 					code.append(TwoOp('add', right, dest))
@@ -128,6 +144,9 @@ def selectInstructions(node, cf, dest = None):
 				dist = left.value / 2
 				
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', right, tmpColor))
 					code.append(TwoOp('sal', Immediate(dist), tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -141,6 +160,9 @@ def selectInstructions(node, cf, dest = None):
 				dist = right.value / 2
 				
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('sal', Immediate(dist), tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -155,6 +177,12 @@ def selectInstructions(node, cf, dest = None):
 					code.append(TwoOp('imul', right, tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
 				
+				elif left == dest:
+					code.append(TwoOp('imul', right, dest))
+				
+				elif right == dest:
+					code.append(TwoOp('imul', left, dest))
+				
 				else:
 					code.append(TwoOp('mov', left, dest))
 					code.append(TwoOp('imul', right, dest))
@@ -162,6 +190,9 @@ def selectInstructions(node, cf, dest = None):
 		elif isinstance(node, ast.Sub):
 			if isinstance(right, Immediate) and right.value == 1:
 				if isinstance(dest, Mem):
+					
+					tmpColor = getTempColor(cf, node)
+					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(OneOp('dec', tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
@@ -170,40 +201,63 @@ def selectInstructions(node, cf, dest = None):
 					code.append(TwoOp('mov', left, dest))
 					code.append(OneOp('dec', dest))
 			
-			else:
-				if isinstance(dest, Mem):
-					code.append(TwoOp('mov', left, tmpColor))
-					code.append(TwoOp('sub', right, tmpColor))
-					code.append(TwoOp('mov', tmpColor, dest))
+			elif isinstance(dest, Mem):
+					
+				tmpColor = getTempColor(cf, node)
 				
-				else:
+				code.append(TwoOp('mov', left, tmpColor))
+				code.append(TwoOp('sub', right, tmpColor))
+				code.append(TwoOp('mov', tmpColor, dest))
+			
+			else:
+				if dest and left != dest:
 					code.append(TwoOp('mov', left, dest))
-					code.append(TwoOp('sub', right, dest))
+				
+				code.append(TwoOp('sub', right, dest))
 		
 		return code
 	
 	elif isinstance(node, ast.FunctionCall):
 		code = Block()
 		
+		usedColors = symsToColors(node['pre-alive'])
+		
+		#Save any caller saved registers currently in use.
+		saveRegs(code, caller, usedColors)
+		
+		#Either move our arguments into their registers, or push them onto
+		#the stack.
+		addSize = 0
+		index = 0
 		for arg in node.args:
-			reg = r.nextArgReg()
-			src = selectInstructions(arg)
+			src = selectInstructions(arg, cf)
 			
-			if reg:
+			reg = None
+			if index < len(args):
+				reg = args[index]
+			
+			if reg != src:
 				code.append(TwoOp("mov", src, reg))
-			else:
+			
+			elif not reg:
 				code.append(OneOp("push", src))
+				addSize += 8
+			
+			index += 1
 		
-		code.append(OneOp("call", node.name.name, None))
+		#Make the function call.
+		code.append(OneOp("call", node.name.symbol, None))
 		
-		if len(node.args) > 4:
-			size = str((len(node.args) - 4) * 4)
-			code.append(TwoOp("add", Immediate(size), "rsp"))
+		#Restore the stack.
+		if addSize > 0:
+			code.append(TwoOp("add", Immediate(addSize), rsp))
 		
-		if dest:
-			code.append(TwoOp("mov", Register("rax"), dest))
+		#Restore any caller saved registers that are in use.
+		restoreRegs(code, caller, usedColors)
 		
-		r.freeArgRegs()
+		#Move the result into the proper destination.
+		if dest and dest != rax:
+			code.append(TwoOp('mov', rax, dest))
 		
 		return code
 	
@@ -244,6 +298,11 @@ def selectInstructions(node, cf, dest = None):
 		code.header += ".globl main\n"
 		code.header += "main:\n"
 		
+		usedColors = symsToColors(node.collectSymbols())
+		
+		#Save any callee saved registers we used.
+		saveRegs(code, callee, usedColors)
+		
 		#Expand the stack.
 		if cf.offset > 0:
 			code.append(TwoOp('sub', Immediate(cf.offset), Register('rsp')))
@@ -252,8 +311,12 @@ def selectInstructions(node, cf, dest = None):
 		code.append(selectInstructions(node.block, cf))
 		
 		endBlock = Block()
+		
+		#Restore any callee saved registers we used.
+		restoreRegs(code, callee, usedColors)
+		
 		#Put our exit value in %rax
-		endBlock.append(TwoOp("mov", Immediate(0), Register("rax")))
+		endBlock.append(TwoOp('mov', Immediate(0), rax))
 		#Return
 		endBlock.append(Instruction("ret"))
 
@@ -277,16 +340,27 @@ def selectInstructions(node, cf, dest = None):
 		
 		else:
 			if isinstance(dest, Mem):
-				reg = r.alloc()
 				
-				code.append(TwoOp("mov", src, tmpColor))
+				tmpColor = getTempColor(cf, node)
+				
+				code.append(TwoOp('mov', src, tmpColor))
 				code.append(OneOp(node.opInstr(), tmpColor))
-				code.append(TwoOp("mov", tmpColor, dest))
-				
-				r.free(reg)
+				code.append(TwoOp('mov', tmpColor, dest))
+			
 			else:
-				code.append(TwoOp("mov", src, dest))
+				if dest and src != dest:
+					code.append(TwoOp('mov', src, dest))
+				
 				code.append(OneOp(node.opInstr(), dest))
 		
 		return code
+
+def getTempColor(cf, node):
+	tmpColor = cf.getColor(node['pre-alive'], Register)
 	
+	if tmpColor == None:
+		raise Spill(node['pre-alive'])
+	
+	else:
+		return tmpColor
+

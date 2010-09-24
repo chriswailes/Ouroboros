@@ -21,13 +21,6 @@ from lib.config import config, args
 
 from transforms.pass_manager import runTransform
 
-#~from transforms.coloring import color, clearColoring, spill
-#~from transforms.const_fold import foldConstants
-#~from transforms.const_prop import propigateConstants
-#~from transforms.discard import discard
-#~from transforms.fixedpoint import fixedpoint
-#~from transforms.flatten import flatten
-
 if len(args) == 0:
 	print('No input files specified.')
 	exit(0)
