@@ -7,6 +7,10 @@ Description:	Generic assembler coloring classes and functions.
 
 from lib.config import config
 
+CALLEE = 0
+CALLER = 1
+NOUSE  = 2
+
 def precolor(tree, ig):
 	if config.arch == 'x86':
 		from x86.coloring import precolor
@@ -38,7 +42,7 @@ class ColorFactory(object):
 		self.colors = set(regs)
 		self.offset = 0
 	
-	def getColor(self, interference = set([]), test = None):
+	def getColor(self, interference = set([]), test = None, maxWeight = 1):
 		color = None
 		
 		allocated = []
@@ -55,10 +59,13 @@ class ColorFactory(object):
 			
 			for colour in free:
 				if isinstance(colour, test):
-					filteredFree.append(colour)
+					if test == Register:
+						if colour.weight <= maxWeight:
+							filteredFree.append(colour)
+					
+					else:
+						filteredFree.append(colour)
 			
-			print("Filtered frees:")
-			print(filteredFree)
 			free = filteredFree
 		
 		else:
@@ -69,8 +76,6 @@ class ColorFactory(object):
 			color = free[0]
 		
 		elif test != Register:
-			
-			print("Creating new color")
 			
 			if self.preIncrement:
 				self.offset += self.wordSize
@@ -83,7 +88,6 @@ class ColorFactory(object):
 			self.colors = self.colors | set([color])
 		
 		
-		print("Returning color {0}".format(color))
 		return color
 
 class Color(object):
@@ -163,7 +167,7 @@ class Register(Color):
 	
 	def __eq__(self, other):
 		if isinstance(other, Register):
-			return self.weight == other.weight
+			return self.weight == other.weight and self.name == other.name
 		else:
 			return False
 	
@@ -172,7 +176,7 @@ class Register(Color):
 			return False
 		
 		elif isinstance(other, Register):
-			return self.weight >= other.weight
+			return self.weight >= other.weight and self.name >= other.name
 		
 		else:
 			return False
@@ -182,7 +186,7 @@ class Register(Color):
 			return False
 		
 		elif isinstance(other, Register):
-			return self.weight > other.weight
+			return self.weight > other.weight and self.name > other.name
 		
 		else:
 			return False
@@ -192,7 +196,7 @@ class Register(Color):
 			return True
 		
 		elif isinstance(other, Register):
-			return self.weight < other.weight
+			return self.weight < other.weight and self.name == other.name
 		
 		else:
 			return False
@@ -202,14 +206,14 @@ class Register(Color):
 			return True
 		
 		elif isinstance(other, Register):
-			return self.weight <= other.weight
+			return self.weight <= other.weight and self.name <= other.name
 		
 		else:
 			return False
 	
 	def __ne__(self, other):
 		if isinstance(other, Register):
-			return self.weight != other.weight
+			return self.weight != other.weight or self.name != other.name
 		else:
 			return True
 	

@@ -8,9 +8,11 @@ Description:	The instruction selection code for the x86 architecture.
 from assembler import *
 from assembler.coloring import *
 from assembler.x86.ib import *
-from assembler.x86.coloring import eax, ebp, esp, ebx, esi, edi
+from assembler.x86.coloring import eax, ebx, ecx, edx, esi, edi, ebp, esp
 
 from lib import ast
+
+from transforms.coloring import symsToColors
 
 l = Labeler()
 
@@ -218,17 +220,52 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.FunctionCall):
 		code = Block()
 		
+		usedColors = symsToColors(node['pre-alive'])
+		
+		#Save any caller saved registers currently in use.
+		if eax in usedColors:
+			code.append(OneOp('push', eax))
+		
+		if ecx in usedColors:
+			code.append(OneOp('push', ecx))
+		
+		if edx in usedColors:
+			code.append(OneOp('push', edx))
+		
+		first = True
+		addSize = 0
 		for arg in node.args:
 			src = selectInstructions(arg, cf)
-			code.append(OneOp('push', src))
+			
+			if first and len(code.insts) > 0:
+				inst = code.insts[-1]
+				
+				if not (isinstance(inst, OneOp) and inst.name == 'push' and inst.operand == src):
+					code.append(OneOp('push', src))
+					addSize += 4
+			
+			else:
+				code.append(OneOp('push', src))
+				addSize += 4
+			
+			first = False
 		
 		code.append(OneOp('call', node.name.symbol, None))
 		
-		if len(node.args) > 0:
-			size = str(len(node.args) * 4)
-			code.append(TwoOp('add', Immediate(size), esp))
+		if addSize > 0:
+			code.append(TwoOp('add', Immediate(addSize), esp))
 		
-		if dest:
+		#Restore any caller saved registers that are in use.
+		if edx in usedColors:
+			code.append(OneOp('pop', edx))
+		
+		if ecx in usedColors:
+			code.append(OneOp('pop', ecx))
+		
+		if eax in usedColors:
+			code.append(OneOp('pop', eax))
+		
+		if dest and dest != eax:
 			code.append(TwoOp('mov', eax, dest))
 
 		return code
@@ -276,9 +313,17 @@ def selectInstructions(node, cf, dest = None):
 		#Make the old stack pointer the new base pointer.
 		code.append(TwoOp('mov', esp, ebp))
 		
-		code.append(OneOp('push', ebx))
-		code.append(OneOp('push', esi))
-		code.append(OneOp('push', edi))
+		usedColors = symsToColors(node.collectSymbols())
+		
+		#Save any callee saved registers we used.
+		if ebx in usedColors:
+			code.append(OneOp('push', ebx))
+		
+		if edi in usedColors:
+			code.append(OneOp('push', edi))
+		
+		if esi in usedColors:
+			code.append(OneOp('push', esi))
 		
 		#Expand the stack.
 		if cf.offset > 0:
@@ -288,17 +333,22 @@ def selectInstructions(node, cf, dest = None):
 		code.append(selectInstructions(node.block, cf))
 		
 		endBlock = Block()
-		#Put our exit value in %eax
-		endBlock.append(TwoOp('mov', Immediate(0), eax))
-		
 		#Restore the stack.
 		if cf.offset > 0:
-			code.append(TwoOp('add', Immediate(cf.offset), esp))
+			endBlock.append(TwoOp('add', Immediate(cf.offset), esp))
 		
-		code.append(OneOp('pop', edi))
-		code.append(OneOp('pop', esi))
-		code.append(OneOp('pop', ebx))
+		#Restore any callee saved registers we used.
+		if esi in usedColors:
+			endBlock.append(OneOp('push', esi))
 		
+		if edi in usedColors:
+			endBlock.append(OneOp('push', edi))
+		
+		if ebx in usedColors:
+			endBlock.append(OneOp('push', ebx))
+		
+		#Put our exit value in %eax
+		endBlock.append(TwoOp('mov', Immediate(0), eax))
 		#Restore the %esp and %ebp.
 		endBlock.append(Instruction('leave'))
 		#Return
@@ -332,7 +382,9 @@ def selectInstructions(node, cf, dest = None):
 				code.append(TwoOp("mov", tmpColor, dest))
 				
 			else:
-				code.append(TwoOp("mov", src, dest))
+				if src != dest:
+					code.append(TwoOp("mov", src, dest))
+				
 				code.append(OneOp(node.opInstr(), dest))
 		
 		return code

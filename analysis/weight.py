@@ -7,7 +7,7 @@ Description:	An analysis that calculates the weight of each symbol.
 
 from lib.ast import *
 
-def calculateWeight(node, depth = -1.0):
+def calculateWeight(node, depth = 0.0):
 	
 	if isinstance(node, Assign):
 		sym = node.var.symbol

@@ -5,7 +5,7 @@ Date:		2010/09/20
 Description:	The actual register allocation code.
 """
 
-from analysis.related import findRelatedAST
+from analysis.related import *
 
 from assembler.coloring import *
 
@@ -16,11 +16,12 @@ def color(program):
 		cf = ColorFactory()
 		ig = buildInterferenceGraph(program)
 		
-		findRelatedAST(program, ig)
+		findRelated(program, ig)
+		chains = findRelationshipChains(program)
 		
 		precolor(program, ig)
 		
-		colorAST(program, cf, ig)
+		colorAST(program, cf, ig, chains)
 		
 		return cf
 	else:
@@ -42,40 +43,59 @@ def buildInterferenceGraph(tree):
 	
 	return ig
 
+def calculateMaxConstraint(chain, ig):
+	constraints = set([])
+	
+	for sym in chain:
+		constraints = constraints | ig[sym]
+	
+	return constraints
+
 def clearColoring(tree, cf, ig):
 	for sym in tree.collectSymbols():
-		if isinstance(sym['color'], Mem):
-			sym['color'] = cf.getColor(ig[sym], Mem)
-		
-		else:
-			sym['color'] = None
+		sym['color'] = None
 
-def colorAST(node, cf, ig):
+def colorAST(node, cf, ig, chains):
 	
 	#Color new symbol.
 	if isinstance(node, Assign):
 		sym = node.var.symbol
 		
-		if not sym.has_key('color') or sym['color'] == None:
-			if sym['related'] != None and isinstance(sym['related']['color'], Register):
-				#If the related variable is a register we definitely want to
-				#take it.
-				print("Assigning relative {0} to {1}".format(sym['related'], sym))
-				#print(ig[sym])
+		if not sym.has_key('color') or sym['color'] in symsToColors(ig[sym]) or sym['color'] == None:
+			#If the related symbol isn't colored with a register then there
+			#might be something better available.  If not, the related
+			#symbol's color will still fall out of the ColorFactory.
+			
+			if sym['related'] != None and isinstance(sym['related']['color'], Register) and \
+			not sym['related']['color'] in symsToColors(ig[sym] - set([sym['related']])):
+				
+				#If the related variable is a register we will take it as
+				#as it does not cause interference.
 				sym['color'] = sym['related']['color']
 			
 			else:
-				#If the related symbol isn't colored with a register then there
-				#might be something better available.  If not, the related
-				#symbol's color will still fall out of the ColorFactory.
-				print("Coloring {0}: {1}".format(sym, ig[sym]))
-				sym['color'] = cf.getColor(ig[sym])
+				color = None
+				
+				if sym.has_key('related') and sym['related'] != None:
+					print("{0} is related to {1}".format(sym, sym['related']))
+					
+					color = cf.getColor(calculateMaxConstraint(chains[sym], ig), Register, 0)
+					
+					if color == None:
+						color = cf.getColor(ig[sym])
+					else:
+						print("Found color ({0}) for {1} using maximum constraint.".format(color, sym))
+					
+					sym['color'] = color
+				
+				else:
+					sym['color'] = cf.getColor(ig[sym])
 	
 	#Color the node's children.
 	for child in node:
-		colorAST(child, cf, ig)
+		colorAST(child, cf, ig, chains)
 
-def spill(cf, tree, symbols):
+def spill(cf, tree, spillSets):
 	cf.clear()
 	
 	ig = buildInterferenceGraph(tree)
@@ -83,15 +103,24 @@ def spill(cf, tree, symbols):
 	clearColoring(tree, cf, ig)
 	precolor(tree, ig)
 	
-	kick = list(symbols).pop(0)
+	kicks = []
+	
+	for symbols0 in spillSets:
+		symbols1 = list(symbols0 - set(kicks))
+		kick = symbols1.pop(0)
+		
+		for sym in symbols1:
+			if sym['weight'] < kick['weight']:
+				kick = sym
+		
+		kick['color'] = cf.getColor(ig[kick], Mem)
+		kicks.append(kick)
+
+def symsToColors(symbols):
+	colors = []
 	
 	for sym in symbols:
-		if sym['weight'] < kick['weight']:
-			kick = sym
+		if sym.has_key('color'):
+			colors.append(sym['color'])
 	
-	for sym in ig:
-		print("{0}: {1}".format(sym, ig[sym]))
-	
-	print('')
-	
-	kick['color'] = cf.getColor(ig[kick], Mem)
+	return set(colors)

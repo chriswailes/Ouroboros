@@ -54,8 +54,7 @@ if config.startStage == 'python':
 		print("")
 	
 	#Run the AST transformation passes
-	#fixedpoint(tree, propigateConstants, discard, foldConstants)
-	discard(tree)
+	fixedpoint(tree, propigateConstants, discard, foldConstants)
 	flatten(tree)
 	
 	if config.verbose:
@@ -79,34 +78,18 @@ if config.startStage == 'python':
 	#findRelatedAST(tree, ig)
 	calculateWeight(tree)
 	
-	for sym in tree.collectSymbols():
-		print "Symbol: {0} Weight: {1}".format(sym, sym['weight'])
-	
-	print('')
-	
-	cf = color(tree)
+	spillSets = []
 	
 	while True:
 		try:
 			#Compile the AST.
+			cf = color(tree)
 			assembly = selectInstructions(tree, cf)
 			break
 		
 		except Spill as s:
-			
-			print("Spills: {0}".format(s.symbols))
-			
-			spill(cf, tree, s.symbols)
-			
-			for sym in tree.collectSymbols():
-				print "Symbol: {0} Color: {1}".format(sym, sym['color'])
-			
-			print('')
-			
-			color(tree)
-			
-			for sym in tree.collectSymbols():
-				print "Symbol: {0} Color: {1}".format(sym, sym['color'])
+			spillSets.append(s.symbols)
+			spill(cf, tree, spillSets)
 		
 
 	if config.verbose:
@@ -115,12 +98,12 @@ if config.startStage == 'python':
 		print(assembly)
 
 	#Run the instruction passes.
-	redundantMoves(assembly)
+	#redundantMoves(assembly)
 
-	if config.verbose:
-		#Print out the post-assembly passes code.
-		print("After Assembly Passes")
-		print(assembly)
+	#~if config.verbose:
+		#~#Print out the post-assembly passes code.
+		#~print("After Assembly Passes")
+		#~print(assembly)
 
 
 	#Put the produced assembly into the output file.

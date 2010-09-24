@@ -5,7 +5,7 @@ Date:		2010/09/20
 Description:	x86 specific coloring code and data structures.
 """
 
-from assembler.coloring import Register
+from assembler.coloring import Register, CALLEE, CALLER, NOUSE
 
 from lib.ast import *
 from lib.symbol_table import Symbol
@@ -14,15 +14,15 @@ from lib.symbol_table import Symbol
 # Colors #
 ##########
 
-ebp = Register('ebp', 2)
-esp = Register('esp', 2)
+ebp = Register('ebp', NOUSE)
+esp = Register('esp', NOUSE)
 
-eax = Register('eax', 1)
-ebx = Register('ebx', 0)
-ecx = Register('ecx', 1)
-edx = Register('edx', 1)
-edi = Register('edi', 0)
-esi = Register('esi', 0)
+eax = Register('eax', CALLER)
+ebx = Register('ebx', CALLEE)
+ecx = Register('ecx', CALLER)
+edx = Register('edx', CALLER)
+edi = Register('edi', CALLEE)
+esi = Register('esi', CALLEE)
 colors = [eax, ebx, ecx, edx, edi, esi]
 
 ########################
@@ -55,10 +55,23 @@ memFormatString = "-{0:d}(%ebp)"
 def precolor(node, ig):
 	global interference
 	
-	if isinstance(node, FunctionCall):
+	if isinstance(node, Assign):
+		sym = node.var.symbol
+		
+		if isinstance(node.exp, FunctionCall):
+			#Here we will pre-color the variable with %eax.  If another
+			#function call interferes with the variable the pre-color will be
+			#discarded and a new one will be selected.
+			sym['color'] = eax
+		
+		else:
+			precolor(node.exp, ig)
+	
+	elif isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
-			if not sym in node['post-alive']:
+			if sym in node['post-alive']:
 				ig[sym] = ig[sym] | interference
 	
-	for child in node:
-		precolor(child, ig)
+	else:
+		for child in node:
+			precolor(child, ig)

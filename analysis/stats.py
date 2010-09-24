@@ -19,27 +19,27 @@ def countReads(node):
 
 def calculateSpans(node, count = 0, alive = {}):
 	inc = 1
-	
-	if isinstance(node, Assign):
-		#Due to SSA form we know this variable isn't already alive.
-		
-		sym = node.var.symbol
-		
-		if sym in node['post-alive']:
-			alive[sym] = count
-		else:
-			sym['span-start'] = sym['span-end'] = count
-			sym['span'] = 0
+	startCount = count
 	
 	for child in node:
 		subInc = calculateSpans(child, count)
 		inc   += subInc
 		count += subInc
 	
+	if isinstance(node, Assign):
+		#Due to SSA form we know this variable isn't already alive.
+		sym = node.var.symbol
+		
+		if sym in node['post-alive']:
+			alive[sym] = startCount
+		else:
+			sym['span-start'] = sym['span-end'] = startCount
+			sym['span'] = 0
+	
 	deletes = []
 	
 	for sym in alive:
-		if (not sym in node['post-alive']) or isinstance(node, Module):
+		if not sym in node['post-alive']:
 			sym['span-start'] = alive[sym]
 			sym['span-end'  ] = count
 			sym['span'] = count - alive[sym]
