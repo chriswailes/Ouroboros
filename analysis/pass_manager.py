@@ -29,9 +29,9 @@ def register(name, fun, args, prereqs, result):
 	passes[name] = AnalysisPass(fun, args, prereqs, result)
 
 def runPass(p, tree):
-	runPasses([p], tree)
+	return runPasses([p], tree)
 
-def runPases(ps, tree):
+def runPasses(ps, tree):
 	global passes
 	
 	run = set([])
@@ -39,7 +39,7 @@ def runPases(ps, tree):
 	results = {}
 	
 	for p in ps:
-		remaining = remaining | findRegs(p)
+		remaining = remaining | findReqs(p)
 	
 	while len(remaining) != 0:
 		toRun = None
@@ -65,6 +65,8 @@ def runPases(ps, tree):
 		
 		remaining = remaining - set([toRun])
 		run = run | set([toRun])
+	
+	return results
 
 #####################
 # Initialize Passes #

@@ -5,46 +5,57 @@ Date:		2010/09/20
 Description:	The actual register allocation code.
 """
 
-from analysis.related import *
-
 from assembler.coloring import *
 
 from lib.ast import *
 
-analysis	= ['interference', 'related', 'chains']
-args		= ['ig', 'chains']
+analysis0	= ['interference', 'related', 'chains']
+args0	= ['ig', 'chains']
+
+analysis1	= ['interference', 'related']
+args1	= ['spillSets', 'ig']
 
 def init():
 	from transforms.pass_manager import register
-	register('color', color, analysis, args)
+	register('color', color, analysis0, args0)
+	register('spill', spill, analysis1, args1)
+
+##################
+# Main Functions #
+##################
 
 def color(tree, ig, chains):
-	cf = ColorFactory()
-	ig = buildInterferenceGraph(program)
-	
-	findRelated(program, ig)
-	chains = findRelationshipChains(program)
-	
 	precolor(program, ig)
-	
-	colorAST(program, cf, ig, chains)
-	
-	return cf
+	colorPrime(program, cf, ig, chains)
 
-def maxConstraint(chain, ig):
-	constraints = set([])
+def spill(tree, spillSets, ig):
+	cf = ColorFactory()
 	
-	for sym in chain:
-		constraints = constraints | ig[sym]
+	clearColoring(tree, cf, ig)
+	precolor(tree, ig)
 	
-	return constraints
+	kicks = []
+	
+	for symbols0 in spillSets:
+		symbols1 = list(symbols0 - set(kicks))
+		kick = symbols1.pop(0)
+		
+		for sym in symbols1:
+			if sym['weight'] < kick['weight']:
+				kick = sym
+		
+		kick['color'] = cf.getColor(ig[kick], Mem)
+		kicks.append(kick)
+
+####################
+# Helper Functions #
+####################
 
 def clearColoring(tree, cf, ig):
 	for sym in tree.collectSymbols():
 		sym['color'] = None
 
-def colorAST(node, cf, ig, chains):
-	
+def colorPrime(node, cf, ig, chains):
 	#Color new symbol.
 	if isinstance(node, Assign):
 		sym = node.var.symbol
@@ -79,26 +90,13 @@ def colorAST(node, cf, ig, chains):
 	for child in node:
 		colorAST(child, cf, ig, chains)
 
-def spill(tree, spillSets):
-	cf = ColorFactory()
+def maxConstraint(chain, ig):
+	constraints = set([])
 	
-	ig = buildInterferenceGraph(tree)
+	for sym in chain:
+		constraints = constraints | ig[sym]
 	
-	clearColoring(tree, cf, ig)
-	precolor(tree, ig)
-	
-	kicks = []
-	
-	for symbols0 in spillSets:
-		symbols1 = list(symbols0 - set(kicks))
-		kick = symbols1.pop(0)
-		
-		for sym in symbols1:
-			if sym['weight'] < kick['weight']:
-				kick = sym
-		
-		kick['color'] = cf.getColor(ig[kick], Mem)
-		kicks.append(kick)
+	return constraints
 
 def symsToColors(symbols):
 	colors = []

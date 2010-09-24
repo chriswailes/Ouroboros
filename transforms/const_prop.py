@@ -7,12 +7,14 @@ Description:	Propigate constants throughout the code.
 
 from lib.ast import *
 
+analysis	= []
+args		= []
+
 def init():
 	from transforms.pass_manager import register
-	register('color', color, analysis, args
+	register('const_prop', propigateConstants, analysis, args)
 
 def propigateConstants(node, consts = {}):
-	
 	if isinstance(node, Assign) and isinstance(node.exp, Integer):
 		consts[node.var.symbol] = Integer(node.exp.value)
 	

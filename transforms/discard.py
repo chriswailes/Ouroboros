@@ -5,14 +5,15 @@ Date:		2010/09/03
 Description:	Removes expressions whos values aren't stored.
 """
 
-from analysis.stats import countReads
-
 from lib import ast
 from lib import util
 
+analysis	= ['reads']
+args		= []
+
 def init():
 	from transforms.pass_manager import register
-	register('color', color, analysis, args
+	register('discard', discard, analysis, args)
 
 def discard(node):
 	if isinstance(node, ast.Assign):

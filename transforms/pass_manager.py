@@ -5,7 +5,7 @@ Date:		2010/09/24
 Description:	The pass manager for the transformation passes.
 """
 
-from transforms.fixedpoint import fixedpoint
+from analysis import pass_manager as apm
 
 class TransformPass(object):
 	def __init__(self, fun, analysis, args):
@@ -13,17 +13,47 @@ class TransformPass(object):
 		self.analysis	= analysis
 		self.args		= args
 
-transforms = {}
+passes = {}
+
+def fixedpoint(tree, addArgs, *transforms):
+	before = ''
+	after  = repr(tree)
+	
+	while before != after:
+		before = after
+		
+		for transform in transforms:
+			runTransformPrime(tree, addArgs, transform)
+		
+		after = repr(tree)
 
 def register(name, fun, analysis, args):
-	global transforms
-	transforms[name] = TransformPass(fun, analysis, args)
+	global passes
+	passes[name] = TransformPass(fun, analysis, args)
 
-def runTransform(transform):
-	pass
+def runTransform(tree, transform, addArgs = {}):
+	global passes
+	
+	if isinstance(transform, list):
+		transforms = []
+		
+		for t in transform:
+			transforms.append(passes[t])
+		
+		fixedpoint(tree, addArgs, *transforms)
+	
+	else:
+		return runTransformPrime(tree, addArgs, passes[transform])
 
-def runTransforms():
-	pass
+def runTransformPrime(tree, addArgs, transform):
+	results = apm.runPasses(transform.analysis, tree)
+	results.update(addArgs)
+	
+	arglist = []
+	for arg in transform.args:
+		arglist.append(results[arg])
+	
+	return transform.fun(tree, *arglist)
 
 #####################
 # Initialize Passes #

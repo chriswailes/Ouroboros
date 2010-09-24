@@ -7,9 +7,12 @@ Description:	A transformation that folds constants.
 
 from lib.ast import *
 
+analysis	= []
+args		= []
+
 def init():
 	from transforms.pass_manager import register
-	register('color', color, analysis, args
+	register('const_fold', foldConstants, analysis, args)
 
 def foldConstants(node):
 	if isinstance(node, Assign):

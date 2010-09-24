@@ -8,9 +8,12 @@ Description:	A transformation that flattens the provided AST.
 from lib.ast import *
 from lib import util
 
+analysis	= []
+args		= []
+
 def init():
 	from transforms.pass_manager import register
-	register('color', color, analysis, args
+	register('flatten', flatten, analysis, args)
 
 def flatten(node, st = None, inplace = False):
 	if isinstance(node, Assign):

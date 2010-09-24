@@ -11,8 +11,6 @@ import compiler
 
 import os
 
-from analysis.pass_manager import *
-
 from assembler import *
 from assembler.redundant_moves import redundantMoves
 from assembler.instruction_selection import selectInstructions
@@ -20,6 +18,8 @@ from assembler.instruction_selection import selectInstructions
 from lib import ast, util
 from lib.translate import translate
 from lib.config import config, args
+
+from transforms.pass_manager import runTransform
 
 #~from transforms.coloring import color, clearColoring, spill
 #~from transforms.const_fold import foldConstants
@@ -39,6 +39,7 @@ if config.startStage == 'python':
 	tree = compiler.parse(tokens)
 	
 	if config.verbose:
+		#Print the original AST
 		print(tree)
 		print("")
 	
@@ -50,9 +51,10 @@ if config.startStage == 'python':
 		print(tree)
 		print("")
 	
-	#Run the AST transformation passes
-	#fixedpoint(tree, propigateConstants, discard, foldConstants)
-	#flatten(tree)
+	#Run the AST transformation passes (except 'color', which is done in the
+	#loop below.
+	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
+	runTransform(tree, 'flatten')
 	
 	if config.verbose:
 		#Print my flattened (and folded) AST
@@ -60,47 +62,45 @@ if config.startStage == 'python':
 		print('')
 		
 		#Print out the original program.
-		print("Original:")
+		print("Before Transformation Passes:")
 		print(tokens)
 		
 		#Print out the Python code for my flattened AST
-		print("Flat:")
+		print("After Transformation Passes:")
 		print(tree.toPython())
 		print('')
 	
-	#Run the AST analysis passes
-	
-	print findReqs('reads')
-	
-	exit(0)
-	
+	#One of the symbols from each of these sets needs to be spilled.
 	spillSets = []
 	
+	#Try and compile the AST, catching spills and iterating until they are all
+	#resolved.
 	while True:
 		try:
 			#Compile the AST.
-			cf = color(tree)
+			cf = runTransform(tree, 'color')
 			assembly = selectInstructions(tree, cf)
 			break
 		
 		except Spill as s:
 			spillSets.append(s.symbols)
-			spill(cf, tree, spillSets)
-		
+			
+			runTransform(tree, {'spllSets':spillSets}, 'spill')
 
+	"""
 	if config.verbose:
 		#Print out the pre-assembly passes code.
 		print("Before Assembly Passes")
 		print(assembly)
 
 	#Run the instruction passes.
-	#redundantMoves(assembly)
+	redundantMoves(assembly)
 
-	#~if config.verbose:
-		#~#Print out the post-assembly passes code.
-		#~print("After Assembly Passes")
-		#~print(assembly)
-
+	if config.verbose:
+		#Print out the post-assembly passes code.
+		print("After Assembly Passes")
+		print(assembly)
+	"""
 
 	#Put the produced assembly into the output file.
 	outFile = open(config.sName, 'w')
