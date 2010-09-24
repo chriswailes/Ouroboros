@@ -11,23 +11,27 @@ from assembler.coloring import *
 
 from lib.ast import *
 
-def color(program):
-	if isinstance(program, Node):
-		cf = ColorFactory()
-		ig = buildInterferenceGraph(program)
-		
-		findRelated(program, ig)
-		chains = findRelationshipChains(program)
-		
-		precolor(program, ig)
-		
-		colorAST(program, cf, ig, chains)
-		
-		return cf
-	else:
-		raise Exception('Coloring anything besides a tree is unsupported.')
+analysis	= ['interference', 'related', 'chains']
+args		= ['ig', 'chains']
 
-def calculateMaxConstraint(chain, ig):
+def init():
+	from transforms.pass_manager import register
+	register('color', color, analysis, args)
+
+def color(tree, ig, chains):
+	cf = ColorFactory()
+	ig = buildInterferenceGraph(program)
+	
+	findRelated(program, ig)
+	chains = findRelationshipChains(program)
+	
+	precolor(program, ig)
+	
+	colorAST(program, cf, ig, chains)
+	
+	return cf
+
+def maxConstraint(chain, ig):
 	constraints = set([])
 	
 	for sym in chain:
@@ -61,7 +65,7 @@ def colorAST(node, cf, ig, chains):
 				color = None
 				
 				if sym.has_key('related') and sym['related'] != None:
-					color = cf.getColor(calculateMaxConstraint(chains[sym], ig), Register, 0)
+					color = cf.getColor(maxConstraint(chains[sym], ig), Register, 0)
 					
 					if color == None:
 						color = cf.getColor(ig[sym])
@@ -75,8 +79,8 @@ def colorAST(node, cf, ig, chains):
 	for child in node:
 		colorAST(child, cf, ig, chains)
 
-def spill(cf, tree, spillSets):
-	cf.clear()
+def spill(tree, spillSets):
+	cf = ColorFactory()
 	
 	ig = buildInterferenceGraph(tree)
 	

@@ -7,33 +7,24 @@ Description:	Propigate constants throughout the code.
 
 from lib.ast import *
 
-def propigateConstants(tree):
-	consts = collectConsts(tree)
-	tree = replaceConsts(tree, consts)
-	
-	return tree
-	
+def init():
+	from transforms.pass_manager import register
+	register('color', color, analysis, args
 
-def collectConsts(node):
-	consts = {}
-	
-	for child in node:
-		consts.update(collectConsts(child))
+def propigateConstants(node, consts = {}):
 	
 	if isinstance(node, Assign) and isinstance(node.exp, Integer):
-		consts[node.var.symbol] = node.exp.value
+		consts[node.var.symbol] = Integer(node.exp.value)
 	
-	return consts
-
-def replaceConsts(node, consts):
-	newChildren = []
+	elif isinstance(node, Name) and const.has_key(node.symbol):
+		return consts[node.sybmol]
 	
-	for child in node:
-		newChildren.append(replaceConsts(child, consts))
-	
-	node.setChildren(newChildren)
-	
-	if isinstance(node, Name) and consts.has_key(node.symbol):
-		return Integer(consts[node.symbol])
 	else:
-		return node
+		newChildren = []
+		
+		for child in node:
+			newChildren.append(propigateConstants(child, consts))
+		
+		node.setChildren(newChildren)
+	
+	return node

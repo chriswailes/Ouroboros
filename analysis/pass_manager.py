@@ -1,11 +1,11 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
 Project:		CSCI 5525 HW1
-Date:		2010/09/22
+Date:		2010/09/24
 Description:	The pass manager for the analysis passes.
 """
 
-class Pass(object):
+class AnalysisPass(object):
 	def __init__(self, fun, args, prereqs, result):
 		self.fun		= fun
 		self.args		= set(args)
@@ -26,7 +26,7 @@ def findReqs(p, reqs = set([])):
 
 def register(name, fun, args, prereqs, result):
 	global passes
-	passes[name] = Pass(fun, args, prereqs, result)
+	passes[name] = AnalysisPass(fun, args, prereqs, result)
 
 def runPass(p, tree):
 	runPasses([p], tree)

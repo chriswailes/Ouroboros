@@ -8,6 +8,10 @@ Description:	A transformation that flattens the provided AST.
 from lib.ast import *
 from lib import util
 
+def init():
+	from transforms.pass_manager import register
+	register('color', color, analysis, args
+
 def flatten(node, st = None, inplace = False):
 	if isinstance(node, Assign):
 		preStmts, node.exp = flatten(node.exp, st, True)
