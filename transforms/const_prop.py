@@ -18,8 +18,8 @@ def propigateConstants(node, consts = {}):
 	if isinstance(node, Assign) and isinstance(node.exp, Integer):
 		consts[node.var.symbol] = Integer(node.exp.value)
 	
-	elif isinstance(node, Name) and const.has_key(node.symbol):
-		return consts[node.sybmol]
+	elif isinstance(node, Name) and consts.has_key(node.symbol):
+		return consts[node.symbol]
 	
 	else:
 		newChildren = []

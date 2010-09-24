@@ -12,7 +12,7 @@ from lib.ast import *
 analysis0	= ['interference', 'related', 'chains']
 args0	= ['ig', 'chains']
 
-analysis1	= ['interference', 'related']
+analysis1	= ['interference', 'related', 'weight']
 args1	= ['spillSets', 'ig']
 
 def init():
@@ -25,8 +25,12 @@ def init():
 ##################
 
 def color(tree, ig, chains):
-	precolor(program, ig)
-	colorPrime(program, cf, ig, chains)
+	cf = ColorFactory()
+	
+	precolor(tree, ig)
+	colorPrime(tree, cf, ig, chains)
+	
+	return cf
 
 def spill(tree, spillSets, ig):
 	cf = ColorFactory()
@@ -88,7 +92,7 @@ def colorPrime(node, cf, ig, chains):
 	
 	#Color the node's children.
 	for child in node:
-		colorAST(child, cf, ig, chains)
+		colorPrime(child, cf, ig, chains)
 
 def maxConstraint(chain, ig):
 	constraints = set([])

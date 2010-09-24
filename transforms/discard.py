@@ -52,9 +52,6 @@ def discard(node):
 		return node
 	
 	elif isinstance(node, ast.Module):
-		#Count symbol reads so we can discard varaibles that are never read.
-		countReads(node)
-		
 		node.block = discard(node.block)
 		
 		return node

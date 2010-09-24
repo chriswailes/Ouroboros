@@ -20,7 +20,7 @@ def spans(node, count = 0, alive = {}):
 	startCount = count
 	
 	for child in node:
-		subInc = calculateSpans(child, count)
+		subInc = spans(child, count)
 		inc   += subInc
 		count += subInc
 	

@@ -45,5 +45,5 @@ def related(node, ig):
 				sym0['related'] = sym1
 	
 	for child in node:
-		findRelated(child, ig)
+		related(child, ig)
 			

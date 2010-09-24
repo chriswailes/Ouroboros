@@ -17,7 +17,7 @@ def init():
 
 def reads(node):
 	for child in node:
-		countReads(child)
+		reads(child)
 	
 	if isinstance(node, Assign):
 		node.var.symbol['reads'] = 0

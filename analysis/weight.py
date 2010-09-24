@@ -35,7 +35,7 @@ def weight(node, depth = 0.0):
 	
 	for child in node:
 		if isinstance(node, BasicBlock):
-			calculateWeight(child, depth + 1.0)
+			weight(child, depth + 1.0)
 		
 		else:
-			calculateWeight(child, depth)
+			weight(child, depth)

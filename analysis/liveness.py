@@ -22,7 +22,7 @@ def liveness(node, alive = []):
 		sym = node.var.symbol
 		sym['tmp'] = sym['reads']
 		
-		livenessAST(node.exp, alive)
+		liveness(node.exp, alive)
 		
 		if sym['tmp'] > 0:
 			alive.append(sym)
@@ -35,6 +35,6 @@ def liveness(node, alive = []):
 	
 	else:
 		for child in node:
-			livenessAST(child, alive)
+			liveness(child, alive)
 	
 	node['post-alive'] = set(alive)

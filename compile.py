@@ -85,7 +85,7 @@ if config.startStage == 'python':
 		except Spill as s:
 			spillSets.append(s.symbols)
 			
-			runTransform(tree, {'spllSets':spillSets}, 'spill')
+			runTransform(tree, 'spill', {'spillSets':spillSets})
 
 	"""
 	if config.verbose:

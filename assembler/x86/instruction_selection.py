@@ -203,8 +203,6 @@ def selectInstructions(node, cf, dest = None):
 					
 					tmpColor = getTempColor(cf, node)
 					
-					print("\nTemporary color: {0}\n".format(tmpColor))
-					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(TwoOp('sub', right, tmpColor))
 					code.append(TwoOp('mov', tmpColor, dest))
