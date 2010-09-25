@@ -34,4 +34,7 @@ def chains(tree):
 		for sym in chain:
 			chainDict[sym] = chain
 	
+	print('Old Chains:')
+	print chainDict
+	
 	return chainDict

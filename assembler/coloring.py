@@ -69,7 +69,6 @@ class ColorFactory(object):
 		
 		if len(free) > 0:
 			free.sort()
-			print("Sorted frees: {0}".format(free))
 			color = free[0]
 		
 		elif test != Register:

@@ -249,7 +249,7 @@ def selectInstructions(node, cf, dest = None):
 		restoreRegs(code, caller, usedColors)
 		
 		#Move the result into the proper destination.
-		if dest != eax:
+		if dest and dest != eax:
 			code.append(TwoOp('mov', eax, dest))
 
 		return code
