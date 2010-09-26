@@ -11,6 +11,8 @@ import compiler
 
 import os
 
+from analysis.pass_manager import runPass
+
 from assembler import *
 from assembler.redundant_moves import redundantMoves
 from assembler.instruction_selection import selectInstructions
@@ -48,7 +50,7 @@ if config.startStage == 'python':
 	#loop below.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
 	runTransform(tree, 'flatten')
-	cf = runTransform(tree, 'color', {'cf':None})
+	#cf = runTransform(tree, 'color', {'cf':None})
 	
 	if config.verbose:
 		#Print my flattened (and folded) AST
@@ -63,6 +65,8 @@ if config.startStage == 'python':
 		print("After Transformation Passes:")
 		print(tree.toPython())
 		print('')
+	
+	runPass(tree, 'chains')
 	
 	#One of the symbols from each of these sets needs to be spilled.
 	spillSets = []

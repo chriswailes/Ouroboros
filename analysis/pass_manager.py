@@ -28,10 +28,10 @@ def register(name, fun, args, prereqs, result):
 	global passes
 	passes[name] = AnalysisPass(fun, args, prereqs, result)
 
-def runPass(p, tree):
-	return runPasses([p], tree)
+def runPass(tree, p):
+	return runPasses(tree, [p])
 
-def runPasses(ps, tree):
+def runPasses(tree, ps):
 	global passes
 	
 	run = set([])

@@ -28,11 +28,18 @@ def spans(node, count = 0, alive = {}):
 		#Due to SSA form we know this variable isn't already alive.
 		sym = node.var.symbol
 		
+		sym['spans-funcall'] = False
+		
 		if sym in node['post-alive']:
 			alive[sym] = startCount
 		else:
 			sym['span-start'] = sym['span-end'] = startCount
 			sym['span'] = 0
+	
+	elif isinstance(node, FunctionCall):
+		for sym in node['pre-alive']:
+			if sym in node['post-alive']:
+				sym['spans-funcall'] = True
 	
 	deletes = []
 	

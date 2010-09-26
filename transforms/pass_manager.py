@@ -46,7 +46,7 @@ def runTransform(tree, transform, addArgs = {}):
 		return runTransformPrime(tree, addArgs, passes[transform])
 
 def runTransformPrime(tree, addArgs, transform):
-	results = apm.runPasses(transform.analysis, tree)
+	results = apm.runPasses(tree, transform.analysis)
 	results.update(addArgs)
 	
 	arglist = []
