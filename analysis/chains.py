@@ -66,7 +66,8 @@ def chains(tree, relgraph):
 		prevSym = None
 		
 		for sym in chain:
-			sym['related-forard'] = prevSym
+			print("Visiting symbol {0}".format(sym))
+			sym['related-forward'] = prevSym
 			prevSym = sym
 			
 			chainDict[sym] = chain

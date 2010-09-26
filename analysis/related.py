@@ -34,12 +34,16 @@ def related(node, graph = {}):
 			#Check the left operand.
 			if isinstance(node.exp.left, Name):
 				sym1 = node.exp.left.symbol
-				graph[sym1].append(sym0)
+				
+				if not sym1 in node['post-alive']:
+					graph[sym1].append(sym0)
 			
 			#Check the right operand if the BinOp is an add or a multiply.
 			if isinstance(node.exp.right, Name) and (isinstance(node.exp, Add) or isinstance(node.exp, Mul)):
 				sym2 = node.exp.right.symbol
-				graph[sym2].append(sym0)
+				
+				if not sym2 in node['post-alive']:
+					graph[sym2].append(sym0)
 				
 				#Pick the right over the left operand if it was defined
 				#closer to this symbol.

@@ -27,6 +27,10 @@ def init():
 def color(tree, ig, chains, cf = None):
 	cf = cf or ColorFactory()
 	
+	print("\nChains:")
+	print(chains)
+	print('')
+	
 	precolor(tree, ig)
 	colorPrime(tree, cf, ig, chains)
 	
@@ -66,31 +70,33 @@ def colorPrime(node, cf, ig, chains):
 	if isinstance(node, Assign):
 		sym = node.var.symbol
 		
+		#We need to find a color if the symbol doesn't already have one, or if
+		#the color it was pre-colored with interferes with a other colors.
 		if not sym.has_key('color') or sym['color'] in symsToColors(ig[sym]):
-			#If the related symbol isn't colored with a register then there
-			#might be something better available.  If not, the related
-			#symbol's color will still fall out of the ColorFactory.
+			forward  = sym['related-forward']
+			backward = sym['related-backward']
 			
-			if sym['related'] != None and isinstance(sym['related']['color'], Register) and \
-			not sym['related']['color'] in symsToColors(ig[sym] - set([sym['related']])):
+			if forward and isinstance(forward['color'], Register) and not forward in symsToColors(ig[sym] - set([forward])):
+				#If our forward looking relation's color is a register and
+				#doesn't cause interference we want to use it.
 				
-				#If the related variable is a register we will take it as
-				#as it does not cause interference.
-				sym['color'] = sym['related']['color']
+				sym['color'] = forward['color']
+			
+			elif backward and isinstance(backard['color'], Register) and not backward in symsToColors(ig[sym] - set([backward])):
+				#Next we will try our backward looking relation's color.
+				
+				sym['color'] = backward['color']
 			
 			else:
-				color = None
+				#If all else fails we will get a new color from those that
+				#are currently available.
 				
-				if sym.has_key('related') and sym['related'] != None:
-					color = cf.getColor(maxConstraint(chains[sym], ig), Register, 0)
-					
-					if color == None:
-						color = cf.getColor(ig[sym])
-					
-					sym['color'] = color
+				color = cf.getColor(maxConstraint(chains[sym], ig), Register)
 				
-				else:
-					sym['color'] = cf.getColor(ig[sym])
+				if color == None:
+					color = cf.getColor(ig[sym])
+				
+				sym['color'] = color
 	
 	#Color the node's children.
 	for child in node:

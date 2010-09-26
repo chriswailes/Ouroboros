@@ -245,12 +245,12 @@ def selectInstructions(node, cf, dest = None):
 		if addSize > 0:
 			code.append(TwoOp('add', Immediate(addSize), esp))
 		
-		#Restore any caller saved registers that are in use.
-		restoreRegs(code, caller, usedColors)
-		
 		#Move the result into the proper destination.
 		if dest and dest != eax:
 			code.append(TwoOp('mov', eax, dest))
+		
+		#Restore any caller saved registers that are in use.
+		restoreRegs(code, caller, usedColors)
 
 		return code
 	
@@ -315,7 +315,7 @@ def selectInstructions(node, cf, dest = None):
 			endBlock.append(TwoOp('add', Immediate(cf.offset), esp))
 		
 		#Restore any callee saved registers we used.
-		restoreRegs(code, callee, usedColors)
+		restoreRegs(endBlock, callee, usedColors)
 		
 		#Put our exit value in %eax
 		endBlock.append(TwoOp('mov', Immediate(0), eax))
