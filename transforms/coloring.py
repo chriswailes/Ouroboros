@@ -27,10 +27,6 @@ def init():
 def color(tree, ig, chains, cf = None):
 	cf = cf or ColorFactory()
 	
-	print("\nChains:")
-	print(chains)
-	print('')
-	
 	precolor(tree, ig)
 	colorPrime(tree, cf, ig, chains)
 	
@@ -82,7 +78,7 @@ def colorPrime(node, cf, ig, chains):
 				
 				sym['color'] = forward['color']
 			
-			elif backward and isinstance(backard['color'], Register) and not backward in symsToColors(ig[sym] - set([backward])):
+			elif backward and isinstance(backward['color'], Register) and not backward in symsToColors(ig[sym] - set([backward])):
 				#Next we will try our backward looking relation's color.
 				
 				sym['color'] = backward['color']
@@ -91,7 +87,7 @@ def colorPrime(node, cf, ig, chains):
 				#If all else fails we will get a new color from those that
 				#are currently available.
 				
-				color = cf.getColor(maxConstraint(chains[sym], ig), Register)
+				color = cf.getColor( maxConstraint(chains[sym], ig), Register)
 				
 				if color == None:
 					color = cf.getColor(ig[sym])

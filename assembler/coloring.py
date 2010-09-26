@@ -38,11 +38,14 @@ class ColorFactory(object):
 		self.colors = set(regs)
 		self.offset = 0
 	
-	def getColor(self, interference = set([]), test = None, maxWeight = 1):
+	def getColor(self, interference = set([]), test = None, preferCaller = False):
 		color = None
 		
+		if preferCaller:
+			self.swapPreference()
+		
 		allocated = []
-			
+		
 		for sym in interference:
 			if sym.has_key('color'):
 				allocated.append(sym['color'])
@@ -55,12 +58,7 @@ class ColorFactory(object):
 			
 			for colour in free:
 				if isinstance(colour, test):
-					if test == Register:
-						if colour.weight <= maxWeight:
-							filteredFree.append(colour)
-					
-					else:
-						filteredFree.append(colour)
+					filteredFree.append(colour)
 			
 			free = filteredFree
 		
@@ -83,8 +81,19 @@ class ColorFactory(object):
 			
 			self.colors = self.colors | set([color])
 		
+		if preferCaller:
+			self.swapPreference()
 		
 		return color
+	
+	def swapPreference(self):
+		for color in self.colors:
+			if isinstance(color, Register):
+				if color.weight == 0:
+					color.weight = 1
+				
+				else:
+					color.weight = 0
 
 class Color(object):
 	def __repr__(self):
