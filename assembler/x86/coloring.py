@@ -58,19 +58,7 @@ memFormatString = "-{0:d}(%ebp)"
 def precolor(node, ig):
 	global interference
 	
-	if isinstance(node, Assign):
-		sym = node.var.symbol
-		
-		#~if isinstance(node.exp, FunctionCall) and not sym.has_key('color'):
-			#~#Here we will pre-color the variable with %eax.  If another
-			#~#function call interferes with the variable the pre-color will
-			#~#be discarded and a new one will be selected.
-			#~sym['color'] = eax
-		#~
-		#~else:
-		precolor(node.exp, ig)
-	
-	elif isinstance(node, FunctionCall):
+	if isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
 			if sym in node['post-alive']:
 				ig[sym] = ig[sym] | interference

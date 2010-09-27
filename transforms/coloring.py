@@ -66,6 +66,9 @@ def colorPrime(node, cf, ig, chains):
 	if isinstance(node, Assign):
 		sym = node.var.symbol
 		
+		if sym.has_key('color') and sym['color'] in symsToColors(ig[sym]):
+			print("Pre-color causes interference.")
+		
 		#We need to find a color if the symbol doesn't already have one, or if
 		#the color it was pre-colored with interferes with a other colors.
 		if not sym.has_key('color') or sym['color'] in symsToColors(ig[sym]):
