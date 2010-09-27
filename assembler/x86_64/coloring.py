@@ -88,31 +88,36 @@ def precolor(node, ig):
 	if isinstance(node, Assign):
 		sym = node.var.symbol
 		
-		if isinstance(node.exp, FunctionCall) and not sym.has_key('color'):
-			#Here we will pre-color the variable with %rax.  If another
-			#function call interferes with the variable the pre-color will
-			#be discarded and a new one will be selected.
-			sym['color'] = rax
+		#This causes a lot more pushes and pops across function calls at the
+		#moment.
 		
-		else:
-			precolor(node.exp, ig)
+		#~if isinstance(node.exp, FunctionCall) and not sym.has_key('color'):
+			#~#Here we will pre-color the variable with %rax.  If another
+			#~#function call interferes with the variable the pre-color will
+			#~#be discarded and a new one will be selected.
+			#~sym['color'] = rax
+		#~
+		#~else:
+		
+		precolor(node.exp, ig)
 	
 	elif isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
 			if sym in node['post-alive']:
 				ig[sym] = ig[sym] | interference
 		
-		index = 0
-		for arg in node.args:
-			if isinstance(arg, Name):
-				sym = arg.symbol
-				if not (sym.has_key('color') or sym in node['post-alive']):
-					sym['color'] = args[index]
-			
-			index += 1
-			
-			if index == len(args):
-				break
+		#This is currently left out because it causes too many pushes and pops.
+		#~index = 0
+		#~for arg in node.args:
+			#~if isinstance(arg, Name):
+				#~sym = arg.symbol
+				#~if not (sym.has_key('color') or sym in node['post-alive']):
+					#~sym['color'] = args[index]
+			#~
+			#~index += 1
+			#~
+			#~if index == len(args):
+				#~break
 	
 	else:
 		for child in node:
