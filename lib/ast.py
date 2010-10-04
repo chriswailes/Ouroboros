@@ -31,9 +31,6 @@ class Node(dict):
 	
 	def setChildren(self, children):
 		pass
-	
-	def isSimple(self):
-		return False
 
 ###############
 # SSA Classes #
@@ -274,6 +271,10 @@ class UnaryOp(Expression):
 		
 		return ret
 
+###################
+# Unary Operators #
+###################
+
 class Negate(UnaryOp):
 	def __init__(self, operand):
 		super(UnaryOp, self).__init__('-', operand)
@@ -281,6 +282,10 @@ class Negate(UnaryOp):
 class Not(UnaryOp):
 	def __init__(self, operand):
 		super(UnaryOp, self).__init__('not ', operand)
+
+####################
+# Binary Operators #
+####################
 
 class Add(BinOp):
 	def __init__(self, left, right):
@@ -377,9 +382,6 @@ class Integer(Value):
 	def __str__(self):
 		return "${0:d}".format(self.value)
 	
-	def isSimple(self):
-		return True
-	
 	def toGraph(self):
 		pass
 	
@@ -425,9 +427,6 @@ class Name(Value):
 	
 	def __str__(self):
 		return str(self.symbol)
-	
-	def isSimple(self):
-		return True
 	
 	def collectSymbols(self):
 		return set([self.symbol])
