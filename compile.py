@@ -46,6 +46,8 @@ if config.startStage == 'python':
 		print(tree)
 		print("")
 	
+	exit(0)
+	
 	#Run the AST transformation passes (except 'color', which is done in the
 	#loop below.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])

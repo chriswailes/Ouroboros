@@ -9,6 +9,10 @@ from util import *
 
 from symbol_table import SymbolTable
 
+##############
+# Base Class #
+##############
+
 class Node(dict):
 	def __iter__(self):
 		for n in self.getChildren():
@@ -30,6 +34,10 @@ class Node(dict):
 	
 	def isSimple(self):
 		return False
+
+###############
+# SSA Classes #
+###############
 
 class Phi(Node):
 	def __init__(self, target, srcs = []):
@@ -94,6 +102,10 @@ class BasicBlock(Node):
 		
 		return ret
 
+##############################
+# Modules, Defs, and Classes #
+##############################
+
 class Module(Node):
 	def __init__(self, block):
 		self.block = block
@@ -112,6 +124,10 @@ class Module(Node):
 	
 	def toPython(self):
 		return self.block.toPython()
+
+##############
+# Statements #
+##############
 
 class Statement(Node):
 	pass
@@ -174,6 +190,10 @@ class If(Statement):
 		
 		return ret
 
+###############
+# Expressions #
+###############
+
 class Expression(Node):
 	pass
 
@@ -206,49 +226,14 @@ class FunctionCall(Expression):
 		
 		return ret + ')'
 
-class Name(Expression):
-	def __init__(self, symbol):
-		self.symbol = symbol
-	
-	def __repr__(self):
-		return "Name({0})".format(str(self.symbol))
-	
-	def isSimple(self):
-		return True
-	
-	def collectSymbols(self):
-		return set([self.symbol])
-	
-	def toGraph(self):
-		pass
-	
-	def toPython(self, level = 0):
-		return str(self.symbol)
-
-class Integer(Expression):
-	def __init__(self, value):
-		self.value = value
-	
-	def __repr__(self):
-		return "Integer({0:d})".format(self.value)
-	
-	def __str__(self):
-		return "${0:d}".format(self.value)
-	
-	def isSimple(self):
-		return True
-	
-	def toGraph(self):
-		pass
-	
-	def toPython(self, level = 0):
-		return "{0:d}".format(self.value)
-
 class BinOp(Expression):
 	def __init__(self, operator, left, right):
 		self.operator = operator
 		self.left = left
 		self.right = right
+	
+	def __repr__(self):
+		return "{0}({1}, {2})".format(self.__class__.__name__, repr(self.left), repr(self.right))
 	
 	def getChildren(self):
 		return [self.left, self.right]
@@ -271,6 +256,9 @@ class UnaryOp(Expression):
 		self.operator = operator
 		self.operand = operand
 	
+	def __repr__(self):
+		return "{0}({1})".format(self.__class__.__name__, repr(self.operand))
+	
 	def getChildren(self):
 		return [self.operand]
 	
@@ -288,59 +276,188 @@ class UnaryOp(Expression):
 
 class Negate(UnaryOp):
 	def __init__(self, operand):
-		self.operator = '-'
-		self.operand = operand
-	
-	def __repr__(self):
-		return "Negate({0})".format(repr(self.operand))
-	
-	def opInstr(self):
-		return "neg"
+		super(UnaryOp, self).__init__('-', operand)
+
+class Not(UnaryOp):
+	def __init__(self, operand):
+		super(UnaryOp, self).__init__('not ', operand)
 
 class Add(BinOp):
 	def __init__(self, left, right):
-		self.operator = '+'
-		self.left = left
-		self.right = right
-	
-	def __repr__(self):
-		return "Add({0}, {1})".format(repr(self.left), repr(self.right))
-	
-	def opInstr(self):
-		return "add"
+		super(BinOp, self).__init__('+', left, right)
+
+class And(BinOp):
+	def __init__(self, left, right):
+		super(BinOp, self).__init__('and', left, right)
+
+class Eq(BinOp):
+	def __init__(self, left, right):
+		super(BinOp, self).__init__('==', left, right)
 
 class Div(BinOp):
 	def __init__(self, left, right):
-		self.operator = '/'
-		self.left = left
-		self.right = right
-	
-	def __repr__(self):
-		return "Div({0}, {1})".format(repr(self.left), repr(self.right))
-	
-	def opInstr(self):
-		return "idiv"
+		super(BinOp, self).__init__('/', left, right)
 
 class Mul(BinOp):
 	def __init__(self, left, right):
-		self.operator = '*'
-		self.left = left
-		self.right = right
-	
-	def __repr__(self):
-		return "Mul({0}, {1})".format(repr(self.left), repr(self.right))
-	
-	def opInstr(self):
-		return "imul"
+		super(BinOp, self).__init__('*', left, right)
+
+class Ne(BinOp):
+	def __init__(self, left, right):
+		super(BinOp, self).__init__('!=', left, right)
+
+class Or(BinOp):
+	def __init__(self, left, right):
+		super(BinOp, self).__init__('or', left, right)
 
 class Sub(BinOp):
 	def __init__(self, left, right):
-		self.operator = '-'
-		self.left = left
-		self.right = right
+		super(BinOp, self).__init__('-', left, right)
+
+##########
+# Values #
+##########
+
+class Value(Expression):
+	pass
+
+class Boolean(Value):
+	pass
+
+class Fals(Boolean):
+	pass
+
+class Tru(Boolean):
+	pass
+
+class Dictionary(Value):
+	def __init__(self, pairs):
+		self.pairs = pairs
+	
+	def __hash__(self):
+		return hash(self.pairs)
 	
 	def __repr__(self):
-		return "Sub({0}, {1})".format(repr(self.left), repr(self.right))
+		return "Dictionary({0})".format(repr(self.pairs))
 	
-	def opInstr(self):
-		return "sub"
+	def __str__(self):
+		return str(self.pairs)
+	
+	def getChildren(self):
+		return self.pairs.keys() + self.pairs.values()
+	
+	def setChildren(self, children):
+		newPairs = {}
+		
+		keyLen = len(children) / 2
+		
+		for index in range(0, keyLen):
+			newPairs[children[index]] = children[index + keyLen]
+		
+		self.pairs = newPairs
+	
+	def toPython(self, level = 0):
+		pythonPairs = {}
+		
+		for key in self:
+			pythonPairs[key.toPython()] = self.pairs[key].toPython()
+		
+		return pad(level) + str(els)
+
+class Integer(Value):
+	def __init__(self, value):
+		self.value = value
+	
+	def __hash__(self):
+		return hash(self.value)
+	
+	def __repr__(self):
+		return "Integer({0:d})".format(self.value)
+	
+	def __str__(self):
+		return "${0:d}".format(self.value)
+	
+	def isSimple(self):
+		return True
+	
+	def toGraph(self):
+		pass
+	
+	def toPython(self, level = 0):
+		return "{0:d}".format(self.value)
+
+class List(Value):
+	def __init__(self, elements):
+		self.elements = elements
+	
+	def __hash__(self):
+		return hash(self.elements)
+	
+	def __repr__(self):
+		return "List({0})".format(repr(self.elements))
+	
+	def __str__(self):
+		return str(self.elements)
+	
+	def getChildren(self):
+		return self.elements
+	
+	def setChildren(self, children):
+		self.elements = children
+	
+	def toPython(self, level = 0):
+		els = []
+		
+		for child in self:
+			els.append(child.toPython())
+		
+		return pad(level) + str(els)
+
+class Name(Value):
+	def __init__(self, symbol):
+		self.symbol = symbol
+	
+	def __hash__(self):
+		return hash(symbol)
+	
+	def __repr__(self):
+		return "Name({0})".format(str(self.symbol))
+	
+	def __str__(self):
+		return str(self.symbol)
+	
+	def isSimple(self):
+		return True
+	
+	def collectSymbols(self):
+		return set([self.symbol])
+	
+	def toGraph(self):
+		pass
+	
+	def toPython(self, level = 0):
+		return str(self.symbol)
+
+class Subscript(Value):
+	def __init__(self, symbol, subscript):
+		self.symbol = symbol
+		self.subscript = subscript
+	
+	def __hash__(self):
+		return hash(str(sym) + str(subcript))
+	
+	def __repr__(self):
+		return "Subscript({0}, {1})".format(repr(self.symbol), repr(self.subscript))
+	
+	def __str__(self):
+		return "{0}[{1}]".format(self.symbol, self.subscript)
+	
+	def getChildren(self):
+		return [self.symbol, self.subscript]
+	
+	def setChildren(self, children):
+		self.symbol = children[0]
+		self.subscript = children[1]
+	
+	def toPython(self, level = 0):
+		return pad(level) + str(self)
