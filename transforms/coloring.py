@@ -90,7 +90,7 @@ def colorPrime(node, cf, ig, chains):
 				#If all else fails we will get a new color from those that
 				#are currently available.
 				
-				color = cf.getColor( maxConstraint(chains[sym], ig), Register)
+				color = cf.getColor(maxConstraint(chains[sym], ig), Register)
 				
 				if color == None:
 					color = cf.getColor(ig[sym])

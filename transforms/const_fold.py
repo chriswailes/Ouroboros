@@ -15,11 +15,14 @@ def init():
 	register('const_fold', foldConstants, analysis, args)
 
 def foldConstants(node):
+	newChildren = []
+	
+	for child in node:
+		newChildren.append(foldConstants(child))
+	
+	node.setChildren(newChildren)
+	
 	if isinstance(node, BinOp):
-		#Fold the left and right operands.
-		node.left = foldConstants(node.left)
-		node.right = foldConstants(node.right)
-		
 		#Move constant values to the left when we can.
 		if isinstance(node, Add) or isinstance(node, Mul):
 			if isinstance(node.right, Integer):
@@ -27,12 +30,26 @@ def foldConstants(node):
 				node.left = node.right
 				node.right = tmp
 		
-		#Swap operators if our right hand value is a negation.
+		elif isinstance(node, And) or isinstance(node, Or):
+			if isinstance(node.right, Boolean):
+				tmp = node.left
+				node.left = node.right
+				node.right = tmp
+		
+		#Swap operators if we can.
 		if isinstance(node, Add) and isinstance(node.right, Negate):
 			node = Sub(node.left, node.right.operand)
 		
 		elif isinstance(node, Sub) and isinstance(node.right, Negate):
-			node = Add(node.left, node.right.operand)	
+			node = Add(node.left, node.right.operand)
+		
+		elif isinstance(node, And) or isinstance(node, Or):
+			if isinstance(node.left, Not) and isinstance(node.right, Not):
+				if isinstance(node, And):
+					node = Or(node.left.operand, node.right.operand)
+				
+				else:
+					node = And(node.left.operand, node.right.operand)
 		
 		#Calcluate constant values.
 		if isinstance(node.left, Integer):
@@ -60,37 +77,48 @@ def foldConstants(node):
 						node = Add(Integer(value), node.right.right)
 	
 	elif isinstance(node, Negate):
-		node.operand = foldConstants(node.operand)
+		op = node.operand
 		
-		if isinstance(node.operand, Add):
-			op = node.operand
-			if isinstance(op.left, Negate) or isinstance(op.right, Negate):
-				newNode = Add(Negate(op.left), Negate(op.right))
-				node = foldConstants(newNode)
-		
-		elif isinstance(node.operand, Integer):
-			value = eval("-{0}".format(node.operand.value))
+		if isinstance(op, Integer):
+			value = eval("-{0}".format(op.value))
 			node = Integer(value)
 		
-		elif isinstance(node.operand, Negate):
-			node = foldConstants(node.operand.operand)
+		elif isinstance(op, Negate):
+			node = foldConstants(op.operand)
 		
-		elif isinstance(node.operand, Sub):
-			op = node.operand
-			
+		elif isinstance(op, BinOp):
 			cond  = isinstance(op.left, Negate) or isinstance(op.left, Integer)
 			cond |= isinstance(op.right, Negate) or isinstance(op.right, Integer)
 			
 			if cond:
-				newNode = Sub(Negate(op.left), Negate(op.right))
-				node = foldConstants(newNode)
+				if isinstance(op, Add):
+					newNode = Add(Negate(op.left), Negate(op.right))
+					node = foldConstants(newNode)
+				
+				elif isinstance(op, Sub):
+					newNode = Sub(Negate(op.left), Negate(op.right))
+					node = foldConstants(newNode)
 	
-	else:
-		newChildren = []
+	elif isinstance(node, Not):
+		op = node.operand
 		
-		for child in node:
-			newChildren.append(foldConstants(child))
+		if isinstance(op, Tru):
+			node = Fals()
 		
-		node.setChildren(newChildren)
+		elif isinstance(op, Fals):
+			node = Tru()
+		
+		elif isinstance(op, BinOp):
+			cond  = isinstance(op.left, Not) or isinstance(op.left, Boolean)
+			cond |= isinstance(op.right, Not) or isinstance(op.right, Boolean)
+			
+			if cond:
+				if isinstance(op, And):
+					newNode = Or(Not(op.left), Not(op.right))
+					node = foldConstants(newNode)
+				
+				elif isinstance(op, Or):
+					newNode = And(Not(op.left), Not(op.right))
+					node = foldConstants(newNode)
 	
 	return node
