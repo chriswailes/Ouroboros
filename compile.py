@@ -66,8 +66,6 @@ if config.startStage == 'python':
 		print(tree.toPython())
 		print('')
 	
-	exit(0)
-	
 	#One of the symbols from each of these sets needs to be spilled.
 	spillSets = []
 	

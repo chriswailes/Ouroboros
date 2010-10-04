@@ -170,6 +170,9 @@ def translate(node, st = None, jn = None, funcName = False):
 	elif isinstance(node, oast.Name):
 		symbol = node.name
 		if funcName:
+			if symbol == 'input':
+				symbol = 'input_int'
+			
 			symbol = st.getFunSymbol(symbol)
 		else:
 			if symbol == 'True':

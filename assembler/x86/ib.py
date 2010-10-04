@@ -8,7 +8,19 @@ Description:	Classes and functions for building x86 instructions.
 from assembler import ib
 from assembler.ib import Block, Immediate, Instruction, Labeler, Label
 
-from assembler.coloring import Mem
+from assembler.coloring import Mem, Register
+
+from lib.ast import *
+
+TAG_SIZE	= Immediate(2)
+TAG_MASK	= Immediate(0x3)
+
+INT_TAG	= Immediate(0x0)
+BOOL_TAG	= Immediate(0x1)
+OBJ_TAG	= Immediate(0x3)
+
+FALS		= Immediate(0x1)
+TRU		= Immediate(0x5)
 
 class OneOp(ib.OneOp):
 	def __init__(self, name, operand = None, suffix = "l", comment = ""):
@@ -32,3 +44,52 @@ def saveRegs(code, regs, inUse):
 	for reg in regs:
 		if reg in inUse:
 			code.append(OneOp('push', reg))
+
+def pack(imm, typ):
+	global TAG_SIZE
+	
+	if isinstance(imm, Immediate):
+		if typ == Integer:
+			value = imm.value << TAG_SIZE.value
+		
+		else:
+			raise Exception('Unspported object in pack funcion.')
+		
+		return Immediate(value)
+	
+	else:
+		raise Exception('Trying to pack a non-Value node.')
+
+def unpack(imm):
+	global TAG_SIZE
+	
+	if isinstance(imm, Immediate):
+		return imm.value >> TAG_SIZE.value
+	
+	else:
+		raise Exception('Trying to unpack a non-Immediate value.')
+
+def tag(obj, typ):
+	global TAG_SIZE, BOOL_TAG, OBJ_TAG
+	
+	if isinstance(obj, Register):
+		code = Block('')
+		
+		code.append(TwoOp('sal', TAG_SIZE, obj))
+		
+		if typ == Integer:
+			pass
+		
+		elif typ == Boolean:
+			code.append(TwoOp('and', BOOL_TAG, obj))
+		
+		else:
+			code.append(TwoOp('and', OBJ_TAG, obj))
+		
+		return code
+	
+	else:
+		raise Exception('Trying to tag a value that isn\'t a register.')
+
+def untag(reg):
+	return TwoOp('sar', TAG_SIZE, reg)
