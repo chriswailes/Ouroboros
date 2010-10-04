@@ -277,11 +277,11 @@ class UnaryOp(Expression):
 
 class Negate(UnaryOp):
 	def __init__(self, operand):
-		super(UnaryOp, self).__init__('-', operand)
+		super(Negate, self).__init__('-', operand)
 
 class Not(UnaryOp):
 	def __init__(self, operand):
-		super(UnaryOp, self).__init__('not ', operand)
+		super(Not, self).__init__('not ', operand)
 
 ####################
 # Binary Operators #
@@ -289,35 +289,35 @@ class Not(UnaryOp):
 
 class Add(BinOp):
 	def __init__(self, left, right):
-		super(BinOp, self).__init__('+', left, right)
+		super(Add, self).__init__('+', left, right)
 
 class And(BinOp):
 	def __init__(self, left, right):
-		super(BinOp, self).__init__('and', left, right)
+		super(And, self).__init__('and', left, right)
 
 class Eq(BinOp):
 	def __init__(self, left, right):
-		super(BinOp, self).__init__('==', left, right)
+		super(Eq, self).__init__('==', left, right)
 
 class Div(BinOp):
 	def __init__(self, left, right):
-		super(BinOp, self).__init__('/', left, right)
+		super(Div, self).__init__('/', left, right)
 
 class Mul(BinOp):
 	def __init__(self, left, right):
-		super(BinOp, self).__init__('*', left, right)
+		super(Mul, self).__init__('*', left, right)
 
 class Ne(BinOp):
 	def __init__(self, left, right):
-		super(BinOp, self).__init__('!=', left, right)
+		super(Ne, self).__init__('!=', left, right)
 
 class Or(BinOp):
 	def __init__(self, left, right):
-		super(BinOp, self).__init__('or', left, right)
+		super(Or, self).__init__('or', left, right)
 
 class Sub(BinOp):
 	def __init__(self, left, right):
-		super(BinOp, self).__init__('-', left, right)
+		super(Sub, self).__init__('-', left, right)
 
 ##########
 # Values #
@@ -327,13 +327,19 @@ class Value(Expression):
 	pass
 
 class Boolean(Value):
-	pass
+	def __repr__(self):
+		return str(self)
+	
+	def toPython(self):
+		return str(self)
 
 class Fals(Boolean):
-	pass
+	def __str__(self):
+		return 'False'
 
 class Tru(Boolean):
-	pass
+	def __str__(self):
+		return 'True'
 
 class Dictionary(Value):
 	def __init__(self, pairs):
@@ -362,12 +368,12 @@ class Dictionary(Value):
 		self.pairs = newPairs
 	
 	def toPython(self, level = 0):
-		pythonPairs = {}
+		pairs = []
 		
-		for key in self:
-			pythonPairs[key.toPython()] = self.pairs[key].toPython()
+		for key in self.pairs:
+			pairs.append("{0}:{1}".format(key.toPython(), self.pairs[key].toPython()))
 		
-		return pad(level) + str(els)
+		return pad(level) + '{' + ', '.join(pairs) + '}'
 
 class Integer(Value):
 	def __init__(self, value):
@@ -413,7 +419,7 @@ class List(Value):
 		for child in self:
 			els.append(child.toPython())
 		
-		return pad(level) + str(els)
+		return pad(level) + '[' + ', '.join(els) + ']'
 
 class Name(Value):
 	def __init__(self, symbol):
@@ -449,7 +455,7 @@ class Subscript(Value):
 		return "Subscript({0}, {1})".format(repr(self.symbol), repr(self.subscript))
 	
 	def __str__(self):
-		return "{0}[{1}]".format(self.symbol, self.subscript)
+		return "{0}[{1}]".format(self.symbol, self.subscript.value)
 	
 	def getChildren(self):
 		return [self.symbol, self.subscript]

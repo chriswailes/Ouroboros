@@ -192,7 +192,7 @@ def translate(node, st = None, jn = None, funcName = False):
 		left = translate(node.nodes[0], st, jn)
 		right = translate(node.nodes[1], st, jn)
 		
-		return ast.And(left, right)
+		return ast.Or(left, right)
 		
 	elif isinstance(node, oast.Printnl):
 		children = util.flatten([translate(e, st, jn) for e in node.getChildNodes()])

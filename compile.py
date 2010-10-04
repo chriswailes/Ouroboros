@@ -46,8 +46,6 @@ if config.startStage == 'python':
 		print(tree)
 		print("")
 	
-	exit(0)
-	
 	#Run the AST transformation passes (except 'color', which is done in the
 	#loop below.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
@@ -67,6 +65,8 @@ if config.startStage == 'python':
 		print("After Transformation Passes:")
 		print(tree.toPython())
 		print('')
+	
+	exit(0)
 	
 	#One of the symbols from each of these sets needs to be spilled.
 	spillSets = []

@@ -31,7 +31,7 @@ def foldConstants(node):
 				node.right = tmp
 		
 		elif isinstance(node, And) or isinstance(node, Or):
-			if isinstance(node.right, Boolean):
+			if not isinstance(node.left, Boolean) and isinstance(node.right, Boolean):
 				tmp = node.left
 				node.left = node.right
 				node.right = tmp
@@ -75,6 +75,21 @@ def foldConstants(node):
 					
 					elif isinstance(node.right, Sub):
 						node = Add(Integer(value), node.right.right)
+		
+		elif isinstance(node.left, Boolean):
+			if isinstance(node, And):
+				if isinstance(node.left, Tru):
+					node = node.right
+				
+				else:
+					node = Fals()
+			
+			elif isinstance(node, Or):
+				if isinstance(node.left, Tru):
+					node = Tru()
+				
+				else:
+					node = node.right
 	
 	elif isinstance(node, Negate):
 		op = node.operand

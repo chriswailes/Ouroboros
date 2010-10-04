@@ -15,8 +15,12 @@ def init():
 	register('const_prop', propigateConstants, analysis, args)
 
 def propigateConstants(node, consts = {}):
-	if isinstance(node, Assign) and isinstance(node.exp, Integer):
-		consts[node.var.symbol] = Integer(node.exp.value)
+	if isinstance(node, Assign):
+		if isinstance(node.exp, Integer):
+			consts[node.var.symbol] = Integer(node.exp.value)
+		
+		elif isinstance(node.exp, Boolean):
+			consts[node.var.symbol] = node.exp
 	
 	elif isinstance(node, Name) and consts.has_key(node.symbol):
 		return consts[node.symbol]

@@ -39,9 +39,9 @@ def discard(node):
 	return node
 
 def extractStmts(exp):
+	stmts = []
+	
 	if isinstance(exp, ast.BinOp):
-		stmts = []
-		
 		if isinstance(exp.left, ast.FunctionCall) or isinstance(exp.left, ast.Statement):
 			stmts.append(exp.left)
 		else:
@@ -51,17 +51,19 @@ def extractStmts(exp):
 			stmts.append(exp.right)
 		else:
 			stmts.append(extractStmts(exp.right))
-		
-		return util.flatten(stmts)
 	
-	elif isinstance(exp, ast.Integer):
-		return []
-	
-	elif isinstance(exp, ast.Name):
-		return []
+	elif isinstance(exp, ast.Dictionary) or  isinstance(exp, ast.List):
+		for child in exp:
+			if isinstance(child, ast.FunctionCall) or isinstance(child, ast.Statement):
+				stmts.append(child)
+			
+			else:
+				stmts.append(extractStmts(child))
 	
 	elif isinstance(exp, ast.UnaryOp):
 		if isinstance(exp.operand, ast.FunctionCall) or isinstance(exp.operand, ast.Statement):
-			return [exp.operand]
+			stmts.append(exp.operand)
 		else:
-			return util.flatten(extractStmts(exp.operand))
+			stmts.append(extractStmts(exp.operand))
+	
+	return util.flatten(stmts)
