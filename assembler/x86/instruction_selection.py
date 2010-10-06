@@ -12,8 +12,6 @@ from assembler.x86.coloring import eax, ebp, esp, callee, caller
 
 from lib import ast
 
-from transforms.coloring import symsToColors
-
 l = Labeler()
 
 def selectInstructions(node, cf, dest = None):
@@ -42,7 +40,7 @@ def selectInstructions(node, cf, dest = None):
 			return code
 		elif isinstance(node.exp, ast.Integer):
 			src = selectInstructions(node.exp, cf)
-			src = pack(src)
+			src = pack(src, Integer)
 			
 			return TwoOp('mov', src, dest)
 		else:
@@ -64,212 +62,128 @@ def selectInstructions(node, cf, dest = None):
 		
 		#The left and right operands need to be translated, but the
 		#destination is already a Symbol,
-		left = selectInstructions(node.left, cf)
-		right = selectInstructions(node.right, cf)
+		savedLeft = left = selectInstructions(node.left, cf)
+		savedRight = right = selectInstructions(node.right, cf)
 		
-		if isinstance(node, ast.Add):
-			#The right value is never going to be an immediate due to our
-			#constant folding transformation.
+		#########
+		# Setup #
+		#########
+		
+		#This code will make sure that both the right and left parameters are
+		#in registers.
+		
+		tmpColor0 = getTempColor(cf, node) if isinstance(dest, Mem) else dest
 			
-			if isinstance(left, Immediate) and left.value == 1:
-				if isinstance(dest, Mem):
-					
-					tmpColor = getTempColor(cf, node)
-					
-					code.append(TwoOp('mov', right, tmpColor))
-					code.append(untag(tmpColor))
-					code.append(OneOp('inc', tmpColor))
-					code.append(tag(tmpColor, Integer))
-					code.append(TwoOp('mov', tmpColor, dest))
-				
-				else:
-					if right != dest:
-						code.append(TwoOp('mov', right, dest))
-					
-					code.append(untag(dest))
-					code.append(OneOp('inc', dest))
-					code.append(tag(dest, Integer))
+		if isinstance(left, Mem):
+			if right != dest:
+				code.append(TwoOp('mov', left, tmpColor0))
+				left = tmpColor0
 			
 			else:
-				if isinstance(dest, Mem):
-					
-					tmpColor = getTempColor(cf, node)
-					
-					code.append(TwoOp('mov', left, tmpColor))
-					code.append(untag(tmpColor))
-					code.append(untag(right))
-					code.append(TwoOp('add', right, tmpColor))
-					code.append(tag(right, Integer))
-					code.append(tag(tmpColor, Integer))
-					code.append(TwoOp('mov', tmpColor, dest))
+				tmpcolor1 = getTempColor(cf, node) if tmpColor0 == dest else tmpColor0
+				code.append(TwoOp('mov', left, tmpColor1))
+				left = tmpColor1
+		
+		elif isinstance(left, Immediate) and (isinstance(node, Div) or isinstance(node, Sub)):
+			#Move left hand immediates into the temporary register when it is
+			#a divide or subtract operation.
+			code.append(TwoOp('mov', left, tmpColor0))
+			left = tmpColor0
+		
+		if isinstance(right, Mem):
+			if left != tmpColor0 and (isinstance(node, Add) or isinstance(node, Mul)):
+				code.append(TwoOp('mov', right, tmpColor0))
+				left = right
+				right = tmpColor0
+			
+			else:
+				tmpColor1 = getTempColor(cf, node, tmpColor0)
 				
-				elif left == dest:
-					code.append(untag(dest))
-					
-					if not isinstance(right, Immediate):
-						code.append(untag(right))
-					
-					code.append(TwoOp('add', right, dest))
-					
-					if not isinstance(right, Immediate):
-						code.append(tag(right, Integer))
-					
-					code.append(tag(dest, Integer))
-					
-				elif right == dest:
-					code.append(untag(dest))
-					
-					if not isinstance(left, Immediate):
-						code.append(untag(left))
-					
-					code.append(TwoOp('add', left, dest))
-					
-					if not isinstance(left, Immediate):
-						code.append(tag(left, Integer))
-					
-					code.append(tag(dest, Integer))
-				
-				else:
-					code.append(TwoOp('mov', left, dest))
-					code.append(untag(dest))
-					
-					if not isinstance(right, Immediate):
-						code.append(untag(right))
-					
-					code.append(TwoOp('add', right, dest))
-					
-					if not isinstance(right, Immediate):
-						code.append(tag(right, Integer))
-					
-					code.append(tag(dest, Integer))
+				code.append(TwoOp('mov', right, tmpColor1))
+				right = tmpColor1
+		
+		#Untag the left operand if it isn't an immediate.
+		if isinstance(savedLeft, Color):
+			code.append(untag(left))
+		
+		#Untag the right operand if it isn't an immediate.
+		if isinstance(savedRight, Color) and savedLeft != savedRight:
+			code.append(untag(right))
+		
+		#############
+		# End Setup #
+		#############
+		
+		#The right value is never going to be an immediate due to our constant
+		#folding transformation.
+		
+		if isinstance(node, ast.Add):
+			if isinstance(left, Immediate) and left.value == 1:
+				code.append(OneOp('inc', right))
+			
+			elif right == dest or isinstance(left, Immediate):
+				code.append(TwoOp('add', left, right))
+			
+			else:
+				code.append(TwoOp('add', right, left))
 			
 		elif isinstance(node, ast.Div):
 			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
 				#We can shift to the right instead of dividing.
 				dist = right.value / 2
 				
-				if isinstance(dest, Mem):
-					code.append(TwoOp('mov', left, reg))
-					code.append(TwoOp('sar', Immediate(dist), reg))
-					code.append(TwoOp('mov', reg, dest))
-				else:
-					code.append(TwoOp('mov', left, dest))
-					code.append(TwoOp('sar', Immediate(dist), dest))
+				#FIXME
 			else:
-				#This is broken for now.  Fixing it doesn't make sense until
-				#register allocation is working.
-				
-				if isinstance(dest, Mem):
-					code.append(TwoOp("mov", left, reg0))
-					code.append(TwoOp("mov", right, reg1))
-					code.append(Instruction("cltd"))
-					
-					code.append(OneOp(node.opInstr(), reg1))
-					code.append(TwoOp("mov", reg0, dest))
-				else:
-					code.append(TwoOp("mov", node.left, dest))
-					code.append(TwoOp("mov", node.right, reg0))
-					code.append(OneOp(node.opInstr(), dest))
+				#FIXME
+				pass
 		
 		elif isinstance(node, ast.Mul):
 			if isinstance(left, Immediate) and (left.value % 2) == 0 and (left.value / 2) < 31:
 				#We can shift to the left instead of multiplying.
 				dist = left.value / 2
 				
-				if isinstance(dest, Mem):
-					
-					tmpColor = getTempColor(cf, node)
-					
-					code.append(TwoOp('mov', right, tmpColor))
-					code.append(TwoOp('sal', Immediate(dist), tmpColor))
-					code.append(TwoOp('mov', tmpColor, dest))
-				
-				else:
-					code.append(TwoOp('mov', right, dest))
-					code.append(TwoOp('sal', Immediate(dist), dest))
+				code.append(TwoOp('sal', Immediate(dist), right))
 			
-			elif isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
-				#We can shift to the left instead of multiplying.
-				dist = right.value / 2
-				
-				if isinstance(dest, Mem):
-					
-					tmpColor = getTempColor(cf, node)
-					
-					code.append(TwoOp('mov', left, tmpColor))
-					code.append(TwoOp('sal', Immediate(dist), tmpColor))
-					code.append(TwoOp('mov', tmpColor, dest))
-				
-				else:
-					code.append(TwoOp('mov', left, dest))
-					code.append(TwoOp('sal', Immediate(dist), dest))
+			elif right == dest or isinstance(left, Immediate):
+				code.append(TwoOp('imul', left, right))
 			
 			else:
-				if isinstance(dest, Mem):
-					
-					tmpColor = getTempColor(cf, node)
-					
-					code.append(TwoOp('mov', left, tmpColor))
-					code.append(TwoOp('imul', right, tmpColor))
-					code.append(TwoOp('mov', tmpColor, dest))
-				
-				elif left == dest:
-					code.append(TwoOp('imul', right, dest))
-				
-				elif right == dest:
-					code.append(TwoOp('imul', left, dest))
-				
-				else:
-					code.append(TwoOp('mov', left, dest))
-					code.append(TwoOp('imul', right, dest))
+				code.append(TwoOp('imul', right, left))
 		
 		elif isinstance(node, ast.Sub):
-			if isinstance(right, Immediate) and unpack(right) == 1:
-				if isinstance(dest, Mem):
-					
-					tmpColor = getTempColor(cf, node)
-					
-					code.append(TwoOp('mov', left, tmpColor))
-					code.append(OneOp('dec', tmpColor))
-					code.append(TwoOp('mov', tmpColor, dest))
-				
-				else:
-					code.append(TwoOp('mov', left, dest))
-					code.append(OneOp('dec', dest))
-			
-			elif isinstance(dest, Mem):
-					
-				tmpColor = getTempColor(cf, node)
-				
-				code.append(TwoOp('mov', left, tmpColor))
-				code.append(untag(tmpColor))
-				code.append(TwoOp('sub', right, tmpColor))
-				code.append
-				code.append(TwoOp('mov', tmpColor, dest))
+			if isinstance(right, Immediate) and right == 1:
+				code.append(OneOp('dec', left))
 			
 			else:
-				if dest and left != dest:
-					code.append(TwoOp('mov', left, dest))
-				
-				if not isinstance(left, Immediate):
-					code.append(untag(dest))
-				
-				if not isinstance(right, Immediate):
-						code.append(untag(right))
-				
-				code.append(TwoOp('sub', right, dest))
-				
-				if not isinstance(right, Immediate):
-						code.append(tag(right, Integer))
-				
-				code.append(tag(dest, Integer))
+				code.append(TwoOp('sub', right, left))
+		
+		###########
+		# Cleanup #
+		###########
+		
+		#Re-tag left, right, and result appropriately.
+		code.append(tag(tmpColor0, Integer))
+		
+		if savedLeft != dest and isinstance(savedLeft, Register) and savedLeft in toColors(node['post-alive']) :
+			code.append(tag(savedLeft, Integer))
+		
+		if savedRight != dest and isinstance(savedRight, Register) and savedRight in toColors(node['post-alive']):
+			code.append(tag(savedRight, Integer))
+		
+		#Move the result.
+		if tmpColor0 != dest:
+			code.append(TwoOp('mov', tmpColor0, dest))
+		
+		###############
+		# End Cleanup #
+		###############
 		
 		return code
 	
 	elif isinstance(node, ast.FunctionCall):
 		code = Block()
 		
-		usedColors = symsToColors(node['pre-alive'])
+		usedColors = toColors(node['pre-alive'])
 		
 		#Save any caller saved registers currently in use.
 		saveRegs(code, caller, usedColors)
@@ -353,7 +267,7 @@ def selectInstructions(node, cf, dest = None):
 		#Make the old stack pointer the new base pointer.
 		code.append(TwoOp('mov', esp, ebp))
 		
-		usedColors = symsToColors(node.collectSymbols())
+		usedColors = toColors(node.collectSymbols())
 		
 		#Save any callee saved registers we used.
 		saveRegs(code, callee, usedColors)
@@ -395,38 +309,34 @@ def selectInstructions(node, cf, dest = None):
 		
 		src = selectInstructions(node.operand, cf)
 		
-		if dest == None:
-			code.append(untag(dest))
-			code.append(OneOp('neg', src))
-			code.append(tag(dest, Integer))
+		#########
+		# Setup #
+		#########
 		
-		else:
-			if isinstance(dest, Mem):
-				
-				tmpColor = getTempColor(cf, node)
-				
-				code.append(TwoOp('mov', src, tmpColor))
-				code.append(untag(tmpColor))
-				code.append(OneOp(node.opInstr(), tmpColor))
-				code.append(tag(tmpColor, Integer))
-				code.append(TwoOp('mov', tmpColor, dest))
-				
-			else:
-				if dest and src != dest:
-					code.append(TwoOp('mov', src, dest))
-				
-				code.append(untag(dest))
-				code.append(OneOp('neg', dest))
-				code.append(tag(dest, Integer))
+		tmpColor = getTempColor(cf, node) if isinstance(dest, Mem) else dest
+		
+		if src != tmpColor:
+			code.append(TwoOp('mov', src, tmpColor))
+		
+		code.append(untag(tmpColor))
+		
+		#############
+		# End Setup #
+		#############
+		
+		code.append(OneOp('neg', dest))
+		
+		###########
+		# Cleanup #
+		###########
+		
+		code.append(tag(tmpColor, Integer))
+		
+		if tmpColor != dest:
+			code.append(TwoOp('mov', tmpColor, dest))
+		
+		###############
+		# End Cleanup #
+		###############
 		
 		return code
-
-def getTempColor(cf, node):
-	tmpColor = cf.getColor(node['pre-alive'], Register)
-	
-	if tmpColor == None:
-		raise Spill(node['pre-alive'])
-	
-	else:
-		return tmpColor
-

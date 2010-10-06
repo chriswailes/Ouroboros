@@ -6,6 +6,7 @@ Description:	Generic assembler coloring classes and functions.
 """
 
 from lib.config import config
+from lib.symbol_table import Symbol
 
 def precolor(tree, ig):
 	if config.arch == 'x86':
@@ -14,6 +15,18 @@ def precolor(tree, ig):
 		from x86_64.coloring import precolor
 	
 	precolor(tree, ig)
+
+def toColors(l):
+	colors = []
+	
+	for o in l:
+		if isinstance(o, Color):
+			colors.append(o)
+		
+		elif isinstance(o, Symbol) and o.has_key('color'):
+			colors.append(o['color'])
+	
+	return set(colors)
 
 class ColorFactory(object):
 	def __init__(self):
@@ -44,13 +57,7 @@ class ColorFactory(object):
 		if preferCaller:
 			self.swapPreference()
 		
-		allocated = []
-		
-		for sym in interference:
-			if sym.has_key('color'):
-				allocated.append(sym['color'])
-		
-		allocated = set(allocated)
+		allocated = toColors(interference)
 		free = self.colors - allocated
 		
 		if test != None:

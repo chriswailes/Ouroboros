@@ -66,22 +66,22 @@ def colorPrime(node, cf, ig, chains):
 	if isinstance(node, Assign):
 		sym = node.var.symbol
 		
-		if sym.has_key('color') and sym['color'] in symsToColors(ig[sym]):
+		if sym.has_key('color') and sym['color'] in toColors(ig[sym]):
 			print("Pre-color causes interference.")
 		
 		#We need to find a color if the symbol doesn't already have one, or if
 		#the color it was pre-colored with interferes with a other colors.
-		if not sym.has_key('color') or sym['color'] in symsToColors(ig[sym]):
+		if not sym.has_key('color') or sym['color'] in toColors(ig[sym]):
 			forward  = sym['related-forward']
 			backward = sym['related-backward']
 			
-			if forward and isinstance(forward['color'], Register) and not forward in symsToColors(ig[sym] - set([forward])):
+			if forward and isinstance(forward['color'], Register) and not forward in toColors(ig[sym] - set([forward])):
 				#If our forward looking relation's color is a register and
 				#doesn't cause interference we want to use it.
 				
 				sym['color'] = forward['color']
 			
-			elif backward and isinstance(backward['color'], Register) and not backward in symsToColors(ig[sym] - set([backward])):
+			elif backward and isinstance(backward['color'], Register) and not backward in toColors(ig[sym] - set([backward])):
 				#Next we will try our backward looking relation's color.
 				
 				sym['color'] = backward['color']
@@ -108,12 +108,3 @@ def maxConstraint(chain, ig):
 		constraints = constraints | ig[sym]
 	
 	return constraints
-
-def symsToColors(symbols):
-	colors = []
-	
-	for sym in symbols:
-		if sym.has_key('color'):
-			colors.append(sym['color'])
-	
-	return set(colors)

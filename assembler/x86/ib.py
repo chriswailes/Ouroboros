@@ -33,6 +33,16 @@ class TwoOp(ib.TwoOp):
 		
 		super(TwoOp, self).__init__(name, src, dest, suffix, comment)
 
+def getTempColor(cf, node, *interference):
+	interference = node['pre-alive'] | set(interference)
+	tmpColor = cf.getColor(interference, Register)
+	
+	if tmpColor == None:
+		raise Spill(node['pre-alive'])
+	
+	else:
+		return tmpColor
+
 def restoreRegs(code, regs, inUse):
 	regs.reverse()
 	
