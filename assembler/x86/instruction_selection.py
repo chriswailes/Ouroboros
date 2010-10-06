@@ -97,7 +97,9 @@ def selectInstructions(node, cf, dest = None):
 					
 					code.append(TwoOp('mov', left, tmpColor))
 					code.append(untag(tmpColor))
+					code.append(untag(right))
 					code.append(TwoOp('add', right, tmpColor))
+					code.append(tag(right, Integer))
 					code.append(tag(tmpColor, Integer))
 					code.append(TwoOp('mov', tmpColor, dest))
 				
@@ -130,9 +132,15 @@ def selectInstructions(node, cf, dest = None):
 				else:
 					code.append(TwoOp('mov', left, dest))
 					code.append(untag(dest))
-					code.append(untag(right))
+					
+					if not isinstance(right, Immediate):
+						code.append(untag(right))
+					
 					code.append(TwoOp('add', right, dest))
-					code.append(tag(right, Integer))
+					
+					if not isinstance(right, Immediate):
+						code.append(tag(right, Integer))
+					
 					code.append(tag(dest, Integer))
 			
 		elif isinstance(node, ast.Div):
@@ -234,14 +242,27 @@ def selectInstructions(node, cf, dest = None):
 				tmpColor = getTempColor(cf, node)
 				
 				code.append(TwoOp('mov', left, tmpColor))
+				code.append(untag(tmpColor))
 				code.append(TwoOp('sub', right, tmpColor))
+				code.append
 				code.append(TwoOp('mov', tmpColor, dest))
 			
 			else:
 				if dest and left != dest:
 					code.append(TwoOp('mov', left, dest))
 				
+				if not isinstance(left, Immediate):
+					code.append(untag(dest))
+				
+				if not isinstance(right, Immediate):
+						code.append(untag(right))
+				
 				code.append(TwoOp('sub', right, dest))
+				
+				if not isinstance(right, Immediate):
+						code.append(tag(right, Integer))
+				
+				code.append(tag(dest, Integer))
 		
 		return code
 	
