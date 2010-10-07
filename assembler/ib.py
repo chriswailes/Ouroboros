@@ -144,8 +144,9 @@ class Label(object):
 		return self.name
 
 class Immediate(object):
-	def __init__(self, value):
+	def __init__(self, value, packed = False):
 		self.value = value
+		self.packed = packed
 	
 	def __str__(self):
 		return '$' + str(self.value)

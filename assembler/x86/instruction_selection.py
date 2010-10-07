@@ -59,6 +59,9 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.BinOp):
 		code = Block()
 		
+		#Specify the end result's type.
+		tagType = Integer
+		
 		#The left and right operands need to be translated, but the
 		#destination is already a Symbol,
 		savedLeft = left = selectInstructions(node.left, cf)
@@ -170,22 +173,40 @@ def selectInstructions(node, cf, dest = None):
 			else:
 				code.append(TwoOp('sub', right, left))
 		
+		elif isinstance(node, ast.And):
+			tagType = Boolean
+			
+			if right == dest or isinstance(left, Immediate):
+				code.append(TwoOp('and', left, right))
+			
+			else:
+				code.append(TwoOp('and', right, left))
+		
+		elif isinstance(node, ast.Or):
+			tagType = Boolean
+			
+			if right == dest or isinstance(left, Immediate):
+				code.append(TwoOp('or', left, right))
+			
+			else:
+				code.append(TwoOp('or', right, left))
+		
 		###########
 		# Cleanup #
 		###########
 		
 		#Re-tag left, right, and result appropriately.
-		code.append(tag(tmpColor0, Integer))
+		code.append(tag(tmpColor0, tagType))
 		
 		if savedLeft != dest and left != dest and isinstance(savedLeft, Register) and \
 		savedLeft in toColors(node['post-alive']) :
 		
-			code.append(tag(savedLeft, Integer))
+			code.append(tag(savedLeft, tagType))
 		
 		if savedRight != dest and right != dest and isinstance(savedRight, Register) and \
 		savedRight in toColors(node['post-alive']):
 		
-			code.append(tag(savedRight, Integer))
+			code.append(tag(savedRight, tagType))
 		
 		#Move the result.
 		if tmpColor0 != dest:
@@ -196,6 +217,15 @@ def selectInstructions(node, cf, dest = None):
 		###############
 		
 		return code
+	
+	elif isinstance(node, ast.Boolean):
+		if isinstance(node, ast.Tru):
+			print("True value: {0}".format(TRU.value))
+			return TRU
+		
+		elif isinstance(node, ast.Fals):
+			print("False value: {0}".format(FALS.value))
+			return FALS
 	
 	elif isinstance(node, ast.FunctionCall):
 		code = Block()
@@ -209,7 +239,7 @@ def selectInstructions(node, cf, dest = None):
 		addSize = 0
 		for arg in node.args:
 			src = selectInstructions(arg, cf)
-			if isinstance(src, Immediate):
+			if isinstance(src, Immediate) and not src.packed:
 				src = pack(src, Integer)
 			
 			if first and len(code.insts) > 0:

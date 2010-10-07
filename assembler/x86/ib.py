@@ -20,8 +20,8 @@ INT_TAG	= Immediate(0x0)
 BOOL_TAG	= Immediate(0x1)
 OBJ_TAG	= Immediate(0x3)
 
-FALS		= Immediate(0x1)
-TRU		= Immediate(0x5)
+FALS		= Immediate(0x1, True)
+TRU		= Immediate(0x5, True)
 
 class OneOp(ib.OneOp):
 	def __init__(self, name, operand = None, suffix = "l", comment = ""):
@@ -92,10 +92,10 @@ def tag(obj, typ):
 			pass
 		
 		elif typ == Boolean:
-			code.append(TwoOp('and', BOOL_TAG, obj))
+			code.append(TwoOp('or', BOOL_TAG, obj))
 		
 		else:
-			code.append(TwoOp('and', OBJ_TAG, obj))
+			code.append(TwoOp('or', OBJ_TAG, obj))
 		
 		return code
 	
