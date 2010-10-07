@@ -5,7 +5,6 @@ Date:		2010/09/02
 Description:	The instruction selection code for the x86 architecture.
 """
 
-from assembler import *
 from assembler.coloring import *
 from assembler.x86.ib import *
 from assembler.x86.coloring import eax, ebp, esp, callee, caller
@@ -72,6 +71,9 @@ def selectInstructions(node, cf, dest = None):
 		#This code will make sure that both the right and left parameters are
 		#in registers.
 		
+		#tmpColor0 will be a register, and hold the final result of our
+		#computation.  The result may need to be moved if tmpColor0 is not
+		#the destination.
 		tmpColor0 = getTempColor(cf, node) if isinstance(dest, Mem) else dest
 			
 		if isinstance(left, Mem):
@@ -84,9 +86,20 @@ def selectInstructions(node, cf, dest = None):
 				code.append(TwoOp('mov', left, tmpColor1))
 				left = tmpColor1
 		
-		elif isinstance(left, Immediate) and (isinstance(node, Div) or isinstance(node, Sub)):
-			#Move left hand immediates into the temporary register when it is
-			#a divide or subtract operation.
+		elif isinstance(left, Immediate):
+			if isinstance(node, Div) or isinstance(node, Sub):
+				#Move left hand immediates into the temporary register when it is
+				#a divide or subtract operation.
+				code.append(TwoOp('mov', left, tmpColor0))
+				left = tmpColor0
+			else:
+				#If the left hand value is an immediate and this is an add
+				#or multiply operation the right hand value needs to be in
+				#the destination register.
+				code.append(TwoOp('mov', right, tmpColor0))
+				right = tmpColor0
+		
+		elif isinstance(left, Register) and left != dest:
 			code.append(TwoOp('mov', left, tmpColor0))
 			left = tmpColor0
 		
@@ -164,10 +177,14 @@ def selectInstructions(node, cf, dest = None):
 		#Re-tag left, right, and result appropriately.
 		code.append(tag(tmpColor0, Integer))
 		
-		if savedLeft != dest and isinstance(savedLeft, Register) and savedLeft in toColors(node['post-alive']) :
+		if savedLeft != dest and left != dest and isinstance(savedLeft, Register) and \
+		savedLeft in toColors(node['post-alive']) :
+		
 			code.append(tag(savedLeft, Integer))
 		
-		if savedRight != dest and isinstance(savedRight, Register) and savedRight in toColors(node['post-alive']):
+		if savedRight != dest and right != dest and isinstance(savedRight, Register) and \
+		savedRight in toColors(node['post-alive']):
+		
 			code.append(tag(savedRight, Integer))
 		
 		#Move the result.

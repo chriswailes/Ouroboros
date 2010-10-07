@@ -5,7 +5,8 @@ Date:		2010/08/26
 Description:	Classes and functions for building x86 instructions.
 """
 
-from assembler import ib
+from assembler import *
+
 from assembler.ib import Block, Immediate, Instruction, Labeler, Label
 
 from assembler.coloring import Mem, Register

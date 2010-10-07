@@ -23,7 +23,6 @@ def propigateConstants(node, consts = {}):
 			consts[node.var.symbol] = node.exp
 	
 	elif isinstance(node, Name) and consts.has_key(node.symbol):
-		print("Replacing symbol {0} with constant {1}".format(node.symbol, consts[node.symbol]))
 		return consts[node.symbol]
 	
 	newChildren = []
