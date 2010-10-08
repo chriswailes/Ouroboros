@@ -23,6 +23,8 @@ OBJ_TAG	= Immediate(0x3)
 FALS		= Immediate(0x1, True)
 TRU		= Immediate(0x5, True)
 
+labeler = Labeler()
+
 class OneOp(ib.OneOp):
 	def __init__(self, name, operand = None, suffix = "l", comment = ""):
 		super(OneOp, self).__init__(name, operand, suffix, comment)
@@ -86,12 +88,11 @@ def tag(obj, typ):
 	if isinstance(obj, Register):
 		code = Block('')
 		
-		code.append(TwoOp('sal', TAG_SIZE, obj))
-		
 		if typ == Integer:
-			pass
+			code.append(TwoOp('sal', TAG_SIZE, obj))
 		
 		elif typ == Boolean:
+			code.append(TwoOp('sal', TAG_SIZE, obj))
 			code.append(TwoOp('or', BOOL_TAG, obj))
 		
 		else:
@@ -104,3 +105,27 @@ def tag(obj, typ):
 
 def untag(reg):
 	return TwoOp('sar', TAG_SIZE, reg)
+
+def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz'):
+	global labeler
+	
+	code = Block()
+	
+	endLabel = labeler.nextLabel()
+	elsLabel = labeler.nextLabel() if els else endLabel
+	
+	code.append(TwoOp('cmp', comp, cond))
+	code.append(OneOp(jmp, elsLabel, None))
+	
+	#Now the then case
+	code.append(then)
+	code.append(OneOp('jmp', endLabel, None))
+	
+	if els:
+		#Now the else label and case.
+		code.append(elsLabel)
+		code.append(els)
+	
+	code.append(endLabel)
+	
+	return code

@@ -66,16 +66,20 @@ def colorPrime(node, cf, ig, chains):
 	if isinstance(node, Assign):
 		sym = node.var.symbol
 		
-		if sym.has_key('color') and sym['color'] in toColors(ig[sym]):
-			print("Pre-color causes interference.")
-		
 		#We need to find a color if the symbol doesn't already have one, or if
 		#the color it was pre-colored with interferes with a other colors.
 		if not sym.has_key('color') or sym['color'] in toColors(ig[sym]):
 			forward  = sym['related-forward']
 			backward = sym['related-backward']
+			phi = sym['phi-related']
 			
-			if forward and isinstance(forward['color'], Register) and not forward in toColors(ig[sym] - set([forward])):
+			if len(phi) > 0:
+				sym['color'] = cf.getColor(maxConstraint(phi, ig))
+				
+				for sym1 in phi:
+					sym1['color'] = sym['color']
+			
+			elif forward and isinstance(forward['color'], Register) and not forward in toColors(ig[sym] - set([forward])):
 				#If our forward looking relation's color is a register and
 				#doesn't cause interference we want to use it.
 				

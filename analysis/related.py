@@ -19,6 +19,7 @@ def related(node, graph = {}):
 	if isinstance(node, Assign):
 		sym0 = node.var.symbol
 		sym0['related-backward'] = None
+		sym0['phi-related'] = []
 		graph[sym0] = []
 		
 		if isinstance(node.exp, Name):
@@ -59,6 +60,18 @@ def related(node, graph = {}):
 			if not sym1 in node['post-alive']:
 				sym0['related-backward'] = sym1
 				graph[sym1].append(sym0)
+	
+	elif isinstance(node, Phi):
+		node.target.symbol['phi-related'] = []
+		
+		for name0 in node:
+			foo = node.target.symbol['phi-related']
+			foo.append(name0.symbol)
+			
+			name0.symbol['phi-related'].append(node.target.symbol)
+			
+			for name1 in node:
+				name0.symbol['phi-related'].append(name1.symbol)
 	
 	for child in node:
 		related(child)

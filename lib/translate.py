@@ -48,14 +48,14 @@ def translate(node, st = None, jn = None, funcName = False):
 		else:
 			#Translate the right hand side first so it can use the older version
 			#of the left hand side.
-			expr = translate(node.expr, st, jn)
-			name = translate(node.nodes.pop(), st, jn)
+			expr	= translate(node.expr, st, jn)
+			var	= translate(node.nodes.pop(), st, jn)
 			
-			if jn:
+			if jn != None:
 				#Add this new assignment to the join node.
-				jn.addSymbol(name.name, st)
+				jn.addName(var, st)
 			
-			return ast.Assign(name, expr)
+			return ast.Assign(var, expr)
 	
 	elif isinstance(node, oast.AssName):
 		name = st.getSymbol(node.name, True)
@@ -234,4 +234,4 @@ def mergeJoins(jn0, block):
 			for t in n.jn.getTargets():
 				#Symbols that don't exist in the scope of jn0 won't be added
 				#because we don't provide a StateTable to addSymbol.
-				jn0.addSymbol(t)
+				jn0.addName(t)

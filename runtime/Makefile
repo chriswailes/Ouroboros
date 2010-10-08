@@ -7,7 +7,7 @@ AR		= ar
 CC		= gcc
 
 AFLAGS	= rcs
-CFLAGS	= -O3 -Wall -fPIC -march=native
+CFLAGS	= -O3 -Wall -fPIC -march=native -g
 LFAGS	= -lm
 SFLAGS	= -shared -Wl,-soname,libpyrun.so
 

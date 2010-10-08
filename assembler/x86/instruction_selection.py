@@ -11,11 +11,7 @@ from assembler.x86.coloring import eax, ebp, esp, callee, caller
 
 from lib import ast
 
-l = Labeler()
-
 def selectInstructions(node, cf, dest = None):
-	global l
-	
 	if isinstance(node, ast.Assign):
 		#The destination is a name, so we need to translate it.
 		dest = selectInstructions(node.var, cf)
@@ -107,7 +103,7 @@ def selectInstructions(node, cf, dest = None):
 			left = tmpColor0
 		
 		if isinstance(right, Mem):
-			if left != tmpColor0 and (isinstance(node, Add) or isinstance(node, Mul)):
+			if left != tmpColor0 and (isinstance(node, Add) or isinstance(node, Mul)) and not isinstance(node, Logical):
 				code.append(TwoOp('mov', right, tmpColor0))
 				left = right
 				right = tmpColor0
@@ -119,11 +115,11 @@ def selectInstructions(node, cf, dest = None):
 				right = tmpColor1
 		
 		#Untag the left operand if it isn't an immediate.
-		if isinstance(savedLeft, Color):
+		if isinstance(node, Arithmatic) and isinstance(savedLeft, Color):
 			code.append(untag(left))
 		
 		#Untag the right operand if it isn't an immediate.
-		if isinstance(savedRight, Color) and savedLeft != savedRight:
+		if isinstance(node, Arithmatic) and isinstance(savedRight, Color) and savedLeft != savedRight:
 			code.append(untag(right))
 		
 		#############
@@ -135,13 +131,13 @@ def selectInstructions(node, cf, dest = None):
 		
 		if isinstance(node, ast.Add):
 			if isinstance(left, Immediate) and left.value == 1:
-				code.append(OneOp('inc', right))
+				code.append(OneOp('inc', tmpColor0))
 			
 			elif right == dest or isinstance(left, Immediate):
-				code.append(TwoOp('add', left, right))
+				code.append(TwoOp('add', left, tmpColor0))
 			
 			else:
-				code.append(TwoOp('add', right, left))
+				code.append(TwoOp('add', right, tmpColor0))
 			
 		elif isinstance(node, ast.Div):
 			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
@@ -158,53 +154,70 @@ def selectInstructions(node, cf, dest = None):
 				#We can shift to the left instead of multiplying.
 				dist = left.value / 2
 				
-				code.append(TwoOp('sal', Immediate(dist), right))
+				code.append(TwoOp('sal', Immediate(dist), tmpColor0))
 			
 			elif right == dest or isinstance(left, Immediate):
-				code.append(TwoOp('imul', left, right))
+				code.append(TwoOp('imul', left, tmpColor0))
 			
 			else:
-				code.append(TwoOp('imul', right, left))
+				code.append(TwoOp('imul', right, tmpColor0))
 		
 		elif isinstance(node, ast.Sub):
 			if isinstance(right, Immediate) and right == 1:
-				code.append(OneOp('dec', left))
+				code.append(OneOp('dec', tmpColor0))
 			
 			else:
-				code.append(TwoOp('sub', right, left))
+				code.append(TwoOp('sub', right, tmpColor0))
 		
 		elif isinstance(node, ast.And):
-			tagType = Boolean
+			tagType = None
 			
-			if right == dest or isinstance(left, Immediate):
-				code.append(TwoOp('and', left, right))
+			if left == dest:
+				case0 = TwoOp('mov', right, tmpColor0)
+				
+				code.append(buildITE(left, case0, None, FALS, 'jle'))
 			
 			else:
-				code.append(TwoOp('and', right, left))
+				case0 = TwoOp('mov', left, tmpColor0)
+				case1 = TwoOp('mov', right, tmpColor0)
+				
+				code.append(buildITE(left, case0, case1, FALS, 'jge'))
 		
 		elif isinstance(node, ast.Or):
-			tagType = Boolean
+			tagType = None
 			
-			if right == dest or isinstance(left, Immediate):
-				code.append(TwoOp('or', left, right))
+			if left == dest:
+				case0 = TwoOp('mov', right, tmpColor0)
+				
+				code.append(buildITE(left, case0, None, FALS, 'jge'))
 			
 			else:
-				code.append(TwoOp('or', right, left))
+				case0 = TwoOp('mov', left, tmpColor0)
+				case1 = TwoOp('mov', right, tmpColor0)
+				
+				code.append(buildITE(left, case0, case1, FALS, 'jle'))
+		
+		elif isinstance(node, ast.Eq):
+			pass
+		
+		elif isinstance(node, ast.Ne):
+			pass
 		
 		###########
 		# Cleanup #
 		###########
 		
 		#Re-tag left, right, and result appropriately.
-		code.append(tag(tmpColor0, tagType))
+		if tagType:
+			code.append(tag(tmpColor0, tagType))
 		
 		if savedLeft != dest and left != dest and isinstance(savedLeft, Register) and \
-		savedLeft in toColors(node['post-alive']) :
+		savedLeft in toColors(node['post-alive']) and tagType:
 		
 			code.append(tag(savedLeft, tagType))
 		
 		if savedRight != dest and right != dest and isinstance(savedRight, Register) and \
-		savedRight in toColors(node['post-alive']):
+		savedRight in toColors(node['post-alive']) and tagType:
 		
 			code.append(tag(savedRight, tagType))
 		
@@ -237,7 +250,9 @@ def selectInstructions(node, cf, dest = None):
 		
 		first = True
 		addSize = 0
-		for arg in node.args:
+		args = list(node.args)
+		args.reverse()
+		for arg in args:
 			src = selectInstructions(arg, cf)
 			if isinstance(src, Immediate) and not src.packed:
 				src = pack(src, Integer)
@@ -262,6 +277,10 @@ def selectInstructions(node, cf, dest = None):
 		if addSize > 0:
 			code.append(TwoOp('add', Immediate(addSize), esp))
 		
+		name = node.name.symbol.name
+		if name == 'create_list' or name == 'create_dict':
+			code.append(tag(eax, None))
+		
 		#Move the result into the proper destination.
 		if dest and dest != eax:
 			code.append(TwoOp('mov', eax, dest))
@@ -279,29 +298,19 @@ def selectInstructions(node, cf, dest = None):
 				return selectInstructions(node.els, cf)
 		
 		else:
-			#In this case the condition is a variable.
-			code = Block()
-			elsLabel = l.nextLabel()
-			endLabel = l.nextLabel()
-			
 			cond = selectInstructions(node.cond, cf)
+			then = selectInstructions(node.then, cf)
+			els  = selectInstructions(node.els, cf)
 			
-			code.append(TwoOp('cmp', Immediate(0), cond))
-			code.append(OneOp('jz', elsLabel, None))
-			
-			#Now the then case
-			code.append(selectInstructions(node.then, cf))
-			code.append(OneOp('jmp', endLabel, None))
-			
-			#Now the label and the else case.
-			code.append(elsLabel)
-			code.append(selectInstructions(node.els, cf))
-			code.append(endLabel)
-			
-			return code
+			return buildITE(cond, then, els)
 	
 	elif isinstance(node, ast.Integer):
 		return Immediate(node.value)
+	
+	elif isinstance(node, ast.List):
+		code = Block()
+		
+		pass
 	
 	elif isinstance(node, ast.Module):
 		code = Block()
@@ -351,7 +360,7 @@ def selectInstructions(node, cf, dest = None):
 		else:
 			return node.symbol
 	
-	elif isinstance(node, ast.Negate):
+	elif isinstance(node, ast.UnaryOp):
 		code = Block()
 		
 		src = selectInstructions(node.operand, cf)
@@ -371,13 +380,21 @@ def selectInstructions(node, cf, dest = None):
 		# End Setup #
 		#############
 		
-		code.append(OneOp('neg', dest))
+		if isinstance(node, ast.Negate):
+			code.append(OneOp('neg', tmpColor))
+		
+		elif isinstance(node, ast.Not):
+			case0 = TwoOp('mov', FALS, tmpColor)
+			case1 = TwoOp('mov', TRU, tmpColor)
+			
+			code.append(buildITE(src, case0, case1, FALS, 'jle'))
 		
 		###########
 		# Cleanup #
 		###########
 		
-		code.append(tag(tmpColor, Integer))
+		if isinstance(node, Arithmatic):
+			code.append(tag(tmpColor, Integer))
 		
 		if tmpColor != dest:
 			code.append(TwoOp('mov', tmpColor, dest))

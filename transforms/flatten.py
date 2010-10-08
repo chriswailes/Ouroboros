@@ -46,9 +46,28 @@ def flatten(node, st = None, inplace = False):
 	#Set our children.
 	node.setChildren(newChildren)
 	
-	if (isinstance(node, UnaryOp) or isinstance(node, BinOp) or isinstance(node, FunctionCall)) and not inplace:
+	if isinstance(node, Assign) and isinstance(node.var, Subscript):
+		funName = Name(st.getFunSymbol('set_subscript'))
+		ret = FunctionCall(funName, [node.var.name, node.var.subscript, node.exp])
+	
+	elif (isinstance(node, UnaryOp) or isinstance(node, BinOp) or isinstance(node, FunctionCall)) and not inplace:
 		ret = Name(st.getSymbol(assign = True))
 		preStmts.append(Assign(ret, node))
+	
+	elif isinstance(node, List):
+		ret = Name(st.getSymbol(assign = True))
+		preStmts.append(Assign(ret, node))
+	
+	elif isinstance(node, Subscript):
+		funName = Name(st.getFunSymbol('get_subscript'))
+		funCall = FunctionCall(funName, [node.name, node.subscript])
+		
+		if inplace:
+			ret = funCall
+		
+		else:
+			ret = Name(st.getSymbol(assign = True))
+			preStmts.append(Assign(ret, funCall))
 	
 	if isinstance(node, Module):
 		return ret

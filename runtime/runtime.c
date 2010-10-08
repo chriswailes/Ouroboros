@@ -704,7 +704,7 @@ pyobj set_subscript(pyobj c, pyobj key, pyobj val)
     return subscript_assign(b, key, val);
   }
   default:
-    printf("error in set subscript, not a list or dictionary\n");
+    printf("error in set_subscript, not a list or dictionary.\n");
     assert(0);
   }
   assert(0);

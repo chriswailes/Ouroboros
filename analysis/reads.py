@@ -20,7 +20,21 @@ def reads(node):
 		reads(child)
 	
 	if isinstance(node, Assign):
-		node.var.symbol['reads'] = 0
+		#~print("In assignment {0}".format(node))
+		
+		if isinstance(node.var, Name):
+			sym = node.var.symbol
+		else:
+			sym = node.var.name.symbol
+		
+		sym['reads'] = 0
 	
 	elif isinstance(node, Name):
+		#~print("In read of symbol {0}".format(node.symbol))
 		node.symbol['reads'] += 1
+	
+	elif isinstance(node, Subscript):
+		node.name.symbol['reads'] += 1
+	
+	elif isinstance(node, Phi):
+		node.target.symbol['reads'] = 0

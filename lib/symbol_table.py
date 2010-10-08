@@ -12,7 +12,7 @@ class SymbolTable(object):
 		if other:
 			self.symbols = other.symbols.copy()
 			self.singletons = other.singletons.copy()
-			self.funSymbols = list(other.funSymbol)
+			self.funSymbols = list(other.funSymbols)
 		else:
 			self.symbols = {}
 			self.singletons = {}
@@ -66,14 +66,19 @@ class SymbolTable(object):
 					a1, _ = other.symbols[s]
 					
 					self.symbols[s] = (a1, b0)
+					
+			self.singletons.update(other.singletons)
 		
 		elif isinstance(other, ast.Join):
 			for phi in other.phis:
-				if self.symbols.has_key(phi.target.name):
-					a0, _ = self.symbols[phi.target.name]
-					b1 = phi.target.version
+				if self.symbols.has_key(phi.target.symbol.name):
+					a0, _ = self.symbols[phi.target.symbol.name]
+					b1 = phi.target.symbol.version
 					
-					self.symbols[phi.target.name] = (a0, b1)
+					pair = (phi.target.symbol.name, b1)
+					self.singletons[pair] = phi.target.symbol
+					
+					self.symbols[phi.target.symbol.name] = (a0, b1)
 
 class FunSymbol(dict):
 	def __init__(self, name):

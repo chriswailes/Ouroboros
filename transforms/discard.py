@@ -21,7 +21,12 @@ def discard(node):
 		
 		for child in node:
 			if isinstance(child, ast.Assign):
-				if child.var.symbol['reads'] != 0:
+				if isinstance(child.var, ast.Name):
+					sym = child.var.symbol
+				else:
+					sym = child.var.name.symbol
+				
+				if sym['reads'] != 0:
 					newChildren.append(child)
 			
 			elif isinstance(child, ast.FunctionCall) or isinstance(child, ast.Statement):

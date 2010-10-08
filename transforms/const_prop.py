@@ -16,20 +16,26 @@ def init():
 
 def propigateConstants(node, consts = {}):
 	if isinstance(node, Assign):
+		if isinstance(node.var, Name):
+			sym = node.var.symbol
+		else:
+			sym = node.var.name.symbol
+		
 		if isinstance(node.exp, Integer):
-			consts[node.var.symbol] = Integer(node.exp.value)
+			consts[sym] = Integer(node.exp.value)
 		
 		elif isinstance(node.exp, Boolean):
-			consts[node.var.symbol] = node.exp
+			consts[sym] = node.exp
 	
 	elif isinstance(node, Name) and consts.has_key(node.symbol):
 		return consts[node.symbol]
 	
-	newChildren = []
+	if not isinstance(node, Phi):
+		newChildren = []
+		
+		for child in node:
+			newChildren.append(propigateConstants(child, consts))
 	
-	for child in node:
-		newChildren.append(propigateConstants(child, consts))
-	
-	node.setChildren(newChildren)
+		node.setChildren(newChildren)
 	
 	return node
