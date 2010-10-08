@@ -6,6 +6,7 @@ Description:	A transformation that folds constants.
 """
 
 from lib.ast import *
+from lib.util import reType
 
 analysis	= []
 args		= []
@@ -23,18 +24,21 @@ def foldConstants(node):
 	node.setChildren(newChildren)
 	
 	if isinstance(node, BinOp):
+		
+		####################
+		# Literal Rotation #
+		####################
+		
 		#Move constant values to the left when we can.
-		if isinstance(node, Add) or isinstance(node, Mul):
-			if isinstance(node.right, Integer):
+		if classGuard(node, Add, Mul):
+			if isinstance(node.right, Literal):
 				tmp = node.left
 				node.left = node.right
 				node.right = tmp
 		
-		elif isinstance(node, And) or isinstance(node, Or):
-			if not isinstance(node.left, Boolean) and isinstance(node.right, Boolean):
-				tmp = node.left
-				node.left = node.right
-				node.right = tmp
+		######################
+		# Operator Reduction #
+		######################
 		
 		#Swap operators if we can.
 		if isinstance(node, Add) and isinstance(node.right, Negate):
@@ -44,6 +48,10 @@ def foldConstants(node):
 			node = Add(node.left, node.right.operand)
 		
 		elif isinstance(node, And) or isinstance(node, Or):
+			
+			#The only place it makes sense to use De Morgan's law is if both
+			#the operands are Not nodes.  Otherwise we would be replacing one
+			#Not node with two.
 			if isinstance(node.left, Not) and isinstance(node.right, Not):
 				if isinstance(node, And):
 					node = Or(node.left.operand, node.right.operand)
@@ -51,121 +59,84 @@ def foldConstants(node):
 				else:
 					node = And(node.left.operand, node.right.operand)
 		
-		#Calcluate constant values.
-		if isinstance(node.left, Integer) or isinstance(node.left, Boolean) or isinstance(node.left, List):
-			#If they are both Integers, calculate their value.
-			if isinstance(node.right, Integer) or isinstance(node.right, Boolean) or isinstance(node.left, List):
-				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.value))
-				
-				if isinstance(node, Arithmatic):
-					if isinstance(value, list):
-						return List(value)
-					else:
-						return Integer(value)
-				elif value:
-					return Tru()
-				else:
-					return Fals()
+		###################
+		# Literal Lifting #
+		###################
+		
+		#Try to lift literal values out of the right hand side.
+		if isinstance(node.right, BinOp) and isinstance(node.right.left, Literal):
+			#There are only several combinations of operations that
+			#we can do this for so we must check to see if this is
+			#one of those cases.
 			
-			#If they aren't both integers we might be able to lift an integer from the right side.
-			elif isinstance(node.right, BinOp) and isinstance(node.right.left, Integer):
-				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.left.value))
+			cond  = isinstance(node, Add) and classGuard(node.right, Add, Sub)
+			cond |= isinstance(node, Sub) and classGuard(node.right, Add, Sub)
+			cond |= isinstance(node, Mul) and isinstance(node.right, Mul)
+			cond |= isinstance(node, And) and isinstance(node.right, And)
+			cond |= isinstance(node, Or)  and isinstance(node.right, Or)
+			
+			if cond:
+				#If we are are currently at a Sub node we need to
+				#swap our operator.
+				if isinstance(node, Sub):
+					node.right = (Sub if isinstance(node.right, Add) else Add)(node.right.left, node.right.right)
 				
-				cond  = isinstance(node, Add) and (isinstance(node.right, Add) or isinstance(node.right, Sub))
-				cond |= isinstance(node, Mul) and isinstance(node.right, Mul)
-				
-				if cond:
-					node.right.left = Integer(value)
+				#Left Rotate
+				newNode = node.__class__(node.left, node.right.left)
+				node.right.left = foldConstants(newNode)
+		
+		########################
+		# Constant Calculation #
+		########################
+		
+		#Calcluate constant values if possible.
+		if isinstance(node.left, Literal):
+			#Boolean simplification only relies on the left value.  Try that first.
+			if isinstance(node, And):
+				if node.left.value:
 					node = node.right
 				
-				elif isinstance(node, Sub):
-					if isinstance(node.right, Add):
-						node = Sub(Integer(value), node.right.right)
-					
-					elif isinstance(node.right, Sub):
-						node = Add(Integer(value), node.right.right)
-		
-			elif isinstance(node.left, Boolean) or isinstance(node.left, Integer):
-				if isinstance(node, And):
-					if node.left.value:
-						node = node.right
-					
-					else:
-						node = Fals()
+				else:
+					node = Fals()
+			
+			elif isinstance(node, Or):
+				if node.left.value:
+					node = node.left
 				
-				elif isinstance(node, Or):
-					if node.left.value:
-						node = node.left
-					
-					else:
-						node = node.right
-		
-		elif isinstance(node, Add) and isinstance(node.left, List) and isinstance(node.right, List):
-			node = List(node.left.elements + node.right.elements)
+				else:
+					node = node.right
+			
+			#For all other operating types we need two Literals.
+			elif isinstance(node.right, Literal):
+				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.value))
+				
+				node = reType(value)
 	
-	elif isinstance(node, Negate):
-		op = node.operand
+	elif isinstance(node, UnaryOp):
+		nodeKlass = node.__class__
+		opKlass = node.operand.__class__
 		
-		if isinstance(op, Integer):
-			value = eval("-{0}".format(op.value))
-			node = Integer(value)
+		if isinstance(node.operand, Literal):
+			value = eval("{0}{1}".format(node.operator, node.operand.value))
+			node = reType(value)
 		
-		elif isinstance(op, Negate):
-			node = foldConstants(op.operand)
+		elif isinstance(node.operand, nodeKlass):
+			#If the operand is the same class as the current node then we can
+			#remove the redundant operations.
+			node = node.operand.operand
 		
-		elif isinstance(op, BinOp):
-			cond  = isinstance(op.left, Negate) or isinstance(op.left, Integer)
-			cond |= isinstance(op.right, Negate) or isinstance(op.right, Integer)
+		elif isinstance(node.operand, BinOp):
+			cond  = classGuard(op.left, nodeKlass, Literal)
+			cond |= classGuard(op.right, nodeKlass, Literal)
 			
 			if cond:
-				if isinstance(op, Add):
-					newNode = Add(Negate(op.left), Negate(op.right))
-					node = foldConstants(newNode)
-				
-				elif isinstance(op, Sub):
-					newNode = Sub(Negate(op.left), Negate(op.right))
-					node = foldConstants(newNode)
+				newNode = opKlass(nodeKlass(node.operand.left), nodeKlass(node.operand.right))
+				node = foldConstants(newNode)
 	
-	elif isinstance(node, Not):
-		op = node.operand
+	elif isinstance(node, IfExp) and isinstance(node.cond, Literal):
+		#We can reduce IfExp nodes if we can calculate their conditional
+		#values at compile time.
 		
-		if isinstance(op, Tru):
-			node = Fals()
-		
-		elif isinstance(op, Fals):
-			node = Tru()
-		
-		elif isinstance(op, Integer):
-			if op.value == 0:
-				node = Tru()
-			else:
-				node = Fals()
-		
-		elif isinstance(op, List):
-			if op.value:
-				node = Fals()
-			else:
-				node = Tru()
-		
-		elif isinstance(op, BinOp):
-			cond  = isinstance(op.left, Not) or isinstance(op.left, Boolean)
-			cond |= isinstance(op.right, Not) or isinstance(op.right, Boolean)
-			
-			if cond:
-				if isinstance(op, And):
-					newNode = Or(Not(op.left), Not(op.right))
-					node = foldConstants(newNode)
-				
-				elif isinstance(op, Or):
-					newNode = And(Not(op.left), Not(op.right))
-					node = foldConstants(newNode)
-	
-	elif isinstance(node, IfExp):
-		if isinstance(node.cond, Integer) or isinstance(node.cond, Boolean) or isinstance(node.cond, List):
-			if node.cond.value:
-				node = node.then
-			
-			else:
-				node = node.els
+		node = node.then if node.cond.value else node.els
 	
 	return node

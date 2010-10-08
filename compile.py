@@ -49,9 +49,8 @@ if config.startStage == 'python':
 	#Run the AST transformation passes (except 'color', which is done in the
 	#loop below.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
-	runTransform(tree, ['simplify', 'flatten'])
-	#runTransform(tree, 'flatten')
-	cf = runTransform(tree, 'color', {'cf':None})
+	runTransform(tree, 'flatten')
+	#cf = runTransform(tree, 'color', {'cf':None})
 	
 	if config.verbose:
 		#Print my flattened (and folded) AST
@@ -66,6 +65,8 @@ if config.startStage == 'python':
 		print("After Transformation Passes:")
 		print(tree.toPython())
 		print('')
+	
+	exit(0)
 	
 	#One of the symbols from each of these sets needs to be spilled.
 	spillSets = []

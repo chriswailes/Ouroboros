@@ -7,8 +7,6 @@ Description:	Describes the abstract syntax tree used by my compiler for HW0.
 
 from util import *
 
-from symbol_table import SymbolTable
-
 ##############
 # Base Class #
 ##############
@@ -29,6 +27,9 @@ class Node(dict):
 	def getChildren(self):
 		return []
 	
+	def isSimple(self):
+		return True
+	
 	def setChildren(self, children):
 		pass
 
@@ -37,7 +38,7 @@ class Node(dict):
 ###############
 
 class Phi(Node):
-	def __init__(self, target, srcs = []):
+	def __init__(self, target, *srcs):
 		self.target = target
 		self.srcs = srcs
 	
@@ -60,20 +61,20 @@ class Join(Node):
 	def __repr__(self):
 		return 'Join(' + repr(self.phis) + ')'
 	
-	def addName(self, name, st = None):
+	def addSymbol(self, sym, st = None):
 		phi0 = None
 		
 		for phi1 in self.phis:
-			if phi1.target.symbol.name == name.symbol.name:
+			if phi1.target.name == sym.name:
 				phi0 = phi1
 				break
 		
 		if phi0 != None:
-			phi0.addSrc(name)
+			phi0.addSrc(sym)
 		
 		elif st != None:
-			target = Name(st.getSymbol(name.symbol.name, True))
-			phi0 = Phi(target, [name])
+			target = st.getSymbol(symbol.name, True)
+			phi0 = Phi(target, sym)
 			self.phis.append(phi0)
 	
 	def getChildren(self):
@@ -91,7 +92,7 @@ class Join(Node):
 		self.phis = children
 
 class BasicBlock(Node):
-	def __init__(self, children, st = SymbolTable()):
+	def __init__(self, children, st):
 		self.children = children
 		self.st = st
 	
@@ -129,9 +130,6 @@ class Module(Node):
 	def setChildren(self, children):
 		self.block = children[0]
 	
-	def toGraph(self):
-		pass
-	
 	def toPython(self):
 		return self.block.toPython()
 
@@ -155,9 +153,6 @@ class Assign(Statement):
 	
 	def setChildren(self, children):
 		self.exp = children[0]
-	
-	def toGraph(self):
-		pass
 	
 	def toPython(self, level = 0):
 		ret  = pad(level)
@@ -188,9 +183,6 @@ class If(Statement):
 		self.els  = children[2]
 		self.jn	= children[3]
 	
-	def toGraph(self):
-		pass
-	
 	def toPython(self, level = 0):
 		ret  = pad(level)
 		ret += "if {0}:\n".format(self.cond.toPython())
@@ -220,13 +212,13 @@ class IfExp(Expression):
 	def getChildren(self):
 		return [self.cond, self.then, self.els]
 	
+	def isSimple(self):
+		return False
+	
 	def setChildren(self, children):
 		self.cond = children[0]
 		self.then = children[1]
 		self.els  = children[2]
-	
-	def toGraph(self):
-		pass
 	
 	def toPython(self, level = 0):
 		ret  = pad(level)
@@ -239,18 +231,15 @@ class IfExp(Expression):
 		return ret
 
 class FunctionCall(Expression):
-	def __init__(self, name, args = []):
+	def __init__(self, name, *args):
 		self.name = name
 		self.args = args
 	
 	def __repr__(self):
-		return "FunctionCall({0}, {1})".format(repr(self.name), repr(self.args))
+		return "FunctionCall({0}, {1})".format(repr(self.name), self.args)
 	
 	def getChildren(self):
 		return self.args
-	
-	def toGraph(self):
-		pass
 	
 	def setChildren(self, children):
 		self.args = children
@@ -288,7 +277,7 @@ class BinOp(Expression):
 	
 	def toPython(self, level = 0):
 		ret  = pad(level)
-		ret += "{0} {1} {2}".format(self.left.toPython(), self.operator, self.right.toPython())
+		ret += "({0} {1} {2})".format(self.left.toPython(), self.operator, self.right.toPython())
 		
 		return ret
 
@@ -380,7 +369,10 @@ class Sub(BinOp, Arithmatic):
 class Value(Expression):
 	pass
 
-class Boolean(Value):
+class Literal(Expression):
+	pass
+
+class Boolean(Value, Literal):
 	def __repr__(self):
 		return str(self)
 	
@@ -401,21 +393,24 @@ class Tru(Boolean):
 	def __str__(self):
 		return 'True'
 
-class Dictionary(Value):
+class Dictionary(Value, Literal):
 	def __init__(self, pairs):
-		self.value = self.pairs = pairs
+		self.value = pairs
 	
 	def __hash__(self):
 		return hash(self.pairs)
 	
 	def __repr__(self):
-		return "Dictionary({0})".format(repr(self.pairs))
+		return "Dictionary({0})".format(repr(self.value))
 	
 	def __str__(self):
 		return str(self.pairs)
 	
 	def getChildren(self):
-		return self.pairs.keys() + self.pairs.values()
+		return self.value.keys() + self.value.values()
+	
+	def isSimple(self):
+		return False
 	
 	def setChildren(self, children):
 		newPairs = {}
@@ -425,17 +420,17 @@ class Dictionary(Value):
 		for index in range(0, keyLen):
 			newPairs[children[index]] = children[index + keyLen]
 		
-		self.pairs = newPairs
+		self.value = newPairs
 	
 	def toPython(self, level = 0):
 		pairs = []
 		
-		for key in self.pairs:
-			pairs.append("{0}:{1}".format(key.toPython(), self.pairs[key].toPython()))
+		for key in self.value:
+			pairs.append("{0}:{1}".format(key.toPython(), self.value[key].toPython()))
 		
 		return pad(level) + '{' + ', '.join(pairs) + '}'
 
-class Integer(Value):
+class Integer(Value, Literal):
 	def __init__(self, value):
 		self.value = value
 	
@@ -448,30 +443,30 @@ class Integer(Value):
 	def __str__(self):
 		return "${0:d}".format(self.value)
 	
-	def toGraph(self):
-		pass
-	
 	def toPython(self, level = 0):
 		return "{0:d}".format(self.value)
 
-class List(Value):
+class List(Value, Literal):
 	def __init__(self, elements):
-		self.value = self.elements = elements
+		self.value = elements
 	
 	def __hash__(self):
-		return hash(self.elements)
+		return hash(self.value)
 	
 	def __repr__(self):
-		return "List({0})".format(repr(self.elements))
+		return "List({0})".format(repr(self.value))
 	
 	def __str__(self):
-		return str(self.elements)
+		return str(self.value)
 	
 	def getChildren(self):
-		return self.elements
+		return self.value
+	
+	def isSimple(self):
+		return False
 	
 	def setChildren(self, children):
-		self.elements = children
+		self.value = value
 	
 	def toPython(self, level = 0):
 		els = []
@@ -482,26 +477,52 @@ class List(Value):
 		return pad(level) + '[' + ', '.join(els) + ']'
 
 class Name(Value):
-	def __init__(self, symbol):
-		self.symbol = symbol
+	def __init__(self, name):
+		self.name = name
 	
 	def __hash__(self):
-		return hash(self.symbol)
+		return hash(self.name)
 	
 	def __repr__(self):
-		return "Name({0})".format(str(self.symbol))
+		return "Name({0})".format(self.name)
 	
 	def __str__(self):
-		return str(self.symbol)
-	
-	def collectSymbols(self):
-		return set([self.symbol])
-	
-	def toGraph(self):
-		pass
+		return str(self.name)
 	
 	def toPython(self, level = 0):
-		return str(self.symbol)
+		return str(self)
+
+class Symbol(Value):
+	def __init__(self, name, version):
+		self.name = name
+		self.version = version
+	
+	def __eq__(self, other):
+		if isinstance(other, Symbol):
+			return self.name == other.name and self.version == other.version
+		else:
+			return False
+	
+	def __hash__(self):
+		return hash(str(self))
+	
+	def __ne__(self, other):
+		if isinstance(other, Symbol):
+			return self.name != other.name or self.version != other.version
+		else:
+			return True
+	
+	def __repr__(self):
+		return "Symbol({0})".format(self)
+	
+	def __str__(self):
+		return "{0}:{1:d}".format(self.name, self.version)
+	
+	def collectSymbols(self):
+		return set([self])
+	
+	def toPython(self, level = 0):
+		return str(self)
 
 class Subscript(Value):
 	def __init__(self, name, subscript):
@@ -519,6 +540,9 @@ class Subscript(Value):
 	
 	def getChildren(self):
 		return [self.subscript]
+	
+	def isSimple(self):
+		return False
 	
 	def setChildren(self, children):
 		self.subscript = children[0]

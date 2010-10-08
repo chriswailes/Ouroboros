@@ -20,19 +20,19 @@ def reads(node):
 		reads(child)
 	
 	if isinstance(node, Assign):
-		if isinstance(node.var, Name):
-			sym = node.var.symbol
-		else:
-			sym = node.var.name.symbol
-		
+		sym = node.var.sybmol if isinstance(node.var, Subscript) else node.var
+		#~print("In assignment for {0}".format(sym))
 		sym['reads'] = 0
 	
-	elif isinstance(node, Name):
-		node.symbol['reads'] += 1
-	
-	elif isinstance(node, Subscript):
-		if isinstance(node.name, Name):
-			node.name.symbol['reads'] += 1
-	
 	elif isinstance(node, Phi):
-		node.target.symbol['reads'] = 0
+		node.target['reads'] = 0
+	
+	elif isinstance(node, Symbol):
+		#~print("Reading {0}".format(node))
+		node['reads'] += 1
+	
+	#This little hack is here to take care of cases where subscripts are
+	#applied to literal values. After the flatten transformation this branch
+	#will be taken whenever we see a subscript.
+	elif isinstance(node, Subscript) and isinstance(node.symbol, Symbol):
+		node.symbol['reads'] += 1

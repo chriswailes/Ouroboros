@@ -15,21 +15,14 @@ def init():
 	register('const_prop', propigateConstants, analysis, args)
 
 def propigateConstants(node, consts = {}):
-	if isinstance(node, Assign):
-		if isinstance(node.var, Name):
-			sym = node.var.symbol
-		else:
-			sym = node.var.name.symbol
-		
-		if isinstance(node.exp, Integer):
-			consts[sym] = Integer(node.exp.value)
-		
-		elif isinstance(node.exp, Boolean):
-			consts[sym] = node.exp
+	#Memorize or replace symbol values, as appropriate.
+	if isinstance(node, Assign) and isinstance(node.var, Symbol) and isinstance(node.exp, Literal):
+		consts[node.var] = node.exp
 	
-	elif isinstance(node, Name) and consts.has_key(node.symbol):
-		return consts[node.symbol]
+	elif isinstance(node, Symbol) and consts.has_key(node):
+		return consts[node]
 	
+	#Values in Phi nodes should never be replaced.
 	if not isinstance(node, Phi):
 		newChildren = []
 		

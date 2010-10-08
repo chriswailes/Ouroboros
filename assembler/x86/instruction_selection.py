@@ -17,7 +17,7 @@ def selectInstructions(node, cf, dest = None):
 		#The destination is a name, so we need to translate it.
 		dest = selectInstructions(node.var, cf)
 		
-		if isinstance(node.exp, ast.Name):
+		if isinstance(node.exp, ast.Symbol):
 			code = Block()
 			
 			#The source is a name, so we need to translate it.

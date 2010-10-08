@@ -12,7 +12,7 @@ import compiler.ast as oast
 import ast
 import util
 
-from symbol_table import SymbolTable, Symbol
+from symbol_table import SymbolTable
 
 def translate(node, st = None, jn = None, funcName = False):
 	if isinstance(node, oast.Add):
@@ -40,14 +40,13 @@ def translate(node, st = None, jn = None, funcName = False):
 		return ast.Assign(var, expr)
 	
 	elif isinstance(node, oast.AssName):
-		name = st.getSymbol(node.name, True)
-		return ast.Name(name)
+		return st.getSymbol(node.name, True)
 	
 	elif isinstance(node, oast.CallFunc):
 		name = translate(node.node, st, jn, True)
 		args = [translate(a, st, jn) for a in node.args]
 		
-		return ast.FunctionCall(name, args)
+		return ast.FunctionCall(name, *args)
 	
 	elif isinstance(node, oast.Compare):
 		left = translate(node.expr, st, jn)
@@ -160,23 +159,21 @@ def translate(node, st = None, jn = None, funcName = False):
 		return ast.Mul(left, right)
 	
 	elif isinstance(node, oast.Name):
-		symbol = node.name
+		ret = 'input_int' if node.name == 'input' else node.name
+		
 		if funcName:
-			if symbol == 'input':
-				symbol = 'input_int'
-			
-			symbol = st.getFunSymbol(symbol)
+			ret = st.getName(ret)
 		else:
-			if symbol == 'True':
+			if ret == 'True':
 				return ast.Tru()
 			
-			elif symbol == 'False':
+			elif ret == 'False':
 				return ast.Fals()
 			
 			else:
-				symbol = st.getSymbol(symbol)
+				ret = st.getSymbol(ret)
 		
-		return ast.Name(symbol)
+		return ret
 	
 	elif isinstance(node, oast.Not):
 		operand = translate(node.expr, st, jn)
@@ -190,10 +187,10 @@ def translate(node, st = None, jn = None, funcName = False):
 		return ast.Or(left, right)
 		
 	elif isinstance(node, oast.Printnl):
-		children = util.flatten([translate(e, st, jn) for e in node.getChildNodes()])
+		children = [translate(e, st, jn) for e in node.getChildNodes()]
+		children = util.flatten(children)
 		
-		symbol = st.getFunSymbol('print_any')
-		return ast.FunctionCall(ast.Name(symbol), children)
+		return ast.FunctionCall(st.getName('print_any'), *children)
 		
 	elif isinstance(node, oast.Stmt):
 		stmts = [translate(s, st, jn) for s in node.getChildNodes()]
@@ -220,10 +217,10 @@ def translate(node, st = None, jn = None, funcName = False):
 	else:
 		None
 
-def mergeJoins(jn0, block):
+def mergeJoins(jn, block):
 	for n in block:
 		if isinstance(n, ast.If):
 			for t in n.jn.getTargets():
 				#Symbols that don't exist in the scope of jn0 won't be added
-				#because we don't provide a StateTable to addSymbol.
-				jn0.addName(t)
+				#because we don't provide a SymbolTable to jn.addSymbol.
+				jn.addSymbol(t)

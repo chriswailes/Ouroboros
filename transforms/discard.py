@@ -5,8 +5,8 @@ Date:		2010/09/03
 Description:	Removes expressions whos values aren't stored.
 """
 
-from lib import ast
-from lib import util
+from lib.ast import *
+from lib.util import flatten, classGuard
 
 analysis	= ['reads']
 args		= []
@@ -16,26 +16,29 @@ def init():
 	register('discard', discard, analysis, args)
 
 def discard(node):
-	if isinstance(node, ast.BasicBlock):
+	if isinstance(node, BasicBlock):
 		newChildren = []
 		
 		for child in node:
-			if isinstance(child, ast.Assign):
-				if isinstance(child.var, ast.Name):
-					sym = child.var.symbol
-				else:
-					sym = child.var.name.symbol
+			if isinstance(child, Assign):
+				sym = child.var.symbol if isinstance(child, Subscript) else child.var
 				
+				#Throw out variables that are never read.
 				if sym['reads'] != 0:
 					newChildren.append(child)
 			
-			elif isinstance(child, ast.FunctionCall) or isinstance(child, ast.Statement):
+			#If it is a Statement or a FunctionCall we need to keep the child.
+			elif classGuard(child, Statement, FunctionCall):
 				newChildren.append(child)
 			
+			#Anything that reaches here is an expression outside of a
+			#statement, and therefor has no effect on the program.  Therefor
+			#we remove any nested statements from the expression then throw
+			#it away.
 			else:
 				newChildren.append(extractStmts(child))
 		
-		node.children = util.flatten(newChildren)
+		node.children = flatten(newChildren)
 	
 	else:
 		for child in node:
@@ -43,32 +46,33 @@ def discard(node):
 	
 	return node
 
+#Extracts statements from expressions and returns them.
 def extractStmts(exp):
 	stmts = []
 	
-	if isinstance(exp, ast.BinOp):
-		if isinstance(exp.left, ast.FunctionCall) or isinstance(exp.left, ast.Statement):
+	if isinstance(exp, BinOp):
+		if classGuard(exp.left, Statement, FunctionCall):
 			stmts.append(exp.left)
 		else:
 			stmts.append(extractStmts(exp.left))
 		
-		if isinstance(exp.right, ast.FunctionCall) or isinstance(exp.right, ast.Statement):
+		if classGuard(exp.right, Statement, FunctionCall):
 			stmts.append(exp.right)
 		else:
 			stmts.append(extractStmts(exp.right))
 	
-	elif isinstance(exp, ast.Dictionary) or  isinstance(exp, ast.List):
+	elif classGuard(exp, List, Dictionary):
 		for child in exp:
-			if isinstance(child, ast.FunctionCall) or isinstance(child, ast.Statement):
+			if classGuard(child, Statement, FunctionCall):
 				stmts.append(child)
 			
 			else:
 				stmts.append(extractStmts(child))
 	
-	elif isinstance(exp, ast.UnaryOp):
-		if isinstance(exp.operand, ast.FunctionCall) or isinstance(exp.operand, ast.Statement):
+	elif isinstance(exp, UnaryOp):
+		if classGuard(exp.operand, Statement, FunctionCall):
 			stmts.append(exp.operand)
 		else:
 			stmts.append(extractStmts(exp.operand))
 	
-	return util.flatten(stmts)
+	return flatten(stmts)

@@ -64,9 +64,8 @@ from transforms import const_fold
 from transforms import const_prop
 from transforms import discard
 from transforms import flatten
-from transforms import simplification
 
-toInit = [coloring, const_fold, const_prop, discard, flatten, simplification]
+toInit = [coloring, const_fold, const_prop, discard, flatten]
 
 for p in toInit:
 	p.init()
