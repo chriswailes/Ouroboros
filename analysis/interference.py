@@ -27,5 +27,4 @@ def interference(tree):
 					ig[sym0] = ig[sym0] | set([sym1])
 					ig[sym1] = ig[sym1] | set([sym0])
 	
-	print("IG: {0}".format(ig))
 	return ig

@@ -40,7 +40,6 @@ def spans(node, count = 0, alive = {}):
 		sym['spans-funcall'] = False
 		
 		if sym in node['post-alive']:
-			#~print("Adding {0} to the alive set.".format(sym))
 			alive[sym] = startCount
 		else:
 			sym['span-start'] = sym['span-end'] = startCount
@@ -53,19 +52,12 @@ def spans(node, count = 0, alive = {}):
 	
 	deletes = []
 	
-	#~print("Alive set: {0}".format(alive))
-	#~print("Post alive: {0}".format(node['post-alive']))
 	for sym in alive:
 		if not sym in node['post-alive']:
 			sym['span-start'] = alive[sym]
 			sym['span-end'  ] = count
 			sym['span'] = count - alive[sym]
 			deletes.append(sym)
-			
-			#~print("Symbol {0}".format(sym))
-			#~print("\tSpan Start: {0}".format(sym['span-start']))
-			#~print("\tSpan End: {0}".format(sym['span-end']))
-			#~print("\tSpan: {0}".format(sym['span']))
 	
 	for sym in deletes:
 		del alive[sym]

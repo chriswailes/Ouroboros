@@ -55,9 +55,7 @@ def foldConstants(node):
 		if isinstance(node.left, Integer) or isinstance(node.left, Boolean) or isinstance(node.left, List):
 			#If they are both Integers, calculate their value.
 			if isinstance(node.right, Integer) or isinstance(node.right, Boolean) or isinstance(node.left, List):
-				print("Calculating value for {0} {1} {2}".format(node.left.value, node.operator, node.right.value))
 				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.value))
-				print("Value is {0}".format(value))
 				
 				if isinstance(node, Arithmatic):
 					if isinstance(value, list):
