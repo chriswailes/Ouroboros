@@ -28,34 +28,16 @@ def translate(node, st = None, jn = None, funcName = False):
 		return ast.And(left, right)
 	
 	elif isinstance(node, oast.Assign):
+		#Translate the right hand side first so it can use the older version
+		#of the left hand side.
+		expr	= translate(node.expr, st, jn)
+		var	= translate(node.nodes.pop(), st, jn)
 		
-		#Explicitly handle the case where the right hand side is an IfExpr.
-		#This is done here so additional information doesn't have to be passed
-		#to the next translate call.
-		if isinstance(node.expr, oast.IfExp):
-			cond = node.expr.cond
-			
-			then = node.expr.then
-			then = oast.Assign(node.nodes[0], then)
-			
-			els = node.expr.else_
-			els = oast.Assign(node.nodes[0], els)
-			
-			node = oast.If([(cond, then)], els)
-			
-			return translate(node, st, jn)
+		if jn != None:
+			#Add this new assignment to the join node.
+			jn.addName(var, st)
 		
-		else:
-			#Translate the right hand side first so it can use the older version
-			#of the left hand side.
-			expr	= translate(node.expr, st, jn)
-			var	= translate(node.nodes.pop(), st, jn)
-			
-			if jn != None:
-				#Add this new assignment to the join node.
-				jn.addName(var, st)
-			
-			return ast.Assign(var, expr)
+		return ast.Assign(var, expr)
 	
 	elif isinstance(node, oast.AssName):
 		name = st.getSymbol(node.name, True)
@@ -79,6 +61,9 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		elif op == '!=':
 			return ast.Ne(left, right)
+		
+		elif op == 'is':
+			return ast.Is(left, right)
 	
 	elif isinstance(node, oast.Const):
 		return ast.Integer(node.value)
@@ -143,6 +128,13 @@ def translate(node, st = None, jn = None, funcName = False):
 		st.update(jn)
 		
 		return ast.If(cond, then, els, jn)
+	
+	elif isinstance(node, oast.IfExp):
+		cond = translate(node.test, st, jn)
+		then = translate(node.then, st, jn)
+		els = translate(node.else_, st, jn)
+		
+		return ast.IfExp(cond, then, els)
 	
 	elif isinstance(node, oast.List):
 		elements = []

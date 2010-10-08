@@ -208,6 +208,36 @@ class If(Statement):
 class Expression(Node):
 	pass
 
+class IfExp(Expression):
+	def __init__(self, cond, then, els):
+		self.cond = cond
+		self.then = then
+		self.els = els
+	
+	def __repr__(self):
+		return "IfExp(Cond: {0}, Then: {1}, Else: {2})".format(repr(self.cond), repr(self.then), repr(self.els))
+	
+	def getChildren(self):
+		return [self.cond, self.then, self.els]
+	
+	def setChildren(self, children):
+		self.cond = children[0]
+		self.then = children[1]
+		self.els  = children[2]
+	
+	def toGraph(self):
+		pass
+	
+	def toPython(self, level = 0):
+		ret  = pad(level)
+		ret += "if {0}:\n".format(self.cond.toPython())
+		ret += self.then.toPython(level + 1)
+		ret += pad(level)
+		ret += "else:\n"
+		ret += self.els.toPython(level + 1)
+		
+		return ret
+
 class FunctionCall(Expression):
 	def __init__(self, name, args = []):
 		self.name = name
@@ -323,6 +353,10 @@ class Div(BinOp, Arithmatic):
 	def __init__(self, left, right):
 		super(Div, self).__init__('/', left, right)
 
+class Is(BinOp, Logical):
+	def __init__(self, left, right):
+		super(Is, self).__init__('is', left, right)
+
 class Mul(BinOp, Arithmatic):
 	def __init__(self, left, right):
 		super(Mul, self).__init__('*', left, right)
@@ -354,16 +388,22 @@ class Boolean(Value):
 		return str(self)
 
 class Fals(Boolean):
+	def __init__(self):
+		self.value = False
+	
 	def __str__(self):
 		return 'False'
 
 class Tru(Boolean):
+	def __init__(self):
+		self.value = True
+	
 	def __str__(self):
 		return 'True'
 
 class Dictionary(Value):
 	def __init__(self, pairs):
-		self.pairs = pairs
+		self.value = self.pairs = pairs
 	
 	def __hash__(self):
 		return hash(self.pairs)
@@ -416,7 +456,7 @@ class Integer(Value):
 
 class List(Value):
 	def __init__(self, elements):
-		self.elements = elements
+		self.value = self.elements = elements
 	
 	def __hash__(self):
 		return hash(self.elements)

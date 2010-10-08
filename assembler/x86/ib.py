@@ -15,6 +15,7 @@ from lib.ast import *
 
 TAG_SIZE	= Immediate(2)
 TAG_MASK	= Immediate(0x3)
+REST_MASK	= Immediate(~0x3)
 
 INT_TAG	= Immediate(0x0)
 BOOL_TAG	= Immediate(0x1)
@@ -36,7 +37,7 @@ class TwoOp(ib.TwoOp):
 		
 		super(TwoOp, self).__init__(name, src, dest, suffix, comment)
 
-def getTempColor(cf, node, *interference):
+def getTmpColor(cf, node, *interference):
 	interference = node['pre-alive'] | set(interference)
 	tmpColor = cf.getColor(interference, Register)
 	
@@ -106,7 +107,10 @@ def tag(obj, typ):
 def untag(reg):
 	return TwoOp('sar', TAG_SIZE, reg)
 
-def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz'):
+def getTag(reg):
+	return TwoOp('and', REST_MASK, reg)
+
+def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz', test = False):
 	global labeler
 	
 	code = Block()
@@ -114,7 +118,11 @@ def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz'):
 	endLabel = labeler.nextLabel()
 	elsLabel = labeler.nextLabel() if els else endLabel
 	
-	code.append(TwoOp('cmp', comp, cond))
+	if test:
+		code.append(TwoOp('test', comp, cond))
+	else:
+		code.append(TwoOp('cmp', comp, cond))
+	
 	code.append(OneOp(jmp, elsLabel, None))
 	
 	#Now the then case

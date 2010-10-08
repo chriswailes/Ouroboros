@@ -8,6 +8,8 @@ Description:	A transformation that flattens the provided AST.
 from lib.ast import *
 from lib import util
 
+from lib.symbol_table import SymbolTable
+
 analysis	= []
 args		= []
 
@@ -54,7 +56,7 @@ def flatten(node, st = None, inplace = False):
 		ret = Name(st.getSymbol(assign = True))
 		preStmts.append(Assign(ret, node))
 	
-	elif isinstance(node, List):
+	elif isinstance(node, List) or isinstance(node, Dictionary):
 		ret = Name(st.getSymbol(assign = True))
 		preStmts.append(Assign(ret, node))
 	
@@ -68,6 +70,29 @@ def flatten(node, st = None, inplace = False):
 		else:
 			ret = Name(st.getSymbol(assign = True))
 			preStmts.append(Assign(ret, funCall))
+	
+	elif isinstance(node, IfExp):
+		
+		jn = Join()
+		
+		stThen = SymbolTable(st)
+		name = Name(stThen.getSymbol(assign = True))
+		jn.addName(name, stThen)
+		
+		then = BasicBlock([Assign(name, node.then)], stThen)
+		
+		stEls = SymbolTable(st)
+		stEls.update(stThen)
+		name = Name(stEls.getSymbol(assign = True))
+		jn.addName(name, stEls)
+		
+		els = BasicBlock([Assign(name, node.els)], stEls)
+		
+		st.update(stEls)
+		st.update(jn)
+		
+		preStmts.append(If(node.cond, then, els, jn))
+		ret = jn.phis[0].target
 	
 	if isinstance(node, Module):
 		return ret

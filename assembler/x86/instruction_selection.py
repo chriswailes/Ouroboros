@@ -10,6 +10,7 @@ from assembler.x86.ib import *
 from assembler.x86.coloring import eax, ebp, esp, callee, caller
 
 from lib import ast
+from lib import symbol_table as st
 
 def selectInstructions(node, cf, dest = None):
 	if isinstance(node, ast.Assign):
@@ -24,7 +25,7 @@ def selectInstructions(node, cf, dest = None):
 			
 			if isinstance(src, Mem) and isinstance(dest, Mem):
 				
-				tmpColor = getTempColor(cf, node)
+				tmpColor = getTmpColor(cf, node)
 				
 				code.append(TwoOp('mov', src, tmpColor))
 				code.append(TwoOp('mov', tmpColor, dest))
@@ -73,7 +74,7 @@ def selectInstructions(node, cf, dest = None):
 		#tmpColor0 will be a register, and hold the final result of our
 		#computation.  The result may need to be moved if tmpColor0 is not
 		#the destination.
-		tmpColor0 = getTempColor(cf, node) if isinstance(dest, Mem) else dest
+		tmpColor0 = getTmpColor(cf, node) if isinstance(dest, Mem) else dest
 			
 		if isinstance(left, Mem):
 			if right != dest:
@@ -81,7 +82,7 @@ def selectInstructions(node, cf, dest = None):
 				left = tmpColor0
 			
 			else:
-				tmpcolor1 = getTempColor(cf, node) if tmpColor0 == dest else tmpColor0
+				tmpColor1 = getTmpColor(cf, node) if tmpColor0 == dest else tmpColor0
 				code.append(TwoOp('mov', left, tmpColor1))
 				left = tmpColor1
 		
@@ -109,17 +110,17 @@ def selectInstructions(node, cf, dest = None):
 				right = tmpColor0
 			
 			else:
-				tmpColor1 = getTempColor(cf, node, tmpColor0)
+				tmpColor1 = getTmpColor(cf, node, tmpColor0)
 				
 				code.append(TwoOp('mov', right, tmpColor1))
 				right = tmpColor1
 		
 		#Untag the left operand if it isn't an immediate.
-		if isinstance(node, Arithmatic) and isinstance(savedLeft, Color):
+		if isinstance(node, Arithmatic) and not isinstance(node, Add) and isinstance(savedLeft, Color):
 			code.append(untag(left))
 		
 		#Untag the right operand if it isn't an immediate.
-		if isinstance(node, Arithmatic) and isinstance(savedRight, Color) and savedLeft != savedRight:
+		if isinstance(node, Arithmatic) and not isinstance(node, Add) and isinstance(savedRight, Color) and savedLeft != savedRight:
 			code.append(untag(right))
 		
 		#############
@@ -131,13 +132,37 @@ def selectInstructions(node, cf, dest = None):
 		
 		if isinstance(node, ast.Add):
 			if isinstance(left, Immediate) and left.value == 1:
+				code.append(untag(tmpColor0))
 				code.append(OneOp('inc', tmpColor0))
 			
-			elif right == dest or isinstance(left, Immediate):
-				code.append(TwoOp('add', left, tmpColor0))
-			
 			else:
-				code.append(TwoOp('add', right, tmpColor0))
+				tagType = None
+				
+				case0 = Block()
+				case0.append(OneOp('push', right))
+				case0.append(OneOp('push', left))
+				case0.append(OneOp('call', st.FunSymbol('add'), None))
+				case0.append(TwoOp('sub', Immediate(8), esp))
+				case0.append(TwoOp('or', OBJ_TAG, eax))
+				case0.append(TwoOp('mov', eax, tmpColor0))
+				
+				case1 = Block()
+				
+				if not isinstance(left, Immediate):
+					case1.append(untag(left))
+				
+				if left != right:
+					case1.append(untag(right))
+				
+				if right == dest or isinstance(left, Immediate):
+					case1.append(TwoOp('add', left, tmpColor0))
+				
+				else:
+					case1.append(TwoOp('add', right, tmpColor0))
+				
+				case1.append(tag(tmpColor0, Integer))
+				
+				code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'je', test = True))
 			
 		elif isinstance(node, ast.Div):
 			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
@@ -198,10 +223,48 @@ def selectInstructions(node, cf, dest = None):
 				code.append(buildITE(left, case0, case1, FALS, 'jle'))
 		
 		elif isinstance(node, ast.Eq):
-			pass
+			tagType = None
+				
+			case0 = Block()
+			case0.append(OneOp('push', right))
+			case0.append(OneOp('push', left))
+			case0.append(OneOp('call', st.FunSymbol('equal'), None))
+			case0.append(TwoOp('sub', Immediate(8), esp))
+			case0.append(tag(eax, Boolean))
+			case0.append(TwoOp('mov', eax, tmpColor0))
+			
+			case2 = TwoOp('mov', TRU, tmpColor0)
+			case3 = TwoOp('mov', FALS, tmpColor0)
+			
+			case1 = buildITE(right, case2, case3, left)
+			
+			code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'je', test = True))
 		
 		elif isinstance(node, ast.Ne):
-			pass
+			tagType = None
+				
+			case0 = Block()
+			case0.append(OneOp('push', right))
+			case0.append(OneOp('push', left))
+			case0.append(OneOp('call', st.FunSymbol('not_equal'), None))
+			case0.append(TwoOp('sub', Immediate(8), esp))
+			case0.append(tag(eax, Boolean))
+			case0.append(TwoOp('mov', eax, tmpColor0))
+			
+			case2 = TwoOp('mov', FALS, tmpColor0)
+			case3 = TwoOp('mov', FRU, tmpColor0)
+			
+			case1 = buildITE(right, case2, case3, left)
+			
+			code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'jz', test = True))
+		
+		elif isinstance(node, ast.Is):
+			tagType = None
+			
+			case0 = TwoOp('mov', FALS, tmpColor0)
+			case1 = TwoOp('mov', TRU, tmpColor0)
+			
+			code.append(buildITE(right, case0, case1, left))
 		
 		###########
 		# Cleanup #
@@ -233,11 +296,9 @@ def selectInstructions(node, cf, dest = None):
 	
 	elif isinstance(node, ast.Boolean):
 		if isinstance(node, ast.Tru):
-			print("True value: {0}".format(TRU.value))
 			return TRU
 		
 		elif isinstance(node, ast.Fals):
-			print("False value: {0}".format(FALS.value))
 			return FALS
 	
 	elif isinstance(node, ast.FunctionCall):
@@ -369,7 +430,7 @@ def selectInstructions(node, cf, dest = None):
 		# Setup #
 		#########
 		
-		tmpColor = getTempColor(cf, node) if isinstance(dest, Mem) else dest
+		tmpColor = getTmpColor(cf, node) if isinstance(dest, Mem) else dest
 		
 		if src != tmpColor:
 			code.append(TwoOp('mov', src, tmpColor))

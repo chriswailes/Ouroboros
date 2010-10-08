@@ -52,11 +52,22 @@ def foldConstants(node):
 					node = And(node.left.operand, node.right.operand)
 		
 		#Calcluate constant values.
-		if isinstance(node.left, Integer):
+		if isinstance(node.left, Integer) or isinstance(node.left, Boolean) or isinstance(node.left, List):
 			#If they are both Integers, calculate their value.
-			if isinstance(node.right, Integer):
+			if isinstance(node.right, Integer) or isinstance(node.right, Boolean) or isinstance(node.left, List):
+				print("Calculating value for {0} {1} {2}".format(node.left.value, node.operator, node.right.value))
 				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.value))
-				return Integer(value)
+				print("Value is {0}".format(value))
+				
+				if isinstance(node, Arithmatic):
+					if isinstance(value, list):
+						return List(value)
+					else:
+						return Integer(value)
+				elif value:
+					return Tru()
+				else:
+					return Fals()
 			
 			#If they aren't both integers we might be able to lift an integer from the right side.
 			elif isinstance(node.right, BinOp) and isinstance(node.right.left, Integer):
@@ -76,20 +87,23 @@ def foldConstants(node):
 					elif isinstance(node.right, Sub):
 						node = Add(Integer(value), node.right.right)
 		
-		elif isinstance(node.left, Boolean):
-			if isinstance(node, And):
-				if isinstance(node.left, Tru):
-					node = node.right
+			elif isinstance(node.left, Boolean) or isinstance(node.left, Integer):
+				if isinstance(node, And):
+					if node.left.value:
+						node = node.right
+					
+					else:
+						node = Fals()
 				
-				else:
-					node = Fals()
-			
-			elif isinstance(node, Or):
-				if isinstance(node.left, Tru):
-					node = Tru()
-				
-				else:
-					node = node.right
+				elif isinstance(node, Or):
+					if node.left.value:
+						node = node.left
+					
+					else:
+						node = node.right
+		
+		elif isinstance(node, Add) and isinstance(node.left, List) and isinstance(node.right, List):
+			node = List(node.left.elements + node.right.elements)
 	
 	elif isinstance(node, Negate):
 		op = node.operand
@@ -123,6 +137,18 @@ def foldConstants(node):
 		elif isinstance(op, Fals):
 			node = Tru()
 		
+		elif isinstance(op, Integer):
+			if op.value == 0:
+				node = Tru()
+			else:
+				node = Fals()
+		
+		elif isinstance(op, List):
+			if op.value:
+				node = Fals()
+			else:
+				node = Tru()
+		
 		elif isinstance(op, BinOp):
 			cond  = isinstance(op.left, Not) or isinstance(op.left, Boolean)
 			cond |= isinstance(op.right, Not) or isinstance(op.right, Boolean)
@@ -135,5 +161,13 @@ def foldConstants(node):
 				elif isinstance(op, Or):
 					newNode = And(Not(op.left), Not(op.right))
 					node = foldConstants(newNode)
+	
+	elif isinstance(node, IfExp):
+		if isinstance(node.cond, Integer) or isinstance(node.cond, Boolean) or isinstance(node.cond, List):
+			if node.cond.value:
+				node = node.then
+			
+			else:
+				node = node.els
 	
 	return node

@@ -16,6 +16,9 @@ def init():
 	register('reads', reads, args, prereqs, result)
 
 def reads(node):
+	if isinstance(node, Module):
+		print(node)
+	
 	for child in node:
 		reads(child)
 	
@@ -34,7 +37,8 @@ def reads(node):
 		node.symbol['reads'] += 1
 	
 	elif isinstance(node, Subscript):
-		node.name.symbol['reads'] += 1
+		if isinstance(node.name, Name):
+			node.name.symbol['reads'] += 1
 	
 	elif isinstance(node, Phi):
 		node.target.symbol['reads'] = 0
