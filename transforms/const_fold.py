@@ -17,8 +17,8 @@ def init():
 
 def foldConstants(node):
 	
-	if isinstance(node, Module):
-		print("Folding constants: {0}".format(node))
+	#~ if isinstance(node, Module):
+		#~ print("Folding constants: {0}".format(node))
 	
 	newChildren = []
 	
@@ -85,9 +85,14 @@ def foldConstants(node):
 				if isinstance(node, Sub):
 					node.right = (Sub if isinstance(node.right, Add) else Add)(node.right.left, node.right.right)
 				
+				#~ print("Before rotate: {0}".format(node))
+				
 				#Left Rotate
-				newNode = node.__class__(node.left, node.right.left)
-				node.right.left = foldConstants(newNode)
+				node.right.left = node.__class__(node.left, node.right.left)
+				node = node.right
+				
+				#~ print("After rotate: {0}".format(node))
+				#~ print('')
 		
 		########################
 		# Constant Calculation #
@@ -113,8 +118,6 @@ def foldConstants(node):
 			#For all other operating types we need two Literals.
 			elif isinstance(node.right, Literal):
 				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.value))
-				
-				print("Calculated new constant.")
 				
 				node = reType(value)
 	

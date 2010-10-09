@@ -36,11 +36,6 @@ def flatten(node, st = None, inplace = False):
 	for child in node:
 		childPreStmts, newChild, childPostStmts = flatten(child, st, newInPlace)
 		
-		print("Pre Stmts: {0}".format(childPreStmts))
-		print("New Child: {0}".format(newChild))
-		print("Post Stmts: {0}".format(childPostStmts))
-		print('')
-		
 		if isinstance(node, BasicBlock):
 			newChildren.append(childPreStmts)
 			newChildren.append(newChild)

@@ -93,7 +93,7 @@ def selectInstructions(node, cf, dest = None):
 				left = tmpColor1
 		
 		elif isinstance(left, Immediate):
-			if isinstance(node, Div) or isinstance(node, Sub):
+			if classGuard(node, Div, Sub):
 				#Move left hand immediates into the temporary register when it is
 				#a divide or subtract operation.
 				code.append(TwoOp('mov', left, tmpColor0))

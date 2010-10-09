@@ -21,9 +21,7 @@ def reads(node):
 		reads(child)
 	
 	if classGuard(node, Assign, Phi):
-		sym = extractSymbol(node)
-		print("In assignment for {0}".format(sym))
-		sym['reads'] = 0
+		extractSymbol(node)['reads'] = 0
 	
 	elif isinstance(node, Symbol):
 		node['reads'] += 1
