@@ -6,6 +6,7 @@ Description:	Determines the liveness of varaibles at every node in the AST.
 """
 
 from lib.ast import *
+from lib.util import classGuard, extractSymbol
 
 args		= []
 prereqs	= ['reads']
@@ -19,28 +20,22 @@ def liveness(node, alive = []):
 	node['pre-alive'] = set(alive)
 	
 	if isinstance(node, Assign):
-		if isinstance(node.var, Name):
-			sym = node.var.symbol
-		else:
-			sym = node.var.name.symbol
+		sym = extractSymbol(node)
 		
 		sym['tmp'] = sym['reads']
 		alive.append(sym)
 	
-	elif isinstance(node, Name):
-		node.symbol['tmp'] -= 1
+	elif classGuard(node, Symbol, Subscript):
+		sym = extractSymbol(node)
 		
-		if node.symbol['tmp'] == 0:
-			alive.remove(node.symbol)
-	
-	elif isinstance(node, Subscript):
-		node.name.symbol['tmp'] -= 1
+		sym['tmp'] -= 1
 		
-		if node.name.symbol['tmp'] == 0:
-			alive.remove(node.name.symbol)
+		if sym['tmp'] == 0:
+			alive.remove(sym)
 	
 	elif isinstance(node, Phi):
-		sym = node.target.symbol
+		sym = node.target
+		
 		sym['tmp'] = sym['reads']
 		alive.append(sym)
 	

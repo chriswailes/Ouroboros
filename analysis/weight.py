@@ -6,6 +6,7 @@ Description:	An analysis that calculates the weight of each symbol.
 """
 
 from lib.ast import *
+from lib.util import extractSymbol
 
 args		= []
 prereqs	= ['reads', 'spans']
@@ -18,20 +19,18 @@ def init():
 def weight(node, depth = 0.0):
 	
 	if isinstance(node, Assign):
-		sym = node.var.symbol
+		sym = extractSymbol(node)
 		
 		sym['weight'] = 1.0 + (10.0 ** depth)
 		sym['tmp'] = sym['reads']
 	
-	elif isinstance(node, Name):
-		sym = node.symbol
+	elif isinstance(node, Symbol):
+		node['weight'] += 1.0 + (10.0 ** depth)
 		
-		sym['weight'] += 1.0 + (10.0 ** depth)
+		node['tmp'] -= 1
 		
-		sym['tmp'] -= 1
-		
-		if sym['tmp'] == 0:
-			sym['weight'] = sym['weight'] / float(sym['span'])
+		if node['tmp'] == 0:
+			node['weight'] = node['weight'] / float(node['span'])
 	
 	for child in node:
 		if isinstance(node, BasicBlock):

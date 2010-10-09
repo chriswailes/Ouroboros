@@ -10,9 +10,15 @@ from assembler.x86.ib import *
 from assembler.x86.coloring import eax, ebp, esp, callee, caller
 
 from lib import ast
-from lib import symbol_table as st
+from lib.util import classGuard
 
 def selectInstructions(node, cf, dest = None):
+	
+	#Error out if we receive a complex node that should have been flattened
+	#or translated out before instruction selection.
+	if not node.isSimple():
+		raise Exception('Non-simple node passed to instruction selection pass.')
+	
 	if isinstance(node, ast.Assign):
 		#The destination is a name, so we need to translate it.
 		dest = selectInstructions(node.var, cf)
@@ -104,7 +110,7 @@ def selectInstructions(node, cf, dest = None):
 			left = tmpColor0
 		
 		if isinstance(right, Mem):
-			if left != tmpColor0 and (isinstance(node, Add) or isinstance(node, Mul)) and not isinstance(node, Logical):
+			if left != tmpColor0 and classGuard(node, Add, Mul) and not isinstance(node, Logical):
 				code.append(TwoOp('mov', right, tmpColor0))
 				left = right
 				right = tmpColor0
@@ -141,7 +147,7 @@ def selectInstructions(node, cf, dest = None):
 				case0 = Block()
 				case0.append(OneOp('push', right))
 				case0.append(OneOp('push', left))
-				case0.append(OneOp('call', st.FunSymbol('add'), None))
+				case0.append(OneOp('call', ast.Name('add'), None))
 				case0.append(TwoOp('sub', Immediate(8), esp))
 				case0.append(TwoOp('or', OBJ_TAG, eax))
 				case0.append(TwoOp('mov', eax, tmpColor0))
@@ -228,7 +234,7 @@ def selectInstructions(node, cf, dest = None):
 			case0 = Block()
 			case0.append(OneOp('push', right))
 			case0.append(OneOp('push', left))
-			case0.append(OneOp('call', st.FunSymbol('equal'), None))
+			case0.append(OneOp('call', ast.Name('equal'), None))
 			case0.append(TwoOp('sub', Immediate(8), esp))
 			case0.append(tag(eax, Boolean))
 			case0.append(TwoOp('mov', eax, tmpColor0))
@@ -246,7 +252,7 @@ def selectInstructions(node, cf, dest = None):
 			case0 = Block()
 			case0.append(OneOp('push', right))
 			case0.append(OneOp('push', left))
-			case0.append(OneOp('call', st.FunSymbol('not_equal'), None))
+			case0.append(OneOp('call', ast.Name('not_equal'), None))
 			case0.append(TwoOp('sub', Immediate(8), esp))
 			case0.append(tag(eax, Boolean))
 			case0.append(TwoOp('mov', eax, tmpColor0))
@@ -309,36 +315,27 @@ def selectInstructions(node, cf, dest = None):
 		#Save any caller saved registers currently in use.
 		saveRegs(code, caller, usedColors)
 		
-		first = True
 		addSize = 0
 		args = list(node.args)
 		args.reverse()
 		for arg in args:
 			src = selectInstructions(arg, cf)
+			
+			#Pack immediates if they haven't been packed yet.
 			if isinstance(src, Immediate) and not src.packed:
 				src = pack(src, Integer)
 			
-			if first and len(code.insts) > 0:
-				inst = code.insts[-1]
-				
-				if not (isinstance(inst, OneOp) and inst.name == 'push' and inst.operand == src):
-					code.append(OneOp('push', src))
-					addSize += 4
-			
-			else:
-				code.append(OneOp('push', src))
-				addSize += 4
-			
-			first = False
+			code.append(OneOp('push', src))
+			addSize += 4
 		
 		#Make the function call.
-		code.append(OneOp('call', node.name.symbol, None))
+		code.append(OneOp('call', node.name, None))
 		
 		#Restore the stack.
 		if addSize > 0:
 			code.append(TwoOp('add', Immediate(addSize), esp))
 		
-		name = node.name.symbol.name
+		name = node.name.name
 		if name == 'create_list' or name == 'create_dict':
 			code.append(tag(eax, None))
 		
@@ -352,26 +349,14 @@ def selectInstructions(node, cf, dest = None):
 		return code
 	
 	elif isinstance(node, ast.If):
-		if isinstance(node.cond, ast.Integer):
-			if node.cond.value != 0:
-				return selectInstructions(node.then, cf)
-			else:
-				return selectInstructions(node.els, cf)
+		cond = selectInstructions(node.cond, cf)
+		then = selectInstructions(node.then, cf)
+		els  = selectInstructions(node.els, cf)
 		
-		else:
-			cond = selectInstructions(node.cond, cf)
-			then = selectInstructions(node.then, cf)
-			els  = selectInstructions(node.els, cf)
-			
-			return buildITE(cond, then, els)
+		return buildITE(cond, then, els)
 	
 	elif isinstance(node, ast.Integer):
 		return Immediate(node.value)
-	
-	elif isinstance(node, ast.List):
-		code = Block()
-		
-		pass
 	
 	elif isinstance(node, ast.Module):
 		code = Block()
@@ -415,11 +400,11 @@ def selectInstructions(node, cf, dest = None):
 		
 		return code
 	
-	elif isinstance(node, ast.Name):
-		if node.symbol.has_key('color'):
-			return node.symbol['color']
+	elif isinstance(node, ast.Symbol):
+		if node.has_key('color'):
+			return node['color']
 		else:
-			return node.symbol
+			raise Exception("Uncolored symbol ({0}) encountered.".format(node))
 	
 	elif isinstance(node, ast.UnaryOp):
 		code = Block()

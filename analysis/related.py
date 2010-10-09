@@ -6,6 +6,7 @@ Description:	Finds related symbols.
 """
 
 from lib.ast import *
+from lib.util import extractSymbol
 
 args		= []
 prereqs	= ['liveness', 'spans']
@@ -17,13 +18,14 @@ def init():
 
 def related(node, graph = {}):
 	if isinstance(node, Assign):
-		sym0 = node.var.symbol
+		sym0 = extractSymbol(node.var)
+		
 		sym0['related-backward'] = None
 		sym0['phi-related'] = []
 		graph[sym0] = []
 		
-		if isinstance(node.exp, Name):
-			sym1 = node.exp.symbol
+		if isinstance(node.exp, Symbol):
+			sym1 = node.exp
 			
 			if not sym1 in node['post-alive']:
 				sym0['related-backward'] = sym1
@@ -33,15 +35,15 @@ def related(node, graph = {}):
 			sym1 = None
 			
 			#Check the left operand.
-			if isinstance(node.exp.left, Name):
-				sym1 = node.exp.left.symbol
+			if isinstance(node.exp.left, Symbol):
+				sym1 = node.exp.left
 				
 				if not sym1 in node['post-alive']:
 					graph[sym1].append(sym0)
 			
 			#Check the right operand if the BinOp is an add or a multiply.
-			if isinstance(node.exp.right, Name) and (isinstance(node.exp, Add) or isinstance(node.exp, Mul)):
-				sym2 = node.exp.right.symbol
+			if classGuard(node.exp, Add, Mul) and isinstance(node.exp.right, Symbol):
+				sym2 = node.exp.right
 				
 				if not sym2 in node['post-alive']:
 					graph[sym2].append(sym0)
@@ -54,24 +56,23 @@ def related(node, graph = {}):
 			if sym1 and not sym1 in node['post-alive']:
 				sym0['related-backward'] = sym1
 		
-		elif isinstance(node.exp, UnaryOp) and isinstance(node.exp.operand, Name):
-			sym1 = node.exp.operand.symbol
+		elif isinstance(node.exp, UnaryOp) and isinstance(node.exp.operand, Symbol):
+			sym1 = node.exp.operand
 			
 			if not sym1 in node['post-alive']:
 				sym0['related-backward'] = sym1
 				graph[sym1].append(sym0)
 	
 	elif isinstance(node, Phi):
-		node.target.symbol['phi-related'] = []
+		node.target['phi-related'] = []
 		
-		for name0 in node:
-			foo = node.target.symbol['phi-related']
-			foo.append(name0.symbol)
+		for sym0 in node:
+			node.target['phi-related'].append(sym0)
 			
-			name0.symbol['phi-related'].append(node.target.symbol)
+			sym0['phi-related'].append(node.target)
 			
-			for name1 in node:
-				name0.symbol['phi-related'].append(name1.symbol)
+			for sym1 in node:
+				sym0['phi-related'].append(sym1)
 	
 	for child in node:
 		related(child)

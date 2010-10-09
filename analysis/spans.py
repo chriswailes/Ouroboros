@@ -6,6 +6,7 @@ Description:	Counts the span of each symbol.
 """
 
 from lib.ast import *
+from lib.util import extractSymbol
 
 args		= []
 prereqs	= ['liveness']
@@ -29,13 +30,7 @@ def spans(node, count = 0, alive = {}):
 	
 	if isinstance(node, Assign) or isinstance(node, Phi):
 		#Due to SSA form we know this variable isn't already alive.
-		if isinstance(node, Assign):
-			if isinstance(node.var, Name):
-				sym = node.var.symbol
-			else:
-				sym = node.var.name.symbol
-		else:
-			sym = node.target.symbol
+		sym = extractSymbol(node)
 		
 		sym['spans-funcall'] = False
 		

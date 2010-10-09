@@ -64,7 +64,7 @@ def clearColoring(tree, cf, ig):
 def colorPrime(node, cf, ig, chains):
 	#Color new symbol.
 	if isinstance(node, Assign):
-		sym = node.var.symbol
+		sym = node.var
 		
 		#We need to find a color if the symbol doesn't already have one, or if
 		#the color it was pre-colored with interferes with a other colors.

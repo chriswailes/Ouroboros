@@ -24,11 +24,43 @@ def flatten(node, st = None, inplace = False):
 	postStmts		= []
 	ret			= node
 	
-	#Setup flattening for this node's children, and translate this node if
-	#neccessary.
+	#Setup flattening for this node's children.
 	if isinstance(node, Assign):
 		newInPlace = True
+	
+	elif isinstance(node, BasicBlock):
+		st = node.st
+		newInPlace = True
+	
+	#Flatten each of our child nodes.
+	for child in node:
+		childPreStmts, newChild, childPostStmts = flatten(child, st, newInPlace)
 		
+		print("Pre Stmts: {0}".format(childPreStmts))
+		print("New Child: {0}".format(newChild))
+		print("Post Stmts: {0}".format(childPostStmts))
+		print('')
+		
+		if isinstance(node, BasicBlock):
+			newChildren.append(childPreStmts)
+			newChildren.append(newChild)
+			newChildren.append(childPostStmts)
+		
+		else:
+			preStmts.append(childPreStmts)
+			newChildren.append(newChild)
+			postStmts.append(childPostStmts)
+	
+	#Here we do the actual flattening.
+	if isinstance(ret, Expression) and not isinstance(ret, Symbol) and \
+	not isinstance(ret, Literal) and not inplace:
+		sym = st.getSymbol(assign = True)
+		preStmts.append(Assign(sym, ret))
+		
+		ret = sym
+	
+	#Translate this node if neccessary.
+	if isinstance(node, Assign):
 		#Assignments to subscripts need to be flattened/translated into
 		#function calls.
 		if isinstance(node.var, Subscript):
@@ -55,10 +87,6 @@ def flatten(node, st = None, inplace = False):
 				postStmts.append(fn)
 				
 				index += 1
-	
-	elif isinstance(node, BasicBlock):
-		st = node.st
-		newInPlace = True
 	
 	elif isinstance(node, IfExp):
 		#Create the new If node's Join node.
@@ -98,31 +126,6 @@ def flatten(node, st = None, inplace = False):
 		#function call.
 		funName = st.getName('get_subscript')
 		ret = FunctionCall(funName, [node.symbol, node.subscript])
-	
-	#Here we do the actual flattening.
-	if isinstance(ret, Expression) and not isinstance(ret, Symbol) and not inplace:
-		sym = st.getSymbol(assign = True)
-		preStmts.append(Assign(sym, ret))
-		
-		print("In {0} and flattening {1} into {2}".format(node, ret, sym))
-		print('')
-		
-		ret = sym
-	
-	#Flatten each of our child nodes.
-	for child in node:
-		childPreStmts, newChild, childPostStmts = flatten(child, st, newInPlace)
-		
-		if isinstance(node, BasicBlock):
-			newChildren.append(childPreStmts)
-			newChildren.append(newChild)
-			newChildren.append(childPostStmts)
-		
-		else:
-			preStmts.append(childPreStmts)
-			newChildren.append(newChild)
-			postStmts.append(childPostStmts)
-			
 	
 	#Flatten our list of pre and post-statements and new child nodes.
 	newChildren = util.flatten(newChildren)

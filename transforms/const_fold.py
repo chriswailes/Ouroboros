@@ -16,6 +16,10 @@ def init():
 	register('const_fold', foldConstants, analysis, args)
 
 def foldConstants(node):
+	
+	if isinstance(node, Module):
+		print("Folding constants: {0}".format(node))
+	
 	newChildren = []
 	
 	for child in node:
@@ -110,6 +114,8 @@ def foldConstants(node):
 			elif isinstance(node.right, Literal):
 				value = eval("{0} {1} {2}".format(node.left.value, node.operator, node.right.value))
 				
+				print("Calculated new constant.")
+				
 				node = reType(value)
 	
 	elif isinstance(node, UnaryOp):
@@ -133,9 +139,9 @@ def foldConstants(node):
 				newNode = opKlass(nodeKlass(node.operand.left), nodeKlass(node.operand.right))
 				node = foldConstants(newNode)
 	
-	elif isinstance(node, IfExp) and isinstance(node.cond, Literal):
-		#We can reduce IfExp nodes if we can calculate their conditional
-		#values at compile time.
+	elif classGuard(node, If, IfExp) and isinstance(node.cond, Literal):
+		#We can reduce If and IfExp nodes if we can calculate their
+		#conditional values at compile time.
 		
 		node = node.then if node.cond.value else node.els
 	

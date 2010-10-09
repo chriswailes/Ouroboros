@@ -6,6 +6,7 @@ Description:	Counts the number of reads each symbol has.
 """
 
 from lib.ast import *
+from lib.util import classGuard, extractSymbol
 
 args		= []
 prereqs	= []
@@ -19,16 +20,12 @@ def reads(node):
 	for child in node:
 		reads(child)
 	
-	if isinstance(node, Assign):
-		sym = node.var.sybmol if isinstance(node.var, Subscript) else node.var
-		#~print("In assignment for {0}".format(sym))
+	if classGuard(node, Assign, Phi):
+		sym = extractSymbol(node)
+		print("In assignment for {0}".format(sym))
 		sym['reads'] = 0
 	
-	elif isinstance(node, Phi):
-		node.target['reads'] = 0
-	
 	elif isinstance(node, Symbol):
-		#~print("Reading {0}".format(node))
 		node['reads'] += 1
 	
 	#This little hack is here to take care of cases where subscripts are
