@@ -49,21 +49,12 @@ def spans(node, count = 0, alive = {}):
 	#Symbols don't have any pre/post-alive information due to their Singleton
 	#nature.
 	if not isinstance(node, Symbol):
-		if isinstance(node, Assign):
-			print("In {0}".format(node))
-			print("Pre-alive: {0}".format(node['pre-alive']))
-			print("Post-alive: {0}".format(node['post-alive']))
-			print("Alive: {0}".format(alive))
-			print('')
-		
 		for sym in alive:
 			if not sym in node['post-alive']:
-				print("Marking symbol {0}".format(sym))
 				sym['span-start'] = alive[sym]
 				sym['span-end'  ] = count - 1
 				sym['span'] = sym['span-end'] - sym['span-start']
 				
-				print("Start: {0} End: {1}\n".format(alive[sym], count))
 				deletes.append(sym)
 	
 	for sym in deletes:

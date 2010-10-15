@@ -27,21 +27,15 @@ def liveness(node, alive = []):
 	if classGuard(node, Assign, Phi):
 		sym = extractSymbol(node)
 		
-		#~print("In assignment for {0}".format(sym))
-		#~print("Live set: {0}".format(alive))
-		
 		sym['tmp'] = sym['reads']
 		alive.append(sym)
 	
 	elif classGuard(node, Symbol, Subscript):
 		sym = extractSymbol(node)
 		
-		#~print("In read of {0}".format(sym))
-		
 		sym['tmp'] -= 1
 		
 		if sym['tmp'] == 0:
-			#~print("Removing {0} from the live set".format(sym))
 			alive.remove(sym)
 	
 	if not isinstance(node, Symbol):

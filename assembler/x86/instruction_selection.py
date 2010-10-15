@@ -336,10 +336,9 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.FunctionCall):
 		code = Block()
 		
-		usedColors = toColors(node['pre-alive'])
-		
-		#Save any caller saved registers currently in use.
-		saveRegs(code, caller, usedColors)
+		#Save any caller saved registers that are in use after this call.
+		saveColors = toColors(node['post-alive'])
+		saveRegs(code, caller, saveColors)
 		
 		addSize = 0
 		args = list(node.args)
@@ -369,7 +368,7 @@ def selectInstructions(node, cf, dest = None):
 			code.append(move(eax, dest))
 		
 		#Restore any caller saved registers that are in use.
-		restoreRegs(code, caller, usedColors)
+		restoreRegs(code, caller, saveColors)
 
 		return code
 	

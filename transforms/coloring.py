@@ -94,10 +94,14 @@ def colorPrime(node, cf, ig, chains):
 				#If all else fails we will get a new color from those that
 				#are currently available.
 				
-				color = cf.getColor(maxConstraint(chains[sym], ig), Register)
+				#Prefere callee save registers if we span a function call,
+				#and caller save registers if we do.
+				preferCaller = not sym['spans-funcall']
+				
+				color = cf.getColor(maxConstraint(chains[sym], ig), Register, preferCaller)
 				
 				if color == None:
-					color = cf.getColor(ig[sym])
+					color = cf.getColor(ig[sym], preferCaller = preferCaller)
 				
 				sym['color'] = color
 	

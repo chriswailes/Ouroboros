@@ -6,7 +6,7 @@ Description:	General purpose classes and functions for building instructions.
 """
 
 from lib import ast
-from lib import util
+from lib.util import classGuard
 
 from coloring import Color
 
@@ -29,7 +29,7 @@ class Block(object):
 		return code
 
 	def append(self, inst):
-		if isinstance(inst, Block) or isinstance(inst, Instruction) or isinstance(inst, Label):
+		if (isinstance(inst, Block) and len(inst.insts) > 0) or classGuard(inst, Instruction, Label):
 			self.insts.append(inst)
 	
 	def atEnd(self):
