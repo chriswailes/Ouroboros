@@ -23,11 +23,10 @@ def flatten(node, st = None, inPlace = False):
 	newChildren	= []
 	newInPlace	= False
 	preStmts		= []
-	postStmts		= []
 	
 	#Setup flattening for this node's children.
 	if isinstance(node, Assign):
-		newInPlace = util.extractSymbol(node.var)
+		newInPlace = True
 	
 	elif isinstance(node, BasicBlock):
 		st = node.st
@@ -37,17 +36,15 @@ def flatten(node, st = None, inPlace = False):
 	#flattening.
 	if not classGuard(node, Dictionary, List):
 		for child in node:
-			childPreStmts, newChild, childPostStmts = flatten(child, st, newInPlace)
+			childPreStmts, newChild = flatten(child, st, newInPlace)
 			
 			if isinstance(node, BasicBlock):
 				newChildren.append(childPreStmts)
 				newChildren.append(newChild)
-				newChildren.append(childPostStmts)
 			
 			else:
 				preStmts.append(childPreStmts)
 				newChildren.append(newChild)
-				postStmts.append(childPostStmts)
 		
 		#Set our new child nodes.
 		newChildren = util.flatten(newChildren)
@@ -67,33 +64,22 @@ def flatten(node, st = None, inPlace = False):
 		node = FunctionCall(st.getName('create_dict'))
 		node.tag = OBJ
 		
-		if inPlace:
-			sym = inPlace
-			stmts = postStmts
-		
-		else:
-			sym = st.getSymbol(assign = True)
-			preStmts.append(Assign(sym, node))
-			node = sym
-			
-			stmts = preStmts
+		sym = st.getSymbol(assign = True)
+		preStmts.append(Assign(sym, node))
+		node = sym
 		
 		name = st.getName('set_subscript')
 		for key in pairs:
 			#Flatten the key
-			childPreStmts, key, childPostStmts = flatten(key, st)
-			
-			stmts.append(childPreStmts)
-			stmts.append(childPostStmts)
+			childPreStmts, key = flatten(key, st)
+			preStmts.append(childPreStmts)
 			
 			#Flatten the value
-			childPreStmts, value, childPostStmts = flatten(pairs[key], st)
-			
-			stmts.append(childPreStmts)
-			stmts.append(childPostStmts)
+			childPreStmts, value = flatten(pairs[key], st)
+			preStmts.append(childPreStmts)
 			
 			#Add the key/value pair to the dictionary.
-			stmts.append(FunctionCall(name, sym, key, value))
+			preStmts.append(FunctionCall(name, sym, key, value))
 	
 	elif isinstance(node, IfExp):
 		#Create the new If node's Join node.
@@ -134,28 +120,19 @@ def flatten(node, st = None, inPlace = False):
 		node = FunctionCall(st.getName('create_list'), Integer(len(node.value)))
 		node.tag = OBJ
 		
-		if inPlace:
-			sym = inPlace
-			stmts = postStmts
-		
-		else:
-			sym = st.getSymbol(assign = True)
-			preStmts.append(Assign(sym, node))
-			node = sym
+		sym = st.getSymbol(assign = True)
+		preStmts.append(Assign(sym, node))
+		node = sym
 			
-			stmts = preStmts
-		
 		index = 0
 		name = st.getName('set_subscript')
 		for child in children:
 			#Flatten the value.
-			childPreStmts, newChild, childPostStmts = flatten(child, st)
-			
-			stmts.append(childPreStmts)
-			stmts.append(childPostStmts)
+			childPreStmts, newChild = flatten(child, st)
+			preStmts.append(childPreStmts)
 			
 			#Add the value to the list.
-			stmts.append(FunctionCall(name, sym, Integer(index), newChild))
+			preStmts.append(FunctionCall(name, sym, Integer(index), newChild))
 			
 			index += 1
 	
@@ -172,8 +149,7 @@ def flatten(node, st = None, inPlace = False):
 		
 		node = sym
 	
-	#Flatten our list of pre and post-statements.
+	#Flatten our list of pre-statements.
 	preStmts = util.flatten(preStmts)
-	postStmts = util.flatten(postStmts)
 	
-	return node if isinstance(node, Module) else (preStmts, node, postStmts)
+	return node if isinstance(node, Module) else (preStmts, node)

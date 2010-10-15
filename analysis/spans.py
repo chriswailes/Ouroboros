@@ -18,15 +18,12 @@ def init():
 
 def spans(node, count = 0, alive = {}):
 	inc = 1
-	startCount = count
 	
-	#We don't want to count the nodes that are children of lists and
-	#dictionaries as this would distort the wieght of variables that span them.
-	if not isinstance(node, Value):
-		for child in node:
-			subInc = spans(child, count)
-			inc   += subInc
-			count += subInc
+	#Count the spans over our children.
+	for child in node:
+		subInc = spans(child, count)
+		inc   += subInc
+		count += subInc
 	
 	if classGuard(node, Assign, Phi):
 		#Due to SSA form we know this variable isn't already alive.
@@ -35,7 +32,7 @@ def spans(node, count = 0, alive = {}):
 		sym['spans-funcall'] = False
 		
 		if sym in node['post-alive']:
-			alive[sym] = startCount
+			alive[sym] = count
 		else:
 			sym['span-start'] = sym['span-end'] = startCount
 			sym['span'] = 0
@@ -52,11 +49,21 @@ def spans(node, count = 0, alive = {}):
 	#Symbols don't have any pre/post-alive information due to their Singleton
 	#nature.
 	if not isinstance(node, Symbol):
+		if isinstance(node, Assign):
+			print("In {0}".format(node))
+			print("Pre-alive: {0}".format(node['pre-alive']))
+			print("Post-alive: {0}".format(node['post-alive']))
+			print("Alive: {0}".format(alive))
+			print('')
+		
 		for sym in alive:
 			if not sym in node['post-alive']:
+				print("Marking symbol {0}".format(sym))
 				sym['span-start'] = alive[sym]
-				sym['span-end'  ] = count
-				sym['span'] = count - alive[sym]
+				sym['span-end'  ] = count - 1
+				sym['span'] = sym['span-end'] - sym['span-start']
+				
+				print("Start: {0} End: {1}\n".format(alive[sym], count))
 				deletes.append(sym)
 	
 	for sym in deletes:

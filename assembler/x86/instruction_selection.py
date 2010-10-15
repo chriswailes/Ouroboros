@@ -26,7 +26,7 @@ def selectInstructions(node, cf, dest = None):
 		dest = selectInstructions(node.var, cf)
 		
 		if isinstance(node.exp, ast.Symbol):
-			code = Block()
+			code = Block('')
 			
 			#The source is a name, so we need to translate it.
 			src = selectInstructions(node.exp, cf)
@@ -95,8 +95,16 @@ def selectInstructions(node, cf, dest = None):
 			if classGuard(node, ast.Div, ast.Sub):
 				#Move left hand immediates into the temporary register when it is
 				#a divide or subtract operation.
+				
+				tmpColor1 = getTmpColor(cf, node) if right == tmpColor0 else tmpColor0
+				
+				if right == tmpColor0:
+					code.append(move(right, tmpColor1))
+					right = tmpColor1
+				
 				code.append(move(left, tmpColor0))
 				left = tmpColor0
+					
 			elif right != dest:
 				#If the left hand value is an immediate and this is an add
 				#or multiply operation the right hand value needs to be in
