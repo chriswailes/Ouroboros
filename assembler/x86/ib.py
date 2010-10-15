@@ -6,23 +6,9 @@ Description:	Classes and functions for building x86 instructions.
 """
 
 from assembler import *
-
-from assembler.ib import Block, Immediate, Instruction, Labeler, Label
-
 from assembler.coloring import Mem, Register
-
-from lib.ast import *
-
-TAG_SIZE	= Immediate(2)
-TAG_MASK	= Immediate(0x3)
-REST_MASK	= Immediate(~0x3)
-
-INT_TAG	= Immediate(0x0)
-BOOL_TAG	= Immediate(0x1)
-OBJ_TAG	= Immediate(0x3)
-
-FALS		= Immediate(0x1, True)
-TRU		= Immediate(0x5, True)
+from assembler.ib import Block, Immediate, Instruction, Labeler, Label
+from assembler.tagging import *
 
 labeler = Labeler()
 
@@ -59,57 +45,6 @@ def saveRegs(code, regs, inUse):
 		if reg in inUse:
 			code.append(OneOp('push', reg))
 
-def pack(imm, typ):
-	global TAG_SIZE
-	
-	if isinstance(imm, Immediate):
-		if typ == Integer:
-			value = imm.value << TAG_SIZE.value
-		
-		else:
-			raise Exception('Unspported object in pack funcion.')
-		
-		return Immediate(value)
-	
-	else:
-		raise Exception('Trying to pack a non-Value node.')
-
-def unpack(imm):
-	global TAG_SIZE
-	
-	if isinstance(imm, Immediate):
-		return imm.value >> TAG_SIZE.value
-	
-	else:
-		raise Exception('Trying to unpack a non-Immediate value.')
-
-def tag(obj, typ):
-	global TAG_SIZE, BOOL_TAG, OBJ_TAG
-	
-	if isinstance(obj, Register):
-		code = Block('')
-		
-		if typ == Integer:
-			code.append(TwoOp('sal', TAG_SIZE, obj))
-		
-		elif typ == Boolean:
-			code.append(TwoOp('sal', TAG_SIZE, obj))
-			code.append(TwoOp('or', BOOL_TAG, obj))
-		
-		else:
-			code.append(TwoOp('or', OBJ_TAG, obj))
-		
-		return code
-	
-	else:
-		raise Exception('Trying to tag a value that isn\'t a register.')
-
-def untag(reg):
-	return TwoOp('sar', TAG_SIZE, reg)
-
-def getTag(reg):
-	return TwoOp('and', REST_MASK, reg)
-
 def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz', test = False):
 	global labeler
 	
@@ -137,3 +72,61 @@ def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz', test = False):
 	code.append(endLabel)
 	
 	return code
+
+def move(src, dest):
+	if isinstance(src, Immediate):
+		dest.tagged = src.packed
+	
+	else:
+		dest.tagged = src.tagged
+	
+	return TwoOp('mov', src, dest)
+	
+def tag(obj, typ = None):
+	global INT, BOOL, TAG_SIZE, BOOL_TAG, OBJ_TAG
+	
+	if isinstance(obj, Register):
+		code = Block('')
+		
+		if typ:
+			obj.tagged = False
+			obj.tag = typ
+		
+		if not obj.tagged:
+			if obj.tag == INT:
+				code.append(TwoOp('sal', TAG_SIZE, obj))
+			
+			elif obj.tag == BOOL:
+				code.append(TwoOp('sal', TAG_SIZE, obj))
+				code.append(TwoOp('or', BOOL_TAG, obj))
+			
+			elif obj.tag == OBJ:
+				code.append(TwoOp('or', OBJ_TAG, obj))
+			
+			obj.tagged = True
+		
+		return code
+	
+	else:
+		raise Exception("Trying to tag a value that isn't in a register.")
+
+def untag(reg):
+	global TAG_SIZE
+	
+	if isinstance(reg, Register):
+		if reg.tagged:
+			reg.tagged = False
+			return TwoOp('sar', TAG_SIZE, reg)
+	
+	else:
+		raise Exception("Trying to untag a value that isn't in a register.")
+
+def getTag(reg):
+	global REST_MASK
+	
+	if isinstance(obj, Register):
+		reg.tagged = False
+		return TwoOp('and', REST_MASK, reg)
+	
+	else:
+		raise Exception("Trying to get the tag of a value that isn't in a register.")

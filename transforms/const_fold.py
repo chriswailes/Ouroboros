@@ -16,10 +16,6 @@ def init():
 	register('const_fold', foldConstants, analysis, args)
 
 def foldConstants(node):
-	
-	#~ if isinstance(node, Module):
-		#~ print("Folding constants: {0}".format(node))
-	
 	newChildren = []
 	
 	for child in node:
@@ -34,11 +30,10 @@ def foldConstants(node):
 		####################
 		
 		#Move constant values to the left when we can.
-		if classGuard(node, Add, Mul):
-			if isinstance(node.right, Literal):
-				tmp = node.left
-				node.left = node.right
-				node.right = tmp
+		if classGuard(node, Add, Mul) and classGuard(node.right, Integer, Boolean):
+			tmp = node.left
+			node.left = node.right
+			node.right = tmp
 		
 		######################
 		# Operator Reduction #
@@ -85,14 +80,9 @@ def foldConstants(node):
 				if isinstance(node, Sub):
 					node.right = (Sub if isinstance(node.right, Add) else Add)(node.right.left, node.right.right)
 				
-				#~ print("Before rotate: {0}".format(node))
-				
 				#Left Rotate
 				node.right.left = node.__class__(node.left, node.right.left)
 				node = node.right
-				
-				#~ print("After rotate: {0}".format(node))
-				#~ print('')
 		
 		########################
 		# Constant Calculation #
@@ -106,7 +96,7 @@ def foldConstants(node):
 					node = node.right
 				
 				else:
-					node = Fals()
+					node = node.left
 			
 			elif isinstance(node, Or):
 				if node.left.value:
@@ -135,8 +125,8 @@ def foldConstants(node):
 			node = node.operand.operand
 		
 		elif isinstance(node.operand, BinOp):
-			cond  = classGuard(op.left, nodeKlass, Literal)
-			cond |= classGuard(op.right, nodeKlass, Literal)
+			cond  = classGuard(node.operand.left, nodeKlass, Literal)
+			cond |= classGuard(node.operand.right, nodeKlass, Literal)
 			
 			if cond:
 				newNode = opKlass(nodeKlass(node.operand.left), nodeKlass(node.operand.right))

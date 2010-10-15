@@ -110,6 +110,9 @@ class Mem(Color):
 	def __init__(self, offset):
 		self.offset = offset
 		
+		self.tagged = False
+		self.tag = None
+		
 		if config.arch == 'x86':
 			from x86.coloring import memFormatString
 		elif config.arch == 'x86_64':
@@ -176,6 +179,9 @@ class Register(Color):
 	def __init__(self, name, weight):
 		self.name = name
 		self.weight = weight
+		
+		self.tagged = False
+		self.tag = None
 	
 	def __eq__(self, other):
 		if isinstance(other, Register):

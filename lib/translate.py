@@ -35,7 +35,7 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		if jn != None:
 			#Add this new assignment to the join node.
-			jn.addName(var, st)
+			jn.addSymbol(var, st)
 		
 		return ast.Assign(var, expr)
 	

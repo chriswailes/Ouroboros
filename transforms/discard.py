@@ -6,7 +6,7 @@ Description:	Removes expressions whos values aren't stored.
 """
 
 from lib.ast import *
-from lib.util import flatten, classGuard
+from lib.util import classGuard, extractSymbol, flatten
 
 analysis	= ['reads']
 args		= []
@@ -21,7 +21,7 @@ def discard(node):
 		
 		for child in node:
 			if isinstance(child, Assign):
-				sym = child.var.symbol if isinstance(child, Subscript) else child.var
+				sym = extractSymbol(child)
 				
 				#Throw out variables that are never read.
 				if sym['reads'] != 0:

@@ -40,7 +40,7 @@ class Node(dict):
 class Phi(Node):
 	def __init__(self, target, *srcs):
 		self.target = target
-		self.srcs = srcs
+		self.srcs = list(srcs)
 	
 	def __repr__(self):
 		return 'Phi(' + repr(self.target) + ', ' + repr(self.srcs) + ')'
@@ -73,7 +73,7 @@ class Join(Node):
 			phi0.addSrc(sym)
 		
 		elif st != None:
-			target = st.getSymbol(symbol.name, True)
+			target = st.getSymbol(sym.name, True)
 			phi0 = Phi(target, sym)
 			self.phis.append(phi0)
 	
@@ -233,7 +233,8 @@ class IfExp(Expression):
 class FunctionCall(Expression):
 	def __init__(self, name, *args):
 		self.name = name
-		self.args = args
+		self.args = list(args)
+		self.tag = False
 	
 	def __repr__(self):
 		return "FunctionCall({0}, {1})".format(repr(self.name), self.args)
@@ -404,7 +405,7 @@ class Dictionary(Value, Literal):
 		return "Dictionary({0})".format(repr(self.value))
 	
 	def __str__(self):
-		return str(self.pairs)
+		return str(self.value)
 	
 	def getChildren(self):
 		return self.value.keys() + self.value.values()
@@ -466,7 +467,7 @@ class List(Value, Literal):
 		return False
 	
 	def setChildren(self, children):
-		self.value = value
+		self.value = children
 	
 	def toPython(self, level = 0):
 		els = []
@@ -525,27 +526,28 @@ class Symbol(Value):
 		return str(self)
 
 class Subscript(Value):
-	def __init__(self, name, subscript):
-		self.name = name
+	def __init__(self, symbol, subscript):
+		self.symbol = symbol
 		self.subscript = subscript
 	
 	def __hash__(self):
-		return hash(str(self.name) + str(self.subcript))
+		return hash(str(self.symbol) + str(self.subcript))
 	
 	def __repr__(self):
-		return "Subscript({0}, {1})".format(repr(self.name), repr(self.subscript))
+		return "Subscript({0}, {1})".format(repr(self.symbol), repr(self.subscript))
 	
 	def __str__(self):
-		return "{0}[{1}]".format(self.name, self.subscript.value)
+		return "{0}[{1}]".format(self.symbol, self.subscript.value)
 	
 	def getChildren(self):
-		return [self.subscript]
+		return [self.symbol, self.subscript]
 	
 	def isSimple(self):
 		return False
 	
 	def setChildren(self, children):
-		self.subscript = children[0]
+		self.symbol = children[0]
+		self.subscript = children[1]
 	
 	def toPython(self, level = 0):
 		return pad(level) + str(self)

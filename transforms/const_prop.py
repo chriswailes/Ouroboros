@@ -6,6 +6,7 @@ Description:	Propigate constants throughout the code.
 """
 
 from lib.ast import *
+from lib.util import classGuard
 
 analysis	= []
 args		= []
@@ -16,7 +17,7 @@ def init():
 
 def propigateConstants(node, consts = {}):
 	#Memorize or replace symbol values, as appropriate.
-	if isinstance(node, Assign) and isinstance(node.var, Symbol) and isinstance(node.exp, Literal):
+	if isinstance(node, Assign) and isinstance(node.var, Symbol) and classGuard(node.exp, Integer, Boolean):
 		consts[node.var] = node.exp
 	
 	elif isinstance(node, Symbol) and consts.has_key(node):

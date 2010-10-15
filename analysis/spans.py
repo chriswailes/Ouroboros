@@ -19,7 +19,7 @@ def init():
 def spans(node, count = 0, alive = {}):
 	inc = 1
 	startCount = count
-
+	
 	#We don't want to count the nodes that are children of lists and
 	#dictionaries as this would distort the wieght of variables that span them.
 	if not isinstance(node, Value):
@@ -28,7 +28,7 @@ def spans(node, count = 0, alive = {}):
 			inc   += subInc
 			count += subInc
 	
-	if isinstance(node, Assign) or isinstance(node, Phi):
+	if classGuard(node, Assign, Phi):
 		#Due to SSA form we know this variable isn't already alive.
 		sym = extractSymbol(node)
 		
@@ -45,14 +45,19 @@ def spans(node, count = 0, alive = {}):
 			if sym in node['post-alive']:
 				sym['spans-funcall'] = True
 	
+	#This is here so we don't change the alive list while we are iterating
+	#through it.
 	deletes = []
 	
-	for sym in alive:
-		if not sym in node['post-alive']:
-			sym['span-start'] = alive[sym]
-			sym['span-end'  ] = count
-			sym['span'] = count - alive[sym]
-			deletes.append(sym)
+	#Symbols don't have any pre/post-alive information due to their Singleton
+	#nature.
+	if not isinstance(node, Symbol):
+		for sym in alive:
+			if not sym in node['post-alive']:
+				sym['span-start'] = alive[sym]
+				sym['span-end'  ] = count
+				sym['span'] = count - alive[sym]
+				deletes.append(sym)
 	
 	for sym in deletes:
 		del alive[sym]

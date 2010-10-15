@@ -5,6 +5,8 @@ Date:		2010/09/01
 Description:	A transformation that flattens the provided AST.
 """
 
+from assembler.tagging import OBJ
+
 from lib.ast import *
 from lib import util
 
@@ -17,42 +19,39 @@ def init():
 	from transforms.pass_manager import register
 	register('flatten', flatten, analysis, args)
 
-def flatten(node, st = None, inplace = False):
+def flatten(node, st = None, inPlace = False):
 	newChildren	= []
 	newInPlace	= False
 	preStmts		= []
 	postStmts		= []
-	ret			= node
 	
 	#Setup flattening for this node's children.
 	if isinstance(node, Assign):
-		newInPlace = True
+		newInPlace = util.extractSymbol(node.var)
 	
 	elif isinstance(node, BasicBlock):
 		st = node.st
 		newInPlace = True
 	
-	#Flatten each of our child nodes.
-	for child in node:
-		childPreStmts, newChild, childPostStmts = flatten(child, st, newInPlace)
+	#Flatten each of our child nodes.  Dictionaries and lists do their own
+	#flattening.
+	if not classGuard(node, Dictionary, List):
+		for child in node:
+			childPreStmts, newChild, childPostStmts = flatten(child, st, newInPlace)
+			
+			if isinstance(node, BasicBlock):
+				newChildren.append(childPreStmts)
+				newChildren.append(newChild)
+				newChildren.append(childPostStmts)
+			
+			else:
+				preStmts.append(childPreStmts)
+				newChildren.append(newChild)
+				postStmts.append(childPostStmts)
 		
-		if isinstance(node, BasicBlock):
-			newChildren.append(childPreStmts)
-			newChildren.append(newChild)
-			newChildren.append(childPostStmts)
-		
-		else:
-			preStmts.append(childPreStmts)
-			newChildren.append(newChild)
-			postStmts.append(childPostStmts)
-	
-	#Here we do the actual flattening.
-	if isinstance(ret, Expression) and not isinstance(ret, Symbol) and \
-	not isinstance(ret, Literal) and not inplace:
-		sym = st.getSymbol(assign = True)
-		preStmts.append(Assign(sym, ret))
-		
-		ret = sym
+		#Set our new child nodes.
+		newChildren = util.flatten(newChildren)
+		node.setChildren(newChildren)
 	
 	#Translate this node if neccessary.
 	if isinstance(node, Assign):
@@ -60,28 +59,41 @@ def flatten(node, st = None, inplace = False):
 		#function calls.
 		if isinstance(node.var, Subscript):
 			funName = st.getName('set_subscript')
-			ret = FunctionCall(funName, [node.var.symbol, node.var.subscript, node.exp])
+			node = FunctionCall(funName, node.var.symbol, node.var.subscript, node.exp)
+	
+	elif isinstance(node, Dictionary):
+		pairs = node.value
 		
-		#The assignment of dictionaries or lists to variables needs to be
-		#flattened/translated.
-		if isinstance(node.exp, Dictionary):
-			node.exp = FunctionCall(st.getName('create_dict'))
-			
-			name = st.getName('set_subscript')
-			for child in node.exp:
-				fn = FunctionCall(name, [node.var, child, exp.value[child]])
-				postStmts.append(fn)
+		node = FunctionCall(st.getName('create_dict'))
+		node.tag = OBJ
 		
-		elif isinstance(node.exp, List):
-			node.exp = FunctionCall(st.getName('create_list'), [Integer(len(exp.elements))])
+		if inPlace:
+			sym = inPlace
+			stmts = postStmts
+		
+		else:
+			sym = st.getSymbol(assign = True)
+			preStmts.append(Assign(sym, node))
+			node = sym
 			
-			index = 0
-			name = st.getFunSymbol('set_subscript')
-			for child in node.exp:
-				fn = FunctionCall(name, [node.var, Integer(index), child])
-				postStmts.append(fn)
-				
-				index += 1
+			stmts = preStmts
+		
+		name = st.getName('set_subscript')
+		for key in pairs:
+			#Flatten the key
+			childPreStmts, key, childPostStmts = flatten(key, st)
+			
+			stmts.append(childPreStmts)
+			stmts.append(childPostStmts)
+			
+			#Flatten the value
+			childPreStmts, value, childPostStmts = flatten(pairs[key], st)
+			
+			stmts.append(childPreStmts)
+			stmts.append(childPostStmts)
+			
+			#Add the key/value pair to the dictionary.
+			stmts.append(FunctionCall(name, sym, key, value))
 	
 	elif isinstance(node, IfExp):
 		#Create the new If node's Join node.
@@ -114,20 +126,54 @@ def flatten(node, st = None, inplace = False):
 		#Append this new If node to our pre-statements and then replace the
 		#node with the target from the join node's (hopefully) only Phi node.
 		preStmts.append(If(node.cond, then, els, jn))
-		ret = jn.phis[0].target
+		node = jn.phis[0].target
+	
+	elif isinstance(node, List):
+		children = node.value
+		
+		node = FunctionCall(st.getName('create_list'), Integer(len(node.value)))
+		node.tag = OBJ
+		
+		if inPlace:
+			sym = inPlace
+			stmts = postStmts
+		
+		else:
+			sym = st.getSymbol(assign = True)
+			preStmts.append(Assign(sym, node))
+			node = sym
+			
+			stmts = preStmts
+		
+		index = 0
+		name = st.getName('set_subscript')
+		for child in children:
+			#Flatten the value.
+			childPreStmts, newChild, childPostStmts = flatten(child, st)
+			
+			stmts.append(childPreStmts)
+			stmts.append(childPostStmts)
+			
+			#Add the value to the list.
+			stmts.append(FunctionCall(name, sym, Integer(index), newChild))
+			
+			index += 1
 	
 	elif isinstance(node, Subscript):
 		#If there is a read from a subscript it needs to be replaced with a
 		#function call.
 		funName = st.getName('get_subscript')
-		ret = FunctionCall(funName, [node.symbol, node.subscript])
+		node = FunctionCall(funName, node.symbol, node.subscript)
 	
-	#Flatten our list of pre and post-statements and new child nodes.
-	newChildren = util.flatten(newChildren)
+	#Here we do the actual flattening.
+	if isinstance(node, Expression) and not classGuard(node, Integer, Boolean, Symbol) and not inPlace:
+		sym = st.getSymbol(assign = True)
+		preStmts.append(Assign(sym, node))
+		
+		node = sym
+	
+	#Flatten our list of pre and post-statements.
 	preStmts = util.flatten(preStmts)
 	postStmts = util.flatten(postStmts)
 	
-	#Set our new child nodes.
-	node.setChildren(newChildren)
-	
-	return ret if isinstance(node, Module) else (preStmts, ret, postStmts)
+	return node if isinstance(node, Module) else (preStmts, node, postStmts)

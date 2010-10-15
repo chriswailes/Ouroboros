@@ -17,9 +17,14 @@ def init():
 	register('liveness', liveness, args, prereqs, result)
 
 def liveness(node, alive = []):
-	node['pre-alive'] = set(alive)
 	
-	if isinstance(node, Assign):
+	if not isinstance(node, Symbol):
+		node['pre-alive'] = set(alive)
+	
+	for child in node:
+		liveness(child, alive)
+	
+	if classGuard(node, Assign, Phi):
 		sym = extractSymbol(node)
 		
 		sym['tmp'] = sym['reads']
@@ -33,13 +38,5 @@ def liveness(node, alive = []):
 		if sym['tmp'] == 0:
 			alive.remove(sym)
 	
-	elif isinstance(node, Phi):
-		sym = node.target
-		
-		sym['tmp'] = sym['reads']
-		alive.append(sym)
-	
-	for child in node:
-		liveness(child, alive)
-	
-	node['post-alive'] = set(alive)
+	if not isinstance(node, Symbol):
+		node['post-alive'] = set(alive)

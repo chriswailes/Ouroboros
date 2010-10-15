@@ -56,12 +56,12 @@ class SymbolTable(object):
 					
 					self.symbols[s] = (a1, b0)
 		
-		elif isinstance(other, ast.Join):
+		elif isinstance(other, Join):
 			for phi in other.phis:
-				if self.symbols.has_key(phi.target.symbol.name):
-					a0, _ = self.symbols[phi.target.symbol.name]
-					b1 = phi.target.symbol.version
+				if self.symbols.has_key(phi.target.name):
+					a0, _ = self.symbols[phi.target.name]
+					b1 = phi.target.version
 					
-					pair = (phi.target.symbol.name, b1)
+					pair = (phi.target.name, b1)
 					
-					self.symbols[phi.target.symbol.name] = (a0, b1)
+					self.symbols[phi.target.name] = (a0, b1)

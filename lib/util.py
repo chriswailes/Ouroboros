@@ -7,9 +7,7 @@ Description:	Utility functions.
 
 #Performs a check to make sure that obj is one of the classes specified.
 def classGuard(obj, *klasses):
-	#~ print("In classGuard.  Obj Class: {0}".format(obj.__class__.__name__))
 	for klass in klasses:
-		#~ print("Comparing to {0}".format(klass.__name__))
 		if isinstance(obj, klass):
 			return True
 	
@@ -55,7 +53,7 @@ def reType(value):
 	elif isinstance(value, dict):
 		return Dictionary(value)
 	
-	elif isinstance(value, int):
+	elif isinstance(value, int) and not isinstance(value, bool):
 		return Integer(value)
 	
 	elif value is True:
@@ -74,3 +72,14 @@ def pad(level):
 			ret += "\t"
 		
 		return ret
+
+class Enum(object):
+	def __init__(self, value):
+		self.value = value
+	
+	def __eq__(self, other):
+		return isinstance(other, Enum) and self.value == other.value
+	
+	def __ne__(self, other):
+		return not (self == other)
+
