@@ -9,7 +9,7 @@ from assembler.coloring import *
 from assembler.tagging import *
 
 from assembler.x86.ib import *
-from assembler.x86.coloring import eax, ebp, esp, callee, caller
+from assembler.x86.coloring import eax, edx, ebp, esp, callee, caller
 
 from lib import ast
 from lib.util import classGuard
@@ -98,7 +98,13 @@ def selectInstructions(node, cf, dest = None):
 				left = tmpColor1
 		
 		elif isinstance(left, Immediate):
-			if classGuard(node, ast.Div, ast.Sub):
+			if isinstance(node, ast.Div):
+				#Move our dividend into eax and padd edx.
+				code.append(move(left, eax))
+				code.append(move(Immediate(left.value >> 31), edx))
+				left = eax
+			
+			elif isinstance(node, ast.Sub):
 				tmpColor1 = getTmpColor(cf, node) if right == tmpColor0 else tmpColor0
 				
 				#Move the right operand to another register if it is in
@@ -118,9 +124,17 @@ def selectInstructions(node, cf, dest = None):
 				code.append(move(right, tmpColor0))
 				right = tmpColor0
 		
-		elif isinstance(left, Register) and left != dest:
-			code.append(move(left, tmpColor0))
-			left = tmpColor0
+		elif isinstance(left, Register):
+			if isinstance(node, ast.Div) and left != eax:
+				#Move our dividend into eax and padd edx.
+				code.append(move(left, eax))
+				code.append(move(left, edx))
+				code.append(TwoOp('sar', Immediate(31), edx))
+				left = eax
+			
+			elif left != dest:
+				code.append(move(left, tmpColor0))
+				left = tmpColor0
 		
 		#Get the right operand into a register.
 		if isinstance(right, Mem):
@@ -134,6 +148,16 @@ def selectInstructions(node, cf, dest = None):
 				
 				code.append(move(right, tmpColor1))
 				right = tmpColor1
+		
+		elif isinstance(right, Immediate) and isinstance(node, ast.Div) and \
+		not ((right.value % 2) == 0 and (right.value / 2) < 31):
+			
+			#If the right hand side is an immediate it needs to be
+			#placed into a register for divide operations.
+			tmpColor1 = getTmpColor(cf, node) if left == tmpColor0 else tmpColor0
+		
+			code.append(move(right, tmpColor1))
+			right = tmpColor1
 		
 		#Untag the left operand if it isn't an immediate.
 		if isinstance(left, Color) and classGuard(node, ast.Div, ast.Mul, ast.Sub):
@@ -200,10 +224,13 @@ def selectInstructions(node, cf, dest = None):
 				#We can shift to the right instead of dividing.
 				dist = right.value / 2
 				
-				#FIXME
+				code.append(TwoOp('sar', Immediate(dist), tmpColor0))
+			
 			else:
-				#FIXME
-				pass
+				code.append(OneOp('idiv', right, None))
+				
+				if tmpColor0 != eax:
+					code.append(move(eax, tmpColor0))
 		
 		elif isinstance(node, ast.Mul):
 			if isinstance(left, Immediate) and (left.value % 2) == 0 and (left.value / 2) < 31:
