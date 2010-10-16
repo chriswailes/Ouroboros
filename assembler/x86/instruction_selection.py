@@ -39,7 +39,7 @@ def selectInstructions(node, cf, dest = None):
 				code.append(move(tmpColor, dest))
 			
 			elif src != dest:
-				code.append(mvoe(src, dest))
+				code.append(move(src, dest))
 			
 			return code
 		elif isinstance(node.exp, ast.Integer):
@@ -80,7 +80,13 @@ def selectInstructions(node, cf, dest = None):
 		#computation.  The result may need to be moved if tmpColor0 is not
 		#the destination.
 		tmpColor0 = getTmpColor(cf, node) if isinstance(dest, Mem) else dest
-			
+		
+		#The default tag for a result will be an int.  If it is already
+		#tagged, as will be the case for logical instructions or Add, it won't
+		#end up being tagged.
+		tmpColor0.tag = INT
+		
+		#Get the left operand into a register.
 		if isinstance(left, Mem):
 			if right != dest:
 				code.append(move(left, tmpColor0))
@@ -93,15 +99,15 @@ def selectInstructions(node, cf, dest = None):
 		
 		elif isinstance(left, Immediate):
 			if classGuard(node, ast.Div, ast.Sub):
-				#Move left hand immediates into the temporary register when it is
-				#a divide or subtract operation.
-				
 				tmpColor1 = getTmpColor(cf, node) if right == tmpColor0 else tmpColor0
 				
+				#Move the right operand to another register if it is in
+				#tmpColor0.
 				if right == tmpColor0:
 					code.append(move(right, tmpColor1))
 					right = tmpColor1
 				
+				#Move the left hand immediate into the destination register.
 				code.append(move(left, tmpColor0))
 				left = tmpColor0
 					
@@ -116,6 +122,7 @@ def selectInstructions(node, cf, dest = None):
 			code.append(move(left, tmpColor0))
 			left = tmpColor0
 		
+		#Get the right operand into a register.
 		if isinstance(right, Mem):
 			if left != tmpColor0 and classGuard(node, Add, Mul) and not isinstance(node, Logical):
 				code.append(move(right, tmpColor0))
@@ -129,11 +136,11 @@ def selectInstructions(node, cf, dest = None):
 				right = tmpColor1
 		
 		#Untag the left operand if it isn't an immediate.
-		if isinstance(left, Color) and classGuard(node, ast.Div, ast.Mul, ast.Sub) and left.tagged:
+		if isinstance(left, Color) and classGuard(node, ast.Div, ast.Mul, ast.Sub):
 			code.append(untag(left))
 		
 		#Untag the right operand if it isn't an immediate.
-		if right != left and isinstance(right, Color) and classGuard(node, ast.Div, ast.Mul, ast.Sub) and right.tagged:
+		if isinstance(right, Color) and classGuard(node, ast.Div, ast.Mul, ast.Sub):
 			code.append(untag(right))
 		
 		#############
@@ -144,7 +151,6 @@ def selectInstructions(node, cf, dest = None):
 			#The right value is never going to be an immediate due to our
 			#constant folding transformation.
 			if isinstance(left, Immediate):
-				
 				#This value hasn't been untagged yet.
 				code.append(untag(tmpColor0))
 				
@@ -153,9 +159,6 @@ def selectInstructions(node, cf, dest = None):
 				
 				else:
 					code.append(TwoOp('add', left, tmpColor0))
-				
-				#Cause the result to be tagged as an integer.
-				tmpColor0.tag = INT
 			
 			else:
 				#Build the case where we need to call the add function.
@@ -174,9 +177,7 @@ def selectInstructions(node, cf, dest = None):
 				
 				#Untag values as necessary.
 				case1.append(untag(left))
-				
-				if left != right:
-					case1.append(untag(right))
+				case1.append(untag(right))
 				
 				#Decide which operand to add to which.
 				if left == tmpColor0:
@@ -189,11 +190,8 @@ def selectInstructions(node, cf, dest = None):
 				case1.append(tag(tmpColor0, INT))
 				
 				#Re-tag the operands.
-				if left != tmpColor0:
-					case1.append(tag(left, INT))
-				
-				if right != tmpColor0:
-					case1.append(tag(right, INT))
+				case1.append(tag(left, INT))
+				case1.append(tag(right, INT))
 				
 				code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'je', True))
 			
@@ -219,8 +217,6 @@ def selectInstructions(node, cf, dest = None):
 			
 			else:
 				code.append(TwoOp('imul', right, tmpColor0))
-			
-			tmpColor0.tag = INT
 		
 		elif isinstance(node, ast.Sub):
 			if isinstance(right, Immediate) and right == 1:
@@ -228,10 +224,10 @@ def selectInstructions(node, cf, dest = None):
 			
 			else:
 				code.append(TwoOp('sub', right, tmpColor0))
-			
-			tmpColor0.tag = INT
 		
-		elif isinstance(node, ast.And):
+		elif classGuard(node, ast.And, ast.Or):
+			jmp = 'jl' if isinstance(node, ast.And) else 'jg'
+			
 			if left == dest:
 				case0 = move(right, tmpColor0)
 				case1 = None
@@ -240,28 +236,23 @@ def selectInstructions(node, cf, dest = None):
 				case0 = move(right, tmpColor0)
 				case1 = move(left, tmpColor0)
 				
-			code.append(buildITE(left, case0, case1, FALS, 'jl', True))
+			code.append(buildITE(left, case0, case1, FALS, jmp, True))
 		
-		elif isinstance(node, ast.Or):
-			if left == dest:
-				case0 = move(right, tmpColor0)
-				case1 = None
-			
-			else:
-				case0 = move(right, tmpColor0)
-				case1 = move(left, tmpColor0)
-				
-			code.append(buildITE(left, case0, case1, FALS, 'jg', True))
-		
-		elif isinstance(node, ast.Eq):
-			tagType = None
-				
+		elif classGuard(node, ast.Eq, ast.Ne):
 			case0 = Block()
+			
+			if isinstance(node, ast.Eq):
+				funName = ast.Name('equal')
+				jmp = 'jz'
+			
+			else:
+				funName = ast.Name('not_equal')
+				jmp = 'jnz'
 			
 			#Build the case where we need to call the equal function.
 			case0.append(OneOp('push', right))
 			case0.append(OneOp('push', left))
-			case0.append(OneOp('call', ast.Name('equal'), None))
+			case0.append(OneOp('call', funName, None))
 			case0.append(TwoOp('sub', Immediate(8), esp))
 			case0.append(tag(eax, BOOL))
 			case0.append(move(eax, tmpColor0))
@@ -270,32 +261,9 @@ def selectInstructions(node, cf, dest = None):
 			case3 = move(FALS, tmpColor0)
 			
 			#Build the case where we are comparing two integers or booleans.
-			case1 = buildITE(right, case2, case3, left)
+			case1 = buildITE(right, case2, case3, left, jmp)
 			
 			code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'je', True))
-		
-		elif isinstance(node, ast.Ne):
-			tagType = None
-				
-			case0 = Block()
-			
-			#Build the case where we need to call the not_equal function.
-			case0.append(OneOp('push', right))
-			case0.append(OneOp('push', left))
-			case0.append(OneOp('call', ast.Name('not_equal'), None))
-			case0.append(TwoOp('sub', Immediate(8), esp))
-			case0.append(tag(eax, BOOL))
-			
-			if eax != dest:
-				case0.append(move(eax, tmpColor0))
-			
-			case2 = move(FALS, tmpColor0)
-			case3 = move(TRU, tmpColor0)
-			
-			#Build the case where we are comparing two integers or booleans.
-			case1 = buildITE(right, case2, case3, left)
-			
-			code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'jz', True))
 		
 		elif isinstance(node, ast.Is):
 			case0 = move(FALS, tmpColor0)
@@ -310,10 +278,10 @@ def selectInstructions(node, cf, dest = None):
 		#Re-tag left, right, and result appropriately.
 		code.append(tag(tmpColor0))
 		
-		if origLeft != dest and left != dest and isinstance(origLeft, Register) and origLeft in toColors(node['post-alive']):
+		if isinstance(origLeft, Register) and origLeft in toColors(node['post-alive']):
 			code.append(tag(origLeft))
 		
-		if origRight != dest and right != dest and isinstance(origRight, Register) and origRight in toColors(node['post-alive']):
+		if isinstance(origRight, Register) and origRight in toColors(node['post-alive']):
 			code.append(tag(origRight))
 		
 		#Move the result.
@@ -353,6 +321,9 @@ def selectInstructions(node, cf, dest = None):
 			code.append(OneOp('push', src))
 			addSize += 4
 		
+		#Clear eax's tagged and tag values.
+		eax.clear()
+		
 		#Make the function call.
 		code.append(OneOp('call', node.name, None))
 		
@@ -375,7 +346,7 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.If):
 		cond = selectInstructions(node.cond, cf)
 		then = selectInstructions(node.then, cf)
-		els  = selectInstructions(node.els, cf)
+		els  = selectInstructions(node.els,  cf)
 		
 		return buildITE(cond, then, els)
 	
@@ -443,10 +414,9 @@ def selectInstructions(node, cf, dest = None):
 		
 		if src != tmpColor:
 			code.append(move(src, tmpColor))
-			tmpColor.tagged = src.tagged
 		
-		if tmpColor.tagged:
-			code.append(untag(tmpColor))
+		#Untag the argument.
+		code.append(untag(tmpColor))
 		
 		#############
 		# End Setup #
@@ -455,6 +425,7 @@ def selectInstructions(node, cf, dest = None):
 		if isinstance(node, ast.Negate):
 			code.append(OneOp('neg', tmpColor))
 			
+			#Tell the cleanup code to tag the result as an integer.
 			tmpColor.tagged = False
 			tmpColor.tag = INT
 		
@@ -462,16 +433,14 @@ def selectInstructions(node, cf, dest = None):
 			case0 = move(FALS, tmpColor)
 			case1 = move(TRU, tmpColor)
 			
-			tmpColor.tagged = True
-			
 			code.append(buildITE(src, case0, case1, FALS, 'jle'))
 		
 		###########
 		# Cleanup #
 		###########
 		
-		if not tmpColor.tagged:
-			code.append(tag(tmpColor, tmpColor.tag))
+		#Tag the result.
+		code.append(tag(tmpColor))
 		
 		if tmpColor != dest:
 			code.append(move(tmpColor, dest))

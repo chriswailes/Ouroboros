@@ -79,9 +79,10 @@ from analysis import liveness
 from analysis import reads
 from analysis import related
 from analysis import spans
+from analysis import typify
 from analysis import weight
 
-toInit = [chains, interference, liveness, reads, related, spans, weight]
+toInit = [chains, interference, liveness, reads, related, spans, typify, weight]
 
 for p in toInit:
 	p.init()

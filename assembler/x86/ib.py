@@ -88,7 +88,7 @@ def tag(obj, typ = None):
 	if isinstance(obj, Register):
 		code = Block('')
 		
-		if typ:
+		if typ and obj.tag != typ:
 			obj.tagged = False
 			obj.tag = typ
 		

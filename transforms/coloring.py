@@ -94,14 +94,18 @@ def colorPrime(node, cf, ig, chains):
 				#If all else fails we will get a new color from those that
 				#are currently available.
 				
-				#Prefere callee save registers if we span a function call,
-				#and caller save registers if we do.
-				preferCaller = not sym['spans-funcall']
+				#This is our first attempt at finding a color.  We look at
+				#the maximum constraint imposed by the chain that this
+				#symbol is a part of, and take our callee/caller preference
+				#from the whole chain.  If there is a single symbol that
+				#spans a function call we would rather go with a callee
+				#saved register.
+				color = cf.getColor(maxConstraint(chains[sym], ig), Register, maxPref(chains[sym]))
 				
-				color = cf.getColor(maxConstraint(chains[sym], ig), Register, preferCaller)
-				
+				#If we didn't find a color under maximum constraint we will
+				#pick one based solely on this symbols interference graph.
 				if color == None:
-					color = cf.getColor(ig[sym], preferCaller = preferCaller)
+					color = cf.getColor(ig[sym], preferCaller = not sym['spans-funcall'])
 				
 				sym['color'] = color
 	
@@ -116,3 +120,10 @@ def maxConstraint(chain, ig):
 		constraints = constraints | ig[sym]
 	
 	return constraints
+
+def maxPref(chain):
+	for sym in chain:
+		if sym['spans-funcall']:
+			return False
+	
+	return True

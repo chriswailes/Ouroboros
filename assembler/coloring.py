@@ -237,3 +237,7 @@ class Register(Color):
 	
 	def __str__(self):
 		return '%' + self.name
+	
+	def clear(self):
+		self.tagged = False
+		self.tag = None
