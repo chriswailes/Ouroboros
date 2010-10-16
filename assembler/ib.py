@@ -5,10 +5,16 @@ Date:		2010/08/26
 Description:	General purpose classes and functions for building instructions.
 """
 
+from assembler import Spill
+from assembler.coloring import Color, Mem, Register
+
 from lib import ast
+from lib.config import config
 from lib.util import classGuard
 
-from coloring import Color
+###############################
+# Instruction Builder Objects #
+###############################
 
 class Block(object):
 	def __init__(self, header = "\n"):
@@ -205,4 +211,82 @@ class TwoOp(Instruction):
 	
 	def __str__(self):
 		return self.pack("{0:5} {1}, {2}".format(self.getOp(), self.src, self.dest))
+
+#################################
+# Instruction Builder Functions #
+#################################
+labeler = Labeler()
+
+def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz', test = False):
+	global labeler
+	
+	if config.arch == 'x86':
+		from assembler.x86.ib import TwoOp, OneOp
+	
+	elif config.arch == 'x86_64':
+		from assembler.x86_64.ib import TwoOp, OneOp
+	
+	code = Block()
+	
+	endLabel = labeler.nextLabel()
+	elsLabel = labeler.nextLabel() if els else endLabel
+	
+	if test:
+		code.append(TwoOp('test', comp, cond))
+	else:
+		code.append(TwoOp('cmp', comp, cond))
+	
+	code.append(OneOp(jmp, elsLabel, None))
+	
+	#Now the then case
+	code.append(then)
+	code.append(OneOp('jmp', endLabel, None))
+	
+	if els:
+		#Now the else label and case.
+		code.append(elsLabel)
+		code.append(els)
+	
+	code.append(endLabel)
+	
+	return code
+
+def getTmpColor(cf, node, *interference):
+	interference = node['pre-alive'] | set(interference)
+	tmpColor = cf.getColor(interference, Register)
+	
+	if tmpColor == None:
+		raise Spill(node['pre-alive'])
+	
+	else:
+		return tmpColor
+
+def move(src, dest):
+	if config.arch == 'x86':
+		from assembler.x86.ib import TwoOp, OneOp
+	
+	elif config.arch == 'x86_64':
+		from assembler.x86_64.ib import TwoOp, OneOp
+	
+	if isinstance(src, Immediate):
+		dest.tagged = src.packed
+	
+	else:
+		dest.tagged = src.tagged
+	
+	return TwoOp('mov', src, dest)
+
+def restoreRegs(code, regs, inUse):
+	#Make a copy of the passed in list so we don't reverse it for everyone.
+	regs = list(regs)
+	regs.reverse()
+	
+	for reg in regs:
+		if reg in inUse:
+			code.append(OneOp('pop', reg))
+
+def saveRegs(code, regs, inUse):
+	for reg in regs:
+		if reg in inUse:
+			code.append(OneOp('push', reg))
 

@@ -88,7 +88,14 @@ def precolor(node, ig):
 	if isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
 			if sym in node['post-alive']:
-				ig[sym] = ig[sym] | interference
+				ig[sym] |= interference
+	
+	elif isinstance(node, Div):
+		if isinstance(node.left, Symbol):
+			node.left['color'] = rax
+		
+		for sym in node['pre-alive']:
+			ig[sym] |= set([interSym0, interSym2])
 	
 	else:
 		for child in node:

@@ -5,8 +5,10 @@ Date:		2010/10/12
 Description:	Constants and functions for dealing with polymorphism.
 """
 
-from assembler.ib import Immediate
+from assembler.coloring import Mem, Register
+from assembler.ib import Block, Immediate, Labeler
 
+from lib.config import config
 from lib.util import Enum
 
 #################
@@ -70,3 +72,75 @@ OBJ_TAG	= Immediate(0x3)
 
 TRU		= pack(0x1, BOOL)
 FALS		= pack(0x0, BOOL)
+
+###########################
+# Color Tagging Functions #
+###########################
+	
+def tag(obj, typ = None):
+	global INT, BOOL, TAG_SIZE, BOOL_TAG, OBJ_TAG
+	
+	if config.arch == 'x86':
+		from assembler.x86.ib import TwoOp, OneOp
+	
+	elif config.arch == 'x86_64':
+		from assembler.x86_64.ib import TwoOp, OneOp
+	
+	if isinstance(obj, Register):
+		code = Block('')
+		
+		if typ and obj.tag != typ:
+			obj.tagged = False
+			obj.tag = typ
+		
+		if not obj.tagged:
+			if obj.tag == INT:
+				code.append(TwoOp('sal', TAG_SIZE, obj))
+			
+			elif obj.tag == BOOL:
+				code.append(TwoOp('sal', TAG_SIZE, obj))
+				code.append(TwoOp('or', BOOL_TAG, obj))
+			
+			elif obj.tag == OBJ:
+				code.append(TwoOp('or', OBJ_TAG, obj))
+			
+			obj.tagged = True
+		
+		return code
+	
+	else:
+		raise Exception("Trying to tag a value that isn't in a register.")
+
+def untag(reg):
+	global TAG_SIZE
+	
+	if config.arch == 'x86':
+		from assembler.x86.ib import TwoOp, OneOp
+	
+	elif config.arch == 'x86_64':
+		from assembler.x86_64.ib import TwoOp, OneOp
+	
+	if isinstance(reg, Register):
+		if reg.tagged:
+			reg.tagged = False
+			return TwoOp('sar', TAG_SIZE, reg)
+	
+	else:
+		raise Exception("Trying to untag a value that isn't in a register.")
+
+def getTag(reg):
+	global REST_MASK
+	
+	if config.arch == 'x86':
+		from assembler.x86.ib import TwoOp, OneOp
+	
+	elif config.arch == 'x86_64':
+		from assembler.x86_64.ib import TwoOp, OneOp
+	
+	if isinstance(obj, Register):
+		reg.tagged = False
+		return TwoOp('and', REST_MASK, reg)
+	
+	else:
+		raise Exception("Trying to get the tag of a value that isn't in a register.")
+
