@@ -38,6 +38,8 @@ if config.startStage == 'python':
 		print(tree)
 		print("")
 	
+	exit(0)
+	
 	#Generate my AST	
 	tree = translate(tree)
 	

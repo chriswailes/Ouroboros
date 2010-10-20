@@ -117,6 +117,27 @@ class BasicBlock(Node):
 # Modules, Defs, and Classes #
 ##############################
 
+class Function(Node):
+	def __init__(self, name, argNames, block):
+		self.name = name
+		self.argNames = argNames
+		self.block = block
+	
+	def __repr__(self):
+		return "Function({0}, {1}, {2})".format(repr(self.name), repr(self.argnames), repr(self.block))
+	
+	def getChildren(self):
+		return [self.block]
+	
+	def setChildren(self, children):
+		self.block = children[0]
+	
+	def toPython(self, level = 0):
+		ret  = pad(level) + "def {0}({1}):\n".format(','.join(self.argnames))
+		ret += self.block.toPython(level + 1)
+		
+		return ret
+
 class Module(Node):
 	def __init__(self, block):
 		self.block = block
@@ -192,6 +213,22 @@ class If(Statement):
 		ret += self.els.toPython(level + 1)
 		
 		return ret
+
+class Return(Statement):
+	def __init__(self, value):
+		self.value = value
+	
+	def __repr__(self):
+		return "Return({0})".format(repr(self.value))
+	
+	def getChildren(self):
+		return [self.value]
+	
+	def setChildren(self, children):
+		self.value = children[0]
+	
+	def toPython(self, level = 0):
+		return pad(level) + 'return ' + self.value.toPython()
 
 ###############
 # Expressions #
@@ -446,6 +483,26 @@ class Integer(Value, Literal):
 	
 	def toPython(self, level = 0):
 		return "{0:d}".format(self.value)
+
+class Lambda(Value):
+	def __init__(self, argNames, block):
+		self.argNames = argNames
+		self.block = block
+	
+	def __repr__(self):
+		return "Lambda({0}, {1})".format(repr(self.argNames), repr(self.block))
+	
+	def getChildren(self):
+		return [self.block]
+	
+	def isSimple(self):
+		return False
+	
+	def setChildren(self, children):
+		self.block = children[0]
+	
+	def toPython(self, level = 0):
+		return "lambda {0}: {1}".format(','.join(self.argNames), self.block.toPython(level))
 
 class List(Value, Literal):
 	def __init__(self, elements):

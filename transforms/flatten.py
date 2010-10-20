@@ -25,12 +25,11 @@ def flatten(node, st = None, inPlace = False):
 	preStmts		= []
 	
 	#Setup flattening for this node's children.
-	if isinstance(node, Assign):
+	if util.classGuard(node, Assign, BasicBlock, Return):
 		newInPlace = True
 	
-	elif isinstance(node, BasicBlock):
-		st = node.st
-		newInPlace = True
+		if isinstance(node, BasicBlock):
+			st = node.st
 	
 	#Flatten each of our child nodes.  Dictionaries and lists do their own
 	#flattening.

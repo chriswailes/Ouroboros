@@ -89,6 +89,16 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		return ast.Div(left, right)
 	
+	elif isinstance(node, oast.Function):
+		funName = st.getname(node.name)
+		argNames = node.argnames
+		
+		newST = SymbolTable()
+		code = translate(node.code, newST, jn)
+		code = BasicBlock(code, newST)
+		
+		return Function(funName, argNames, code)
+	
 	elif isinstance(node, oast.If):
 		tests = node.tests
 		cond, then = tests.pop(0)
@@ -191,6 +201,9 @@ def translate(node, st = None, jn = None, funcName = False):
 		children = util.flatten(children)
 		
 		return ast.FunctionCall(st.getName('print_any'), *children)
+	
+	elif isinstance(node, oast.Return):
+		return Return(translate(node.value, st, jn))
 		
 	elif isinstance(node, oast.Stmt):
 		stmts = [translate(s, st, jn) for s in node.getChildNodes()]
