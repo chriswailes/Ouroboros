@@ -74,7 +74,7 @@ def runPasses(tree, ps):
 #####################
 
 from analysis import chains
-from analysis import heapify
+#~ from analysis import heapify
 from analysis import interference
 from analysis import liveness
 from analysis import reads
@@ -83,7 +83,7 @@ from analysis import spans
 from analysis import typify
 from analysis import weight
 
-toInit = [chains, heapify, interference, liveness, reads, related, spans, typify, weight]
+toInit = [chains, interference, liveness, reads, related, spans, typify, weight]
 
 for p in toInit:
 	p.init()

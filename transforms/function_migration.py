@@ -19,7 +19,7 @@ def init():
 def migrateFunctions(node, st = None, funs = []):
 	newChildren = []
 	
-	st = node.st if isinstance(node, Module) else st
+	st = node.st if isinstance(node, BasicBlock) else st
 	
 	for child in node:
 		if isinstance(child, Function):
@@ -30,7 +30,7 @@ def migrateFunctions(node, st = None, funs = []):
 			newChildren.append(assign)
 		
 		else:
-			migrateFunctions(child, funs, st)
+			migrateFunctions(child, st, funs)
 			newChildren.append(child)
 	
 	node.setChildren(newChildren)

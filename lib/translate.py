@@ -159,7 +159,7 @@ def translate(node, st = None, jn = None, funcName = False):
 		#Add the return for the result of our expression.
 		code = ast.Return(code)
 		
-		block = ast.BasicBlock(code, newST)
+		block = ast.BasicBlock([code], newST)
 		
 		st.update(newST)
 		

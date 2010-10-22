@@ -36,6 +36,7 @@ def discard(node):
 			#we remove any nested statements from the expression then throw
 			#it away.
 			else:
+				print("Discarding {0}".format(child))
 				newChildren.append(extractStmts(child))
 		
 		node.children = flatten(newChildren)

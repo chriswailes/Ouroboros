@@ -33,7 +33,12 @@ def reads(node):
 			node.name['reads'] = 1
 	
 	elif isinstance(node, Symbol):
-		node['reads'] += 1
+		
+		if node.has_key('reads'):
+			node['reads'] += 1
+		
+		else:
+			node['reads'] = 1
 	
 	#This little hack is here to take care of cases where subscripts are
 	#applied to literal values. After the flatten transformation this branch

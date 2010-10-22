@@ -49,7 +49,7 @@ if config.startStage == 'python':
 	#Run the AST transformation passes.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
 	runTransform(tree, 'flatten')
-	#~runTransform(tree, 'function_migration')
+	runTransform(tree, 'function_migration')
 	#~runTransforms(tree, ['const_prop'])
 	#~cf = runTransform(tree, 'color', {'cf':None})
 	
