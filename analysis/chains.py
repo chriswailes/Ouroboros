@@ -14,6 +14,11 @@ def init():
 	register('chains', chains, args, prereqs, result)
 
 def chains(tree, relgraph):
+	
+	#~for sym in relgraph:
+		#~print("{0}: {1}".format(sym, sym.keys()))
+		#~print(sym['reads'])
+	
 	outerGraph = relgraph.copy()
 	
 	finalChains = []

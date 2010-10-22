@@ -9,7 +9,7 @@ from assembler.coloring import *
 
 from lib.ast import *
 
-analysis0	= ['interference', 'related', 'chains']
+analysis0	= ['interference', 'related', 'chains', 'heapify']
 args0	= ['ig', 'chains', 'cf']
 
 analysis1	= ['interference', 'related', 'weight']
@@ -27,8 +27,8 @@ def init():
 def color(tree, ig, chains, cf = None):
 	cf = cf or ColorFactory()
 	
-	precolor(tree, ig)
-	colorPrime(tree, cf, ig, chains)
+	#~precolor(tree, ig)
+	#~colorPrime(tree, cf, ig, chains)
 	
 	return cf
 

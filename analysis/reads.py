@@ -17,11 +17,20 @@ def init():
 	register('reads', reads, args, prereqs, result)
 
 def reads(node):
-	for child in node:
-		reads(child)
-	
 	if classGuard(node, Assign, Phi):
 		extractSymbol(node)['reads'] = 0
+	
+	elif classGuard(node, Function, Lambda):
+		for sym in node.argSymbols:
+			sym['reads'] = 0
+	
+	elif isinstance(node, FunctionCall) and isinstance(node.name, Symbol):
+		
+		if node.name.has_key('reads'):
+			node.name['reads'] += 1
+		
+		else:
+			node.name['reads'] = 1
 	
 	elif isinstance(node, Symbol):
 		node['reads'] += 1
@@ -31,3 +40,6 @@ def reads(node):
 	#will be taken whenever we see a subscript.
 	elif isinstance(node, Subscript) and isinstance(node.symbol, Symbol):
 		node.symbol['reads'] += 1
+	
+	for child in node:
+		reads(child)

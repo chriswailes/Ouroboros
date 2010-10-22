@@ -34,10 +34,22 @@ def spans(node, count = 0, alive = {}):
 		if sym in node['post-alive']:
 			alive[sym] = count
 		else:
-			sym['span-start'] = sym['span-end'] = startCount
+			sym['span-start'] = sym['span-end'] = count
 			sym['span'] = 0
 	
+	elif classGuard(node, Function, Lambda):
+		
+		for sym in node.argSymbols:
+			sym['spans-funcall'] = False
+			
+			if sym in node['post-alive']:
+				alive[sym] = count
+			else:
+				sym['span-start'] = sym['span-end'] = count
+				sym['span'] = 0
+	
 	elif isinstance(node, FunctionCall):
+		#Mark functions that span this function call.
 		for sym in node['pre-alive']:
 			if sym in node['post-alive']:
 				sym['spans-funcall'] = True

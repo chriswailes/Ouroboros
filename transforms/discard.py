@@ -28,7 +28,7 @@ def discard(node):
 					newChildren.append(child)
 			
 			#If it is a Statement or a FunctionCall we need to keep the child.
-			elif classGuard(child, Statement, FunctionCall):
+			elif classGuard(child, Statement, Function, FunctionCall, Lambda):
 				newChildren.append(child)
 			
 			#Anything that reaches here is an expression outside of a

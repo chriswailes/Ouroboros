@@ -21,14 +21,19 @@ def liveness(node, alive = []):
 	if not isinstance(node, Symbol):
 		node['pre-alive'] = set(alive)
 	
-	for child in node:
-		liveness(child, alive)
-	
 	if classGuard(node, Assign, Phi):
 		sym = extractSymbol(node)
 		
 		sym['tmp'] = sym['reads']
 		alive.append(sym)
+	
+	elif classGuard(node, Function, Lambda):
+		for sym in node.argSymbols:
+			
+			#Functions might have arguments that are never read.
+			if sym['reads'] > 0:
+				sym['tmp'] = sym['reads']
+				alive.append(sym)				
 	
 	elif classGuard(node, Symbol, Subscript):
 		sym = extractSymbol(node)
@@ -37,6 +42,9 @@ def liveness(node, alive = []):
 		
 		if sym['tmp'] == 0:
 			alive.remove(sym)
+	
+	for child in node:
+		liveness(child, alive)
 	
 	if not isinstance(node, Symbol):
 		node['post-alive'] = set(alive)

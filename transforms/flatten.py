@@ -10,7 +10,7 @@ from assembler.tagging import OBJ
 from lib.ast import *
 from lib import util
 
-from lib.symbol_table import SymbolTable
+from lib.symbol_table import SymbolTable, getSingleton
 
 analysis	= []
 args		= []
@@ -112,6 +112,16 @@ def flatten(node, st = None, inPlace = False):
 		#node with the target from the join node's (hopefully) only Phi node.
 		preStmts.append(If(node.cond, then, els, jn))
 		node = jn.phis[0].target
+	
+	elif isinstance(node, Lambda):
+		#Get a name for the lambda.
+		name = st.getName('lambda', False, True)
+		
+		#Add the function definition to the preStmts list.
+		preStmts.append(Function(name, node.argSymbols, node.block))
+		
+		#Set this node to the name of the lambda.
+		node = name
 	
 	elif isinstance(node, List):
 		children = node.value

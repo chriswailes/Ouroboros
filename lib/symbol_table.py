@@ -12,26 +12,44 @@ singletons = {}
 def getSingleton(name, version, typ = Symbol):
 	global singletons
 	
-	pair = (name, version)
-	sym = None
+	trip = (typ, name, version)
+	ret = None
 	
-	if singletons.has_key(pair):
-		sym = singletons[pair]
+	if singletons.has_key(trip):
+		ret = singletons[trip]
 	else:
-		sym = Symbol(name, version) if typ == Symbol else Name(name)
-		singletons[pair] = sym
+		ret = Symbol(name, version) if typ == Symbol else Name(name, version)
+		singletons[trip] = ret
 	
-	return sym
+	return ret
 
 class SymbolTable(object):
 	def __init__(self, other = None):
 		if other:
 			self.symbols = other.symbols.copy()
+			self.names = other.names.copy()
 		else:
 			self.symbols = {}
+			self.names = {}
 	
-	def getName(self, name):
-		return getSingleton(name, 0, Name)
+	def getName(self, name, bif = True, define = False):
+		#Left value  -> next assignment
+		#Right value -> current read
+		
+		if bif:
+			return getSingleton(name, -1, Name)
+		
+		else:
+			if self.names.has_key(name):
+				if define:
+					a, _ = self.names[name]
+					self.names[name] = (a + 1, a + 1)
+			
+			else:
+				self.names[name] = (0, 0)
+			
+			_, b = self.names[name]
+			return getSingleton(name, b, Name)
 	
 	def getSymbol(self, name = '!', assign = False):
 		#Left value  -> next assignment

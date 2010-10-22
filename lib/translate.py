@@ -90,14 +90,18 @@ def translate(node, st = None, jn = None, funcName = False):
 		return ast.Div(left, right)
 	
 	elif isinstance(node, oast.Function):
-		funName = st.getname(node.name)
-		argNames = node.argnames
+		name = st.getName(node.name, False, True)
 		
-		newST = SymbolTable()
+		newST = SymbolTable(st)
+		
+		argSymbols = map(lambda name: newST.getSymbol(name, True), node.argnames)
+		
 		code = translate(node.code, newST, jn)
-		code = BasicBlock(code, newST)
+		block = ast.BasicBlock(code, newST)
 		
-		return Function(funName, argNames, code)
+		st.update(newST)
+		
+		return ast.Function(name, argSymbols, block)
 	
 	elif isinstance(node, oast.If):
 		tests = node.tests
@@ -145,6 +149,22 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		return ast.IfExp(cond, then, els)
 	
+	elif isinstance(node, oast.Lambda):
+		newST = SymbolTable(st)
+		
+		argSymbols = map(lambda name: newST.getSymbol(name, True), node.argnames)
+		
+		code = translate(node.code, newST, jn)
+		
+		#Add the return for the result of our expression.
+		code = ast.Return(code)
+		
+		block = ast.BasicBlock(code, newST)
+		
+		st.update(newST)
+		
+		return ast.Lambda(argSymbols, block)
+	
 	elif isinstance(node, oast.List):
 		elements = []
 		
@@ -171,19 +191,38 @@ def translate(node, st = None, jn = None, funcName = False):
 	elif isinstance(node, oast.Name):
 		ret = 'input_int' if node.name == 'input' else node.name
 		
-		if funcName:
+		if ret == 'input_int':
 			ret = st.getName(ret)
+		
 		else:
 			if ret == 'True':
-				return ast.Tru()
+				ret = ast.Tru()
 			
 			elif ret == 'False':
-				return ast.Fals()
+				ret = ast.Fals()
 			
 			else:
 				ret = st.getSymbol(ret)
 		
 		return ret
+	
+	#~elif isinstance(node, oast.Name):
+		#~ret = 'input_int' if node.name == 'input' else node.name
+		#~
+		#~if funcName:
+			#~ret = st.getName(ret, (ret == 'input_int'))
+		#~
+		#~else:
+			#~if ret == 'True':
+				#~return ast.Tru()
+			#~
+			#~elif ret == 'False':
+				#~return ast.Fals()
+			#~
+			#~else:
+				#~ret = st.getSymbol(ret)
+		#~
+		#~return ret
 	
 	elif isinstance(node, oast.Not):
 		operand = translate(node.expr, st, jn)
@@ -203,7 +242,7 @@ def translate(node, st = None, jn = None, funcName = False):
 		return ast.FunctionCall(st.getName('print_any'), *children)
 	
 	elif isinstance(node, oast.Return):
-		return Return(translate(node.value, st, jn))
+		return ast.Return(translate(node.value, st, jn))
 		
 	elif isinstance(node, oast.Stmt):
 		stmts = [translate(s, st, jn) for s in node.getChildNodes()]

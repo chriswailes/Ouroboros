@@ -17,10 +17,10 @@ def init():
 
 def propigateConstants(node, consts = {}):
 	#Memorize or replace symbol values, as appropriate.
-	if isinstance(node, Assign) and isinstance(node.var, Symbol) and classGuard(node.exp, Integer, Boolean):
+	if isinstance(node, Assign) and isinstance(node.var, Symbol) and classGuard(node.exp, Integer, Boolean, Name):
 		consts[node.var] = node.exp
 	
-	elif isinstance(node, Symbol) and consts.has_key(node):
+	elif classGuard(node, Name, Symbol) and consts.has_key(node):
 		return consts[node]
 	
 	#Values in Phi nodes should never be replaced.
