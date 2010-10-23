@@ -8,13 +8,13 @@ Description:	Generic assembler coloring classes and functions.
 from lib.config import config
 from lib.symbol_table import Symbol
 
-def precolor(tree, ig):
+def precolor(tree, ig, cf):
 	if config.arch == 'x86':
 		from x86.coloring import precolor
 	elif config.arch == 'x86_64':
 		from x86_64.coloring import precolor
 	
-	precolor(tree, ig)
+	precolor(tree, ig, cf)
 
 def toColors(l):
 	colors = []
@@ -37,8 +37,11 @@ class ColorFactory(object):
 		elif config.arch == 'x86_64':
 			from x86_64.coloring import colors, preIncrement, wordSize
 		
+		from assembler.ib import Labeler, Label
+		
 		self.colors = set(colors)
 		self.preIncrement = preIncrement
+		self.labeler = Labeler('D')
 		self.wordSize = wordSize
 	
 	def clear(self):
@@ -92,6 +95,9 @@ class ColorFactory(object):
 			self.swapPreference()
 		
 		return color
+	
+	def getDataLabel(self):
+		return self.labeler.nextLabel()
 	
 	def swapPreference(self):
 		for color in self.colors:

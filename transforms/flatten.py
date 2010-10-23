@@ -25,7 +25,7 @@ def flatten(node, st = None, inPlace = False):
 	preStmts		= []
 	
 	#Setup flattening for this node's children.
-	if util.classGuard(node, Assign, BasicBlock, Return):
+	if util.classGuard(node, Assign, BasicBlock):
 		newInPlace = True
 	
 		if isinstance(node, BasicBlock):
@@ -88,20 +88,20 @@ def flatten(node, st = None, inPlace = False):
 		#the then clause proper.
 		stThen = SymbolTable(st)
 		
-		name = stThen.getSymbol(assign = True)
-		jn.addName(name, stThen)
+		sym = stThen.getSymbol(assign = True)
+		jn.addSymbol(sym, stThen)
 		
-		then = BasicBlock([Assign(name, node.then)], stThen)
+		then = BasicBlock([Assign(sym, node.then)], stThen)
 		
 		#Create the else clause's symbol table, update the Join node, and create
 		#the else clause proper.
 		stEls = SymbolTable(st)
 		stEls.update(stThen)
 		
-		name = stEls.getSymbol(assign = True)
-		jn.addName(name, stEls)
+		sym = stEls.getSymbol(assign = True)
+		jn.addSymbol(sym, stEls)
 		
-		els = BasicBlock([Assign(name, node.els)], stEls)
+		els = BasicBlock([Assign(sym, node.els)], stEls)
 		
 		#Updte our SymbolTable (this should have no effect as statements
 		#aren't allowed in IfExp nodes).
@@ -112,16 +112,6 @@ def flatten(node, st = None, inPlace = False):
 		#node with the target from the join node's (hopefully) only Phi node.
 		preStmts.append(If(node.cond, then, els, jn))
 		node = jn.phis[0].target
-	
-	elif isinstance(node, Lambda):
-		#Get a name for the lambda.
-		name = st.getName('lambda', False, True)
-		
-		#Add the function definition to the preStmts list.
-		preStmts.append(Function(name, node.argSymbols, node.block))
-		
-		#Set this node to the name of the lambda.
-		node = name
 	
 	elif isinstance(node, List):
 		children = node.value
@@ -152,11 +142,15 @@ def flatten(node, st = None, inPlace = False):
 		node = FunctionCall(funName, node.symbol, node.subscript)
 	
 	#Here we do the actual flattening.
-	if isinstance(node, Expression) and not classGuard(node, Integer, Boolean, Symbol) and not inPlace:
+	if isinstance(node, Expression) and not classGuard(node, Boolean, Integer, Name, Symbol) and not inPlace:
 		sym = st.getSymbol(assign = True)
 		preStmts.append(Assign(sym, node))
 		
 		node = sym
+	
+	elif isinstance(node, Function):
+		preStmts.append(node)
+		node = node.name
 	
 	#Flatten our list of pre-statements.
 	preStmts = util.flatten(preStmts)

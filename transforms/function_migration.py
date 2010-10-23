@@ -24,10 +24,7 @@ def migrateFunctions(node, st = None, funs = []):
 	for child in node:
 		if isinstance(child, Function):
 			funs.append(child)
-			
-			sym = st.getSymbol(child.name.name, True)
-			assign = Assign(sym, child.name)
-			newChildren.append(assign)
+			migrateFunctions(child)
 		
 		else:
 			migrateFunctions(child, st, funs)

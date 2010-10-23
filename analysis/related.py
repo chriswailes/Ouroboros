@@ -63,8 +63,15 @@ def related(node, graph = {}):
 				sym0['related-backward'] = sym1
 				graph[sym1].append(sym0)
 	
+	elif isinstance(node, Function):
+		for sym in node.argSymbols:
+			sym['related-backward'] = None
+			sym['phi-related'] = []
+			graph[sym] = []
+	
 	elif isinstance(node, Phi):
 		node.target['phi-related'] = []
+		graph[node.target] = []
 		
 		for sym0 in node:
 			node.target['phi-related'].append(sym0)

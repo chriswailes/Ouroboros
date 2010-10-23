@@ -134,20 +134,22 @@ class Block(object):
 				i.reset()
 
 class Labeler(object):
-	def __init__(self):
+	def __init__(self, prefix = 'L'):
+		self.prefix = prefix
 		self.cur = -1
 	
 	def nextLabel(self):
 		self.cur += 1
-		return Label(self.cur)
+		return Label(self.prefix, self.cur)
 
 class Label(object):
-	def __init__(self, num):
+	def __init__(self, prefix, num):
+		self.prefix = prefix
 		self.num = num
-		self.name = "L{0}".format(self.num)
+		self.tagged = True
 	
 	def __str__(self):
-		return self.name
+		return "{0}{1}".format(self.prefix, self.num)
 
 class Immediate(object):
 	def __init__(self, value, packed = False):
@@ -220,6 +222,11 @@ labeler = Labeler()
 def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz', test = False):
 	global labeler
 	
+	if isinstance(cond, Immediate) and not isinstance(comp, Immediate):
+		tmp = comp
+		comp = cond
+		cond = tmp
+	
 	if config.arch == 'x86':
 		from assembler.x86.ib import TwoOp, OneOp
 	
@@ -271,7 +278,7 @@ def move(src, dest):
 	if isinstance(src, Immediate):
 		dest.tagged = src.packed
 	
-	else:
+	elif classGuard(src, Label, Mem, Register):
 		dest.tagged = src.tagged
 	
 	return TwoOp('mov', src, dest)

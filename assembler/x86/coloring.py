@@ -5,7 +5,7 @@ Date:		2010/09/20
 Description:	x86 specific coloring code and data structures.
 """
 
-from assembler.coloring import Register
+from assembler.coloring import Register, Mem
 
 from lib.ast import *
 from lib.symbol_table import Symbol
@@ -55,22 +55,33 @@ memFormatString = "-{0:d}(%ebp)"
 # Architecture Specific Coloring #
 ##################################
 
-def precolor(node, ig):
+def precolor(node, ig, cf):
 	global interference
 	
-	if isinstance(node, FunctionCall):
-		for sym in node['pre-alive']:
-			if sym in node['post-alive']:
-				ig[sym] |= interference
-	
-	elif isinstance(node, Div):
+	if isinstance(node, Div):
 		if isinstance(node.left, Symbol):
 			node.left['color'] = eax
 		
 		for sym in node['pre-alive']:
 			ig[sym] |= set([interSym0, interSym2])
 	
+	elif isinstance(node, Function):
+		colors = [cf.getColor(set([]), Mem)]
+		
+		for sym in node.argSymbols:
+			sym['color'] = cf.getColor(set(colors), Mem)
+			sym['color'].formatString = "{0:d}(%ebp)"
+			sym['color'].tagged = True
+			
+			colors.append(sym['color'])
+			
+	
+	elif isinstance(node, FunctionCall):
+		for sym in node['pre-alive']:
+			if sym in node['post-alive']:
+				ig[sym] |= interference
+	
 	else:
 		for child in node:
-			precolor(child, ig)
+			precolor(child, ig, cf)
 

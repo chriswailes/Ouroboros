@@ -36,7 +36,7 @@ if config.startStage == 'python':
 	if config.verbose:
 		#Print the original AST
 		print(tree)
-		print("")
+		print('')
 	
 	#Generate my AST	
 	tree = translate(tree)
@@ -44,14 +44,14 @@ if config.startStage == 'python':
 	if config.verbose:
 		#Print my AST
 		print(tree)
-		print("")
+		print('')
 	
 	#Run the AST transformation passes.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
 	runTransform(tree, 'flatten')
 	runTransform(tree, 'function_migration')
-	#~runTransforms(tree, ['const_prop'])
-	#~cf = runTransform(tree, 'color', {'cf':None})
+	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
+	cf = runTransform(tree, 'color', {'cf':None})
 	
 	if config.verbose:
 		#Print my flattened (and folded) AST
@@ -66,8 +66,6 @@ if config.startStage == 'python':
 		print("After Transformation Passes:")
 		print(tree.toPython())
 		print('')
-	
-	exit(0)
 	
 	#One of the symbols from each of these sets needs to be spilled.
 	spillSets = []
@@ -88,21 +86,6 @@ if config.startStage == 'python':
 			
 			cf = runTransform(tree, 'spill', {'spillSets':spillSets})
 			runTransform(tree, 'color', {'cf':cf})
-
-	"""
-	if config.verbose:
-		#Print out the pre-assembly passes code.
-		print("Before Assembly Passes")
-		print(assembly)
-
-	#Run the instruction passes.
-	redundantMoves(assembly)
-
-	if config.verbose:
-		#Print out the post-assembly passes code.
-		print("After Assembly Passes")
-		print(assembly)
-	"""
 
 	#Put the produced assembly into the output file.
 	outFile = open(config.sName, 'w')

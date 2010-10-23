@@ -37,7 +37,7 @@ def spans(node, count = 0, alive = {}):
 			sym['span-start'] = sym['span-end'] = count
 			sym['span'] = 0
 	
-	elif classGuard(node, Function, Lambda):
+	elif isinstance(node, Function):
 		
 		for sym in node.argSymbols:
 			sym['spans-funcall'] = False
@@ -62,7 +62,7 @@ def spans(node, count = 0, alive = {}):
 	#nature.
 	if not isinstance(node, Symbol):
 		for sym in alive:
-			if not sym in node['post-alive']:
+			if isinstance(node, Module) or not sym in node['post-alive']:
 				sym['span-start'] = alive[sym]
 				sym['span-end'  ] = count - 1
 				sym['span'] = sym['span-end'] - sym['span-start']

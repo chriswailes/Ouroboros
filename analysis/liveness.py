@@ -17,34 +17,44 @@ def init():
 	register('liveness', liveness, args, prereqs, result)
 
 def liveness(node, alive = []):
+	if isinstance(node, Module):
+		for sym in node.collectSymbols():
+			if sym.has_key('tmp'):
+				del sym['tmp']
 	
 	if not isinstance(node, Symbol):
 		node['pre-alive'] = set(alive)
 	
-	if classGuard(node, Assign, Phi):
-		sym = extractSymbol(node)
-		
-		sym['tmp'] = sym['reads']
-		alive.append(sym)
-	
-	elif classGuard(node, Function, Lambda):
+	if isinstance(node, Function):
 		for sym in node.argSymbols:
 			
 			#Functions might have arguments that are never read.
 			if sym['reads'] > 0:
 				sym['tmp'] = sym['reads']
-				alive.append(sym)				
+				alive.append(sym)
+	
+	for child in node:
+		liveness(child, alive)
+	
+	if classGuard(node, Assign, Phi):
+		sym = extractSymbol(node)
+		
+		if not sym.has_key('tmp'):
+			sym['tmp'] = sym['reads']
+			alive.append(sym)
 	
 	elif classGuard(node, Symbol, Subscript):
 		sym = extractSymbol(node)
 		
-		sym['tmp'] -= 1
-		
-		if sym['tmp'] == 0:
-			alive.remove(sym)
-	
-	for child in node:
-		liveness(child, alive)
+		if sym.has_key('tmp'):
+			sym['tmp'] -= 1
+			
+			if sym['tmp'] == 0:
+				alive.remove(sym)
+			
+		else:
+			sym['tmp'] = sym['reads']
+			alive.append(sym)
 	
 	if not isinstance(node, Symbol):
 		node['post-alive'] = set(alive)

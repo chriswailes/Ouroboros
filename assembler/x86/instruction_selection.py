@@ -87,7 +87,7 @@ def selectInstructions(node, cf, dest = None):
 		tmpColor0.tag = INT
 		
 		#Get the left operand into a register.
-		if isinstance(left, Mem):
+		if classGuard(left, Mem, Label):
 			if right != dest:
 				code.append(move(left, tmpColor0))
 				left = tmpColor0
@@ -137,7 +137,7 @@ def selectInstructions(node, cf, dest = None):
 				left = tmpColor0
 		
 		#Get the right operand into a register.
-		if isinstance(right, Mem):
+		if classGuard(right, Mem, Label):
 			if left != tmpColor0 and classGuard(node, Add, Mul) and not isinstance(node, Logical):
 				code.append(move(right, tmpColor0))
 				left = right
@@ -328,6 +328,47 @@ def selectInstructions(node, cf, dest = None):
 		elif isinstance(node, ast.Fals):
 			return FALS
 	
+	elif isinstance(node, ast.Function):
+		code = Block()
+		
+		code.header += ".globl {0}\n".format(node.name)
+		code.header += "{0}:\n".format(node.name)
+		
+		#Push the old base pointer onto the stack.
+		code.append(OneOp('push', ebp))
+		#Make the old stack pointer the new base pointer.
+		code.append(move(esp, ebp))
+		
+		usedColors = toColors(node.collectSymbols())
+		
+		#Save any callee saved registers we used.
+		saveRegs(code, callee, usedColors)
+		
+		#Expand the stack.
+		foo = cf.offset - (4 * len(node.argSymbols)) - 4
+		if foo > 0:
+			code.append(TwoOp('sub', Immediate(foo), esp))
+		
+		#Append the module's code.
+		code.append(selectInstructions(node.block, cf))
+		
+		endBlock = Block()
+		#Restore the stack.
+		if foo > 0:
+			endBlock.append(TwoOp('add', Immediate(foo), esp))
+		
+		#Restore any callee saved registers we used.
+		restoreRegs(endBlock, callee, usedColors)
+		
+		#Restore the %esp and %ebp registers.
+		endBlock.append(Instruction('leave'))
+		#Return
+		endBlock.append(Instruction('ret'))
+
+		code.append(endBlock)
+		
+		return code
+	
 	elif isinstance(node, ast.FunctionCall):
 		code = Block()
 		
@@ -352,7 +393,8 @@ def selectInstructions(node, cf, dest = None):
 		eax.clear()
 		
 		#Make the function call.
-		code.append(OneOp('call', node.name, None))
+		name = '*' + str(node.name['color']) if isinstance(node.name, Symbol) else node.name
+		code.append(OneOp('call', name, None))
 		
 		#Restore the stack.
 		if addSize > 0:
@@ -383,42 +425,82 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.Module):
 		code = Block()
 		code.header  = "# x86\n"
-		code.header += ".globl main\n"
-		code.header += "main:\n"
 		
-		#Push the old base pointer onto the stack.
-		code.append(OneOp('push', ebp))
-		#Make the old stack pointer the new base pointer.
-		code.append(move(esp, ebp))
+		#Define our data section.
+		code.header += "\n# Data\n"
+		for sym in node.collectSymbols():
+			if sym['heapify']:
+				code.header += ".globl {0}\n".format(sym['color'])
+				code.header += "\t.data\n"
+				code.header += "\t.align\t4\n"
+				code.header += "\t.size\t{0}, 4\n".format(sym['color'])
+				
+				code.header += "{0}:\n".format(sym['color'])
+				code.header += "\t.long\t1\n"
+				code.header += "\t.section\t.data\n"
 		
-		usedColors = toColors(node.collectSymbols())
+		#Convert the body into it's own function for ease of code generation.
+		node.block.children.append(ast.Return(ast.Integer(0)))
+		fun = ast.Function(ast.Name('main'), [], node.block)
+		node.functions.append(fun)
 		
-		#Save any callee saved registers we used.
-		saveRegs(code, callee, usedColors)
+		#Define our functions.
+		code.header += "\n# Functions\n"
+		for fun in node.functions:
+			code.append(selectInstructions(fun, cf))
 		
-		#Expand the stack.
-		if cf.offset > 0:
-			code.append(TwoOp('sub', Immediate(cf.offset), esp))
+		#~code.header += ".globl main\n"
+		#~code.header += "main:\n"
+		#~
+		#~#Push the old base pointer onto the stack.
+		#~code.append(OneOp('push', ebp))
+		#~#Make the old stack pointer the new base pointer.
+		#~code.append(move(esp, ebp))
+		#~
+		#~usedColors = toColors(node.collectSymbols())
+		#~
+		#~#Save any callee saved registers we used.
+		#~saveRegs(code, callee, usedColors)
+		#~
+		#~#Expand the stack.
+		#~if cf.offset > 0:
+			#~code.append(TwoOp('sub', Immediate(cf.offset), esp))
+		#~
+		#~#Append the module's code.
+		#~code.append(selectInstructions(node.block, cf))
+		#~
+		#~endBlock = Block()
+		#~#Restore the stack.
+		#~if cf.offset > 0:
+			#~endBlock.append(TwoOp('add', Immediate(cf.offset), esp))
+		#~
+		#~#Restore any callee saved registers we used.
+		#~restoreRegs(endBlock, callee, usedColors)
+		#~
+		#~#Put our exit value in %eax
+		#~endBlock.append(move(Immediate(0), eax))
+		#~#Restore the %esp and %ebp registers.
+		#~endBlock.append(Instruction('leave'))
+		#~#Return
+		#~endBlock.append(Instruction('ret'))
+#~
+		#~code.append(endBlock)
 		
-		#Append the module's code.
-		code.append(selectInstructions(node.block, cf))
+		return code
+	
+	elif isinstance(node, ast.Name):
+		return node
+	
+	elif isinstance(node, ast.Return):
+		code = Block()
 		
-		endBlock = Block()
-		#Restore the stack.
-		if cf.offset > 0:
-			endBlock.append(TwoOp('add', Immediate(cf.offset), esp))
+		src = selectInstructions(node.value, cf)
+		#Pack immediates if they haven't been packed yet.
+		if isinstance(src, Immediate):
+			src = pack(src, INT)
 		
-		#Restore any callee saved registers we used.
-		restoreRegs(endBlock, callee, usedColors)
-		
-		#Put our exit value in %eax
-		endBlock.append(move(Immediate(0), eax))
-		#Restore the %esp and %ebp registers.
-		endBlock.append(Instruction('leave'))
-		#Return
-		endBlock.append(Instruction('ret'))
-
-		code.append(endBlock)
+		if src != eax:
+			code.append(move(src, eax))
 		
 		return code
 	

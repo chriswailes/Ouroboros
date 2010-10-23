@@ -14,19 +14,25 @@ def classGuard(obj, *klasses):
 	return False
 
 def extractSymbol(node):
-	from lib.ast import Assign, Symbol, Subscript, Phi
+	from lib.ast import Assign, FunctionCall, Return, Subscript, Symbol, Phi
 	
 	if isinstance(node, Assign):
 		ret = extractSymbol(node.var)
 	
-	elif isinstance(node, Symbol):
-		ret = node
+	elif isinstance(node, FunctionCall):
+		ret = node.name
+	
+	elif isinstance(node, Phi):
+		ret = node.target
+	
+	elif isinstance(node, Return):
+		ret = node.value
 	
 	elif isinstance(node, Subscript):
 		ret = node.symbol
 	
-	elif isinstance(node, Phi):
-		ret = node.target
+	elif isinstance(node, Symbol):
+		ret = node
 	
 	else:
 		raise Exception("Node doesn't have a symbol.")

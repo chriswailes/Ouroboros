@@ -27,8 +27,14 @@ def init():
 def color(tree, ig, chains, cf = None):
 	cf = cf or ColorFactory()
 	
-	#~precolor(tree, ig)
-	#~colorPrime(tree, cf, ig, chains)
+	precolor(tree, ig, cf)
+	colorPrime(tree, cf, ig, chains)
+	
+	#~print('Coloring:')
+	#~for sym in tree.collectSymbols():
+		#~if sym.has_key('color'):
+			#~print("{0}: {1}".format(sym, sym['color']))
+	#~print('')
 	
 	return cf
 
@@ -36,7 +42,20 @@ def spill(tree, spillSets, ig):
 	cf = ColorFactory()
 	
 	clearColoring(tree, cf, ig)
-	precolor(tree, ig)
+	
+	#~print('Post-clearing Coloring:')
+	#~for sym in tree.collectSymbols():
+		#~if sym.has_key('color'):
+			#~print("{0}: {1}".format(sym, sym['color']))
+	#~print('')
+	
+	precolor(tree, ig, cf)
+	
+	#~print('Post-precolor Coloring:')
+	#~for sym in tree.collectSymbols():
+		#~if sym.has_key('color'):
+			#~print("{0}: {1}".format(sym, sym['color']))
+	#~print('')
 	
 	kicks = []
 	
@@ -50,6 +69,7 @@ def spill(tree, spillSets, ig):
 		
 		kick['color'] = cf.getColor(ig[kick], Mem)
 		kicks.append(kick)
+		print("Kicking {0}".format(kick))
 	
 	return cf
 
@@ -68,12 +88,15 @@ def colorPrime(node, cf, ig, chains):
 		
 		#We need to find a color if the symbol doesn't already have one, or if
 		#the color it was pre-colored with interferes with a other colors.
-		if not sym.has_key('color') or sym['color'] in toColors(ig[sym]):
+		if not sym.has_key('color') or sym['color'] in toColors(ig[sym]) or sym['heapify']:
 			forward  = sym['related-forward']
 			backward = sym['related-backward']
 			phi = sym['phi-related']
 			
-			if len(phi) > 0:
+			if sym['heapify']:
+				sym['color'] = cf.getDataLabel()
+			
+			elif len(phi) > 0:
 				sym['color'] = cf.getColor(maxConstraint(phi, ig))
 				
 				for sym1 in phi:
