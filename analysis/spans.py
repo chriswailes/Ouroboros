@@ -19,6 +19,10 @@ def init():
 def spans(node, count = 0, alive = {}):
 	inc = 1
 	
+	#~ if isinstance(node, Module):
+		#~ print(node)
+		#~ print('')
+	
 	#Count the spans over our children.
 	for child in node:
 		subInc = spans(child, count)
@@ -31,14 +35,20 @@ def spans(node, count = 0, alive = {}):
 		
 		sym['spans-funcall'] = False
 		
+		#~ print("In assignment to {0}".format(sym))
+		#~ print("Pre-alive: {0}".format(node['pre-alive']))
+		#~ print("Post-alive: {0}".format(node['post-alive']))
+		#~ print('')
+		
 		if sym in node['post-alive']:
+			#~ print("Symbol is in post-alive.")
 			alive[sym] = count
 		else:
+			#~ print("Symbol is not in post-alive.")
 			sym['span-start'] = sym['span-end'] = count
 			sym['span'] = 0
 	
 	elif isinstance(node, Function):
-		
 		for sym in node.argSymbols:
 			sym['spans-funcall'] = False
 			
@@ -60,9 +70,14 @@ def spans(node, count = 0, alive = {}):
 	
 	#Symbols don't have any pre/post-alive information due to their Singleton
 	#nature.
-	if not isinstance(node, Symbol):
+	if not classGuard(node, Symbol, Name):
 		for sym in alive:
 			if isinstance(node, Module) or not sym in node['post-alive']:
+				#~ print("Reached end of span for {0}".format(sym))
+				#~ print("Node: {0}".format(node))
+				#~ print("Post-alive: {0}".format(node['post-alive']))
+				#~ print('')
+				
 				sym['span-start'] = alive[sym]
 				sym['span-end'  ] = count - 1
 				sym['span'] = sym['span-end'] - sym['span-start']

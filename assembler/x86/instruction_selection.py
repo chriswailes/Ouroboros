@@ -374,6 +374,7 @@ def selectInstructions(node, cf, dest = None):
 		
 		#Save any caller saved registers that are in use after this call.
 		saveColors = toColors(node['post-alive'])
+		print("Saved colors: {0}".format(saveColors))
 		saveRegs(code, caller, saveColors)
 		
 		addSize = 0
