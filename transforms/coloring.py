@@ -12,7 +12,7 @@ from lib.ast import *
 analysis0	= ['interference', 'related', 'chains', 'heapify']
 args0	= ['ig', 'chains', 'cf']
 
-analysis1	= ['interference', 'related', 'weight']
+analysis1	= ['interference', 'weight']
 args1	= ['spillSets', 'ig']
 
 def init():
@@ -31,7 +31,7 @@ def color(tree, ig, chains, cf = None):
 	colorPrime(tree, cf, ig, chains)
 	
 	#~print('Coloring:')
-	#~for sym in tree.collectSymbols():
+	#~for sym in sorted(tree.collectSymbols(), key = lambda x: x.name):
 		#~if sym.has_key('color'):
 			#~print("{0}: {1}".format(sym, sym['color']))
 	#~print('')
@@ -41,18 +41,18 @@ def color(tree, ig, chains, cf = None):
 def spill(tree, spillSets, ig):
 	cf = ColorFactory()
 	
-	clearColoring(tree, cf, ig)
+	clearColoring(tree)
 	
 	#~print('Post-clearing Coloring:')
-	#~for sym in tree.collectSymbols():
+	#~for sym in sorted(tree.collectSymbols(), key = lambda x: x.name):
 		#~if sym.has_key('color'):
 			#~print("{0}: {1}".format(sym, sym['color']))
 	#~print('')
-	
-	precolor(tree, ig, cf)
-	
+	#~
+	#~precolor(tree, ig, cf)
+	#~
 	#~print('Post-precolor Coloring:')
-	#~for sym in tree.collectSymbols():
+	#~for sym in sorted(tree.collectSymbols(), key = lambda x: x.name):
 		#~if sym.has_key('color'):
 			#~print("{0}: {1}".format(sym, sym['color']))
 	#~print('')
@@ -77,7 +77,7 @@ def spill(tree, spillSets, ig):
 # Helper Functions #
 ####################
 
-def clearColoring(tree, cf, ig):
+def clearColoring(tree):
 	for sym in tree.collectSymbols():
 		del sym['color']
 
@@ -102,15 +102,17 @@ def colorPrime(node, cf, ig, chains):
 				for sym1 in phi:
 					sym1['color'] = sym['color']
 			
-			elif forward and isinstance(forward['color'], Register) and not forward in toColors(ig[sym] - set([forward])):
+			elif forward and isinstance(forward['color'], Register) and not forward['color'] in toColors(ig[sym] - set([forward])):
 				#If our forward looking relation's color is a register and
 				#doesn't cause interference we want to use it.
 				
+				#~print("Assigning color based on forward relationship. {0} gets {1}".format(sym, forward['color']))
 				sym['color'] = forward['color']
 			
-			elif backward and isinstance(backward['color'], Register) and not backward in toColors(ig[sym] - set([backward])):
+			elif backward and isinstance(backward['color'], Register) and not backward['color'] in toColors(ig[sym] - set([backward])):
 				#Next we will try our backward looking relation's color.
 				
+				#~print("Assigning color based on backward relationship. {0} gets {1}".format(sym, backward['color']))
 				sym['color'] = backward['color']
 			
 			else:
@@ -129,6 +131,10 @@ def colorPrime(node, cf, ig, chains):
 				#pick one based solely on this symbols interference graph.
 				if color == None:
 					color = cf.getColor(ig[sym], preferCaller = not sym['spans-funcall'])
+					#~print("Found color based on local constraint. {0} gets {1}".format(sym, color))
+				
+				#~else:
+					#~print("Found color based on max constraint. {0} gets {1}".format(sym, color))
 				
 				sym['color'] = color
 	

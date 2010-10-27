@@ -179,9 +179,10 @@ def translate(node, st = None, jn = None, funcName = False):
 		st = SymbolTable()
 		children = translate(node.node, st)
 		
-		children = ast.BasicBlock(children, st)
+		block = ast.BasicBlock(children, st)
+		fun = ast.Function(st.getName('main'), [], block)
 		
-		return ast.Module(children)
+		return ast.Module([fun])
 	
 	elif isinstance(node, oast.Mul):
 		left = translate(node.left, st, jn)

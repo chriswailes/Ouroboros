@@ -42,9 +42,11 @@ def selectInstructions(node, cf, dest = None):
 				code.append(move(src, dest))
 			
 			return code
-		elif isinstance(node.exp, ast.Integer):
+		elif classGuard(node.exp, ast.Boolean, ast.Integer):
 			src = selectInstructions(node.exp, cf)
-			src = pack(src, INT)
+			
+			if isinstance(node.exp, ast.Integer):
+				src = pack(src, INT)
 			
 			return move(src, dest)
 		else:
@@ -99,9 +101,8 @@ def selectInstructions(node, cf, dest = None):
 		
 		elif isinstance(left, Immediate):
 			if isinstance(node, ast.Div):
-				#Move our dividend into eax and padd edx.
+				#Move our dividend into %eax.
 				code.append(move(left, eax))
-				code.append(move(Immediate(left.value >> 31), edx))
 				left = eax
 			
 			elif isinstance(node, ast.Sub):
@@ -126,10 +127,8 @@ def selectInstructions(node, cf, dest = None):
 		
 		elif isinstance(left, Register):
 			if isinstance(node, ast.Div) and left != eax:
-				#Move our dividend into eax and padd edx.
+				#Move our dividend into eax.
 				code.append(move(left, eax))
-				code.append(move(left, edx))
-				code.append(TwoOp('sar', Immediate(31), edx))
 				left = eax
 			
 			elif left != dest:
@@ -181,6 +180,9 @@ def selectInstructions(node, cf, dest = None):
 				if left.value == 1:
 					code.append(OneOp('inc', tmpColor0))
 				
+				elif left.value == -1:
+					code.append(OneOp('dec', tmpColor0))
+				
 				else:
 					code.append(TwoOp('add', left, tmpColor0))
 			
@@ -220,6 +222,9 @@ def selectInstructions(node, cf, dest = None):
 				code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'je', True))
 			
 		elif isinstance(node, ast.Div):
+			#Prepare out %edx.
+			code.append(Instruction('cltd'))
+			
 			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
 				#We can shift to the right instead of dividing.
 				dist = right.value / 2
@@ -270,11 +275,11 @@ def selectInstructions(node, cf, dest = None):
 			
 			if isinstance(node, ast.Eq):
 				funName = ast.Name('equal')
-				jmp = 'jz'
+				jmp = 'jne'
 			
 			else:
 				funName = ast.Name('not_equal')
-				jmp = 'jnz'
+				jmp = 'je'
 			
 			#Build the case where we need to call the equal function.
 			case0.append(OneOp('push', right))
@@ -286,6 +291,13 @@ def selectInstructions(node, cf, dest = None):
 			
 			case2 = move(TRU, tmpColor0)
 			case3 = move(FALS, tmpColor0)
+			
+			#Pack left and right immediates for comparison.
+			if isinstance(left, Immediate):
+				left = pack(right, INT)
+			
+			if isinstance(right, Immediate):
+				right = pack(right, INT)
 			
 			#Build the case where we are comparing two integers or booleans.
 			case1 = buildITE(right, case2, case3, left, jmp)
@@ -374,7 +386,6 @@ def selectInstructions(node, cf, dest = None):
 		
 		#Save any caller saved registers that are in use after this call.
 		saveColors = toColors(node['post-alive'])
-		print("Saved colors: {0}".format(saveColors))
 		saveRegs(code, caller, saveColors)
 		
 		addSize = 0
@@ -414,11 +425,19 @@ def selectInstructions(node, cf, dest = None):
 		return code
 	
 	elif isinstance(node, ast.If):
+		#~print("Selecting Instructions for {0}".format(node))
+		
 		cond = selectInstructions(node.cond, cf)
 		then = selectInstructions(node.then, cf)
 		els  = selectInstructions(node.els,  cf)
 		
-		return buildITE(cond, then, els)
+		#~print("If: {0}".format(cond))
+		#~print("Then: {0}".format(then))
+		#~print("Else: {0}".format(els))
+		
+		#Here we compare the conditional to False, and if it is less then or
+		#equal to False (either False or 0) we will go to the else case.
+		return buildITE(cond, then, els, FALS, 'jle')
 	
 	elif isinstance(node, ast.Integer):
 		return Immediate(node.value)
@@ -440,52 +459,10 @@ def selectInstructions(node, cf, dest = None):
 				code.header += "\t.long\t1\n"
 				code.header += "\t.section\t.data\n"
 		
-		#Convert the body into it's own function for ease of code generation.
-		node.block.children.append(ast.Return(ast.Integer(0)))
-		fun = ast.Function(ast.Name('main'), [], node.block)
-		node.functions.append(fun)
-		
 		#Define our functions.
 		code.header += "\n# Functions\n"
 		for fun in node.functions:
 			code.append(selectInstructions(fun, cf))
-		
-		#~code.header += ".globl main\n"
-		#~code.header += "main:\n"
-		#~
-		#~#Push the old base pointer onto the stack.
-		#~code.append(OneOp('push', ebp))
-		#~#Make the old stack pointer the new base pointer.
-		#~code.append(move(esp, ebp))
-		#~
-		#~usedColors = toColors(node.collectSymbols())
-		#~
-		#~#Save any callee saved registers we used.
-		#~saveRegs(code, callee, usedColors)
-		#~
-		#~#Expand the stack.
-		#~if cf.offset > 0:
-			#~code.append(TwoOp('sub', Immediate(cf.offset), esp))
-		#~
-		#~#Append the module's code.
-		#~code.append(selectInstructions(node.block, cf))
-		#~
-		#~endBlock = Block()
-		#~#Restore the stack.
-		#~if cf.offset > 0:
-			#~endBlock.append(TwoOp('add', Immediate(cf.offset), esp))
-		#~
-		#~#Restore any callee saved registers we used.
-		#~restoreRegs(endBlock, callee, usedColors)
-		#~
-		#~#Put our exit value in %eax
-		#~endBlock.append(move(Immediate(0), eax))
-		#~#Restore the %esp and %ebp registers.
-		#~endBlock.append(Instruction('leave'))
-		#~#Return
-		#~endBlock.append(Instruction('ret'))
-#~
-		#~code.append(endBlock)
 		
 		return code
 	

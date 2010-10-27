@@ -24,7 +24,7 @@ def migrateFunctions(node, st = None, funs = []):
 	for child in node:
 		if isinstance(child, Function):
 			funs.append(child)
-			migrateFunctions(child)
+			migrateFunctions(child, st, funs)
 		
 		else:
 			migrateFunctions(child, st, funs)

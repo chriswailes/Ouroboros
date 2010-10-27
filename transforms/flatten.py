@@ -21,19 +21,19 @@ def init():
 
 def flatten(node, st = None, inPlace = False):
 	newChildren	= []
-	newInPlace	= False
+	newInPlace	= None
 	preStmts		= []
 	
 	#Setup flattening for this node's children.
-	if util.classGuard(node, Assign, BasicBlock):
-		newInPlace = True
+	if util.classGuard(node, Assign, BasicBlock, Module):
+		newInPlace = node.__class__
 	
 		if isinstance(node, BasicBlock):
 			st = node.st
 	
-	#Flatten each of our child nodes.  Dictionaries and lists do their own
-	#flattening.
-	if not classGuard(node, Dictionary, List):
+	#Flatten each of our child nodes.  Dictionaries, if-expressions, and lists
+	#do their own flattening.
+	if not classGuard(node, Dictionary, IfExp, List):
 		for child in node:
 			childPreStmts, newChild = flatten(child, st, newInPlace)
 			
@@ -84,33 +84,29 @@ def flatten(node, st = None, inPlace = False):
 		#Create the new If node's Join node.
 		jn = Join()
 		
-		#Create the then clause's symbol table, update the Join node, and create
-		#the then clause proper.
-		stThen = SymbolTable(st)
+		#Flattent he conditional expression.
+		condPreStmts, cond = flatten(node.cond, st, jn)
+		preStmts.append(condPreStmts)
 		
-		sym = stThen.getSymbol(assign = True)
-		jn.addSymbol(sym, stThen)
+		#Create the assignment variable for the then clause.
+		sym = st.getSymbol(assign = True)
+		jn.addSymbol(sym, st)
 		
-		then = BasicBlock([Assign(sym, node.then)], stThen)
+		_, then = flatten(BasicBlock([Assign(sym, node.then)], st))
 		
-		#Create the else clause's symbol table, update the Join node, and create
-		#the else clause proper.
-		stEls = SymbolTable(st)
-		stEls.update(stThen)
+		#Create the assignment variable for the else clause.
+		sym = st.getSymbol(assign = True)
+		jn.addSymbol(sym, st)
 		
-		sym = stEls.getSymbol(assign = True)
-		jn.addSymbol(sym, stEls)
-		
-		els = BasicBlock([Assign(sym, node.els)], stEls)
+		_, els = flatten(BasicBlock([Assign(sym, node.els)], st))
 		
 		#Updte our SymbolTable (this should have no effect as statements
 		#aren't allowed in IfExp nodes).
-		st.update(stEls)
 		st.update(jn)
 		
 		#Append this new If node to our pre-statements and then replace the
 		#node with the target from the join node's (hopefully) only Phi node.
-		preStmts.append(If(node.cond, then, els, jn))
+		preStmts.append(If(cond, then, els, jn))
 		node = jn.phis[0].target
 	
 	elif isinstance(node, List):
@@ -142,13 +138,13 @@ def flatten(node, st = None, inPlace = False):
 		node = FunctionCall(funName, node.symbol, node.subscript)
 	
 	#Here we do the actual flattening.
-	if isinstance(node, Expression) and not classGuard(node, Boolean, Integer, Name, Symbol) and not inPlace:
+	if classGuard(node, BinOp, FunctionCall, IfExp, UnaryOp) and not inPlace:
 		sym = st.getSymbol(assign = True)
 		preStmts.append(Assign(sym, node))
 		
 		node = sym
 	
-	elif isinstance(node, Function):
+	elif isinstance(node, Function) and inPlace != Module:
 		preStmts.append(node)
 		node = node.name
 	

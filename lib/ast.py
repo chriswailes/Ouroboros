@@ -53,6 +53,15 @@ class Phi(Node):
 	
 	def setChildren(self, children):
 		self.srcs = children
+	
+	def toPython(self, level = 0):
+		ret  = pad(level)
+		ret += self.target.toPython()
+		ret += ' = Phi('
+		ret += ', '.join(map(lambda sym: str(sym), self.srcs))
+		ret += ')'
+		
+		return ret
 
 class Join(Node):
 	def __init__(self):
@@ -90,6 +99,14 @@ class Join(Node):
 	
 	def setChildren(self, children):
 		self.phis = children
+	
+	def toPython(self, level = 0):
+		ret = ''
+		
+		for phi in self.phis:
+			ret += phi.toPython(level)
+		
+		return ret
 
 class BasicBlock(Node):
 	def __init__(self, children, st):
@@ -135,7 +152,7 @@ class Function(Node):
 		self.block = children[-1]
 	
 	def toPython(self, level = 0):
-		argNames = ','.join(map(lambda sym: str(sym), self.argSymbols))
+		argNames = ', '.join(map(lambda sym: str(sym), self.argSymbols))
 		
 		ret  = pad(level) + "def {0}({1}):\n".format(self.name, argNames)
 		ret += self.block.toPython(level + 1)
@@ -143,27 +160,23 @@ class Function(Node):
 		return ret
 
 class Module(Node):
-	def __init__(self, block, functions = []):
-		self.block = block
+	def __init__(self, functions):
 		self.functions = functions
 	
 	def __repr__(self):
-		return "Module({0}, {1})".format(repr(self.functions), repr(self.block))
+		return "Module({0})".format(repr(self.functions))
 	
 	def getChildren(self):
-		return self.functions + [self.block]
+		return self.functions
 	
 	def setChildren(self, children):
-		self.functions = children[0:-1]
-		self.block = children[-1]
+		self.functions = children
 	
 	def toPython(self):
 		ret = ""
 		
 		for fun in self.functions:
 			ret += fun.toPython() + "\n"
-		
-		ret += self.block.toPython()
 		
 		return ret
 
@@ -229,6 +242,8 @@ class If(Statement):
 		ret += pad(level)
 		ret += "else:\n"
 		ret += self.els.toPython(level + 1)
+		ret += "\n"
+		ret += self.jn.toPython(level)
 		
 		return ret
 
@@ -502,30 +517,6 @@ class Integer(Value, Literal):
 	
 	def toPython(self, level = 0):
 		return "{0:d}".format(self.value)
-
-#~class Lambda(Value):
-	#~def __init__(self, argSymbols, block):
-		#~self.argSymbols = argSymbols
-		#~self.block = block
-	#~
-	#~def __repr__(self):
-		#~return "Lambda({0}, {1})".format(repr(self.argSymbols), repr(self.block))
-	#~
-	#~def getChildren(self):
-		#~return self.argSymbols + [self.block]
-		#~return [self.block]
-	#~
-	#~def isSimple(self):
-		#~return False
-	#~
-	#~def setChildren(self, children):
-		#~self.argnames = children[0:-1]
-		#~self.block = children[-1]
-	#~
-	#~def toPython(self, level = 0):
-		#~argNames = ','.join(map(lambda sym: str(sym), self.argSymbols))
-		#~
-		#~return "lambda {0}: {1}".format(','.join(argNames), self.block.toPython(level))
 
 class List(Value, Literal):
 	def __init__(self, elements):

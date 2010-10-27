@@ -81,7 +81,6 @@ def precolor(node, ig, cf):
 			if sym in node['post-alive']:
 				ig[sym] |= interference
 	
-	else:
-		for child in node:
-			precolor(child, ig, cf)
+	for child in node:
+		precolor(child, ig, cf)
 

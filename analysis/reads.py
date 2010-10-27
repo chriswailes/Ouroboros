@@ -18,8 +18,11 @@ def init():
 
 def reads(node):
 	if isinstance(node, Module):
+		#~print('')
+		
 		for sym in node.collectSymbols():
 			if sym.has_key('reads'):
+				#~print("Claring reads from {0}".format(sym))
 				del sym['reads']
 	
 	if classGuard(node, Assign, Phi) and not extractSymbol(node).has_key('reads'):
@@ -51,3 +54,6 @@ def reads(node):
 	
 	for child in node:
 		reads(child)
+	
+	#~if isinstance(node, Module):
+		#~print('')

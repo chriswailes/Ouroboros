@@ -40,20 +40,20 @@ def liveness(node, alive = []):
 		sym = extractSymbol(node)
 		
 		if not sym.has_key('tmp'):
-		#~ print("Sym {0} has {1} reads".format(sym, sym['reads']))
+			#~print("Sym {0} has {1} reads".format(sym, sym['reads']))
 			sym['tmp'] = sym['reads']
 			alive.append(sym)
 	
 	elif classGuard(node, Symbol, Subscript):
 		sym = extractSymbol(node)
 		
-		#~ print("Reading {0}".format(sym))
+		#~print("Reading {0}".format(sym))
 		
 		if sym.has_key('tmp'):
 			sym['tmp'] -= 1
 			
 			if sym['tmp'] == 0:
-				#~ print("Removing {0}".format(sym))
+				#~print("Removing {0}".format(sym))
 				alive.remove(sym)
 			
 		else:
