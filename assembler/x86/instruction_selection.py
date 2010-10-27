@@ -189,11 +189,18 @@ def selectInstructions(node, cf, dest = None):
 			else:
 				#Build the case where we need to call the add function.
 				case0 = Block()
+				case0.append(untag(left, OBJ))
+				case0.append(untag(right, OBJ))
+				
 				case0.append(OneOp('push', right))
 				case0.append(OneOp('push', left))
+				
 				case0.append(OneOp('call', ast.Name('add'), None))
 				case0.append(TwoOp('sub', Immediate(8), esp))
+				
 				case0.append(tag(eax, OBJ))
+				case0.append(tag(left, OBJ))
+				case0.append(tag(right, OBJ))
 				
 				if eax != dest:
 					case0.append(move(eax, tmpColor0))
@@ -397,6 +404,9 @@ def selectInstructions(node, cf, dest = None):
 			#Pack immediates if they haven't been packed yet.
 			if isinstance(src, Immediate):
 				src = pack(src, INT)
+			
+			elif isinstance(src, ast.Name):
+				src = '$' + str(src)
 			
 			code.append(OneOp('push', src))
 			addSize += 4

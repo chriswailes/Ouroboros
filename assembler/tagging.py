@@ -111,7 +111,7 @@ def tag(obj, typ = None):
 	else:
 		raise Exception("Trying to tag a value that isn't in a register.")
 
-def untag(reg):
+def untag(reg, typ = INT):
 	global TAG_SIZE
 	
 	if config.arch == 'x86':
@@ -123,7 +123,12 @@ def untag(reg):
 	if isinstance(reg, Register):
 		if reg.tagged:
 			reg.tagged = False
-			return TwoOp('sar', TAG_SIZE, reg)
+			
+			if typ == OBJ:
+				return TwoOp('and', REST_MASK, reg)
+			
+			else:
+				return TwoOp('sar', TAG_SIZE, reg)
 	
 	else:
 		raise Exception("Trying to untag a value that isn't in a register.")
