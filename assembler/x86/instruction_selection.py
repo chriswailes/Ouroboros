@@ -189,6 +189,7 @@ def selectInstructions(node, cf, dest = None):
 			else:
 				#Build the case where we need to call the add function.
 				case0 = Block()
+				
 				case0.append(untag(left, OBJ))
 				case0.append(untag(right, OBJ))
 				
