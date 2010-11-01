@@ -197,7 +197,7 @@ def selectInstructions(node, cf, dest = None):
 				case0.append(OneOp('push', left))
 				
 				case0.append(OneOp('call', ast.Name('add'), None))
-				case0.append(TwoOp('sub', Immediate(8), esp))
+				case0.append(TwoOp('add', Immediate(8), esp))
 				
 				case0.append(tag(eax, OBJ))
 				case0.append(tag(left, OBJ))
