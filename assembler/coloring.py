@@ -122,15 +122,18 @@ class Mem(Color):
 	def __init__(self, offset):
 		self.offset = offset
 		
+		self.formatString = "{0}{1:d}({2})"
+		
 		self.tagged = False
 		self.tag = None
 		
 		if config.arch == 'x86':
-			from x86.coloring import memFormatString
+			from x86.coloring import memBaseReg, memDirection
 		elif config.arch == 'x86_64':
-			from x86_64.coloring import memFormatString
+			from x86_64.coloring import memBaseReg, memDirection
 		
-		self.formatString = memFormatString
+		self.baseReg = memBaseReg
+		self.direction = memDirection
 	
 	def __eq__(self, other):
 		if isinstance(other, Mem):
@@ -185,7 +188,7 @@ class Mem(Color):
 			return True
 	
 	def __str__(self):
-		return self.formatString.format(self.offset)
+		return self.formatString.format('' if self.direction == 'up' else '-', self.offset, self.baseReg)
 
 class Register(Color):
 	def __init__(self, name, weight):

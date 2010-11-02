@@ -143,12 +143,13 @@ class Function(Node):
 	def __repr__(self):
 		return "Function({0}, {1}, {2})".format(repr(self.name), repr(self.argSymbols), repr(self.block))
 	
+	def collectSymbols(self):
+		return set(self.argSymbols) | self.block.collectSymbols()
+	
 	def getChildren(self):
-		#~return self.argSymbols + [self.block]
 		return [self.block]
 	
 	def setChildren(self, children):
-		#~self.argnames = children[0:-1]
 		self.block = children[-1]
 	
 	def toPython(self, level = 0):

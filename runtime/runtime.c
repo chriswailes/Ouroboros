@@ -775,37 +775,35 @@ int is_true(pyobj v)
 /* Support for Functions */
 
 static big_pyobj* closure_to_big(function f) {
-  big_pyobj* v = (big_pyobj*)malloc(sizeof(big_pyobj));
-  v->tag = FUN;
-  v->u.f = f;
-  return v;
+	big_pyobj* v = (big_pyobj*)malloc(sizeof(big_pyobj));
+	v->tag = FUN;
+	v->u.f = f;
+	return v;
 }
 
 big_pyobj* create_closure(void* fun_ptr, pyobj free_vars) {
-  function f;
-  f.function_ptr = fun_ptr;
-  f.free_vars = free_vars;
-  return closure_to_big(f);
+	function f;
+	f.function_ptr = fun_ptr;
+	f.free_vars = free_vars;
+	return closure_to_big(f);
 }
 
-
-
 void* get_fun_ptr(pyobj p) {
-  big_pyobj* b = project_big(p);
-  assert(b->tag == FUN);
-  return b->u.f.function_ptr;
+	big_pyobj* b = project_big(p);
+	assert(b->tag == FUN);
+	return b->u.f.function_ptr;
 }
 
 pyobj get_free_vars(pyobj p) {
-  big_pyobj* b = project_big(p);
-  assert(b->tag == FUN);
-  return b->u.f.free_vars;
+	big_pyobj* b = project_big(p);
+	assert(b->tag == FUN);
+	return b->u.f.free_vars;
 }
 
 big_pyobj* set_free_vars(big_pyobj* b, pyobj free_vars) {
-  assert(b->tag == FUN);
-  b->u.f.free_vars = free_vars;
-  return b;
+	assert(b->tag == FUN);
+	b->u.f.free_vars = free_vars;
+	return b;
 }
 
 /* Support for Objects and Classes */

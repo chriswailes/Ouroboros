@@ -12,7 +12,7 @@ from lib import util
 
 from lib.symbol_table import SymbolTable, getSingleton
 
-analysis	= []
+analysis	= ['heapify']
 args		= []
 
 def init():
@@ -145,8 +145,26 @@ def flatten(node, st = None, inPlace = False):
 		node = sym
 	
 	elif isinstance(node, Function) and inPlace != Module:
+		closured = []
+		
+		print("Flattening {0}".format(node.name))
+		
+		for sym in node['free']:
+			if sym['heapify'] == 'closure':
+				closured.append(sym)
+				node.argSymbols.append(sym)
+		
+		#Remove the variables that we have put into the closure from the list
+		#of free variables for this function.
+		node['free'] -= set(closured)
+		
 		preStmts.append(node)
-		node = node.name
+		
+		if len(closured) > 0:
+			node = FunctionCall(Name('create_closure'), node.name, List(closured))
+		
+		else:
+			node = node.name
 	
 	#Flatten our list of pre-statements.
 	preStmts = util.flatten(preStmts)

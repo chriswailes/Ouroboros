@@ -137,7 +137,7 @@ def selectInstructions(node, cf, dest = None):
 		
 		#Get the right operand into a register.
 		if classGuard(right, Mem, Label):
-			if left != tmpColor0 and classGuard(node, Add, Mul) and not isinstance(node, Logical):
+			if left != tmpColor0 and classGuard(node, ast.Add, ast.Mul) and not isinstance(node, ast.Logical):
 				code.append(move(right, tmpColor0))
 				left = right
 				right = tmpColor0
@@ -292,8 +292,10 @@ def selectInstructions(node, cf, dest = None):
 			#Build the case where we need to call the equal function.
 			case0.append(OneOp('push', right))
 			case0.append(OneOp('push', left))
+			
 			case0.append(OneOp('call', funName, None))
-			case0.append(TwoOp('sub', Immediate(8), esp))
+			case0.append(TwoOp('add', Immediate(8), esp))
+			
 			case0.append(tag(eax, BOOL))
 			case0.append(move(eax, tmpColor0))
 			
@@ -351,8 +353,9 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.Function):
 		code = Block()
 		
-		code.header += ".globl {0}\n".format(node.name)
-		code.header += "{0}:\n".format(node.name)
+		code.append(Directive("globl {0}".format(node.name), False))
+		code.append(Directive('align 4', False))
+		code.append(Label(node.name, ''))
 		
 		#Push the old base pointer onto the stack.
 		code.append(OneOp('push', ebp))
@@ -365,7 +368,7 @@ def selectInstructions(node, cf, dest = None):
 		saveRegs(code, callee, usedColors)
 		
 		#Expand the stack.
-		foo = cf.offset - (4 * len(node.argSymbols)) - 4
+		foo = cf.offset - 4
 		if foo > 0:
 			code.append(TwoOp('sub', Immediate(foo), esp))
 		
@@ -416,8 +419,31 @@ def selectInstructions(node, cf, dest = None):
 		eax.clear()
 		
 		#Make the function call.
-		name = '*' + str(node.name['color']) if isinstance(node.name, Symbol) else node.name
-		code.append(OneOp('call', name, None))
+		if isinstance(node.name, ast.Name):
+			#This is the direct call case.
+			code.append(OneOp('call', node.name, None))
+		
+		else:
+			#This is the case when we recieved the function pointer as an
+			#argument.  This can either result in a direct or an indirect
+			#call.
+			src = selectInstructions(node.name, cf)
+			
+			if isinstance(src, Mem):
+				tmpColor = getTmpColor(cf, node)
+				code.append(move(src, tmpColor))
+				src = tmpColor
+			
+			#This is the case where we need to unpack the closure.
+			case0 = Block("#EMPTY\n")
+			
+			#The case where it is a direct call (made indirectly).
+			case1 = OneOp('call', '*' + str(src), None)
+			
+			code.append(buildITE(src, case0, case1, TAG_MASK, 'je', True))
+		
+		#~name = '*' + str(node.name['color']) if isinstance(node.name, Symbol) else node.name
+		#~code.append(OneOp('call', name, None))
 		
 		#Restore the stack.
 		if addSize > 0:
@@ -454,26 +480,30 @@ def selectInstructions(node, cf, dest = None):
 		return Immediate(node.value)
 	
 	elif isinstance(node, ast.Module):
-		code = Block()
-		code.header  = "# x86\n"
+		code = Block("# x86\n")
+		
+		data = Block("# Data\n")
+		funs = Block("# Functions\n")
 		
 		#Define our data section.
-		code.header += "\n# Data\n"
 		for sym in node.collectSymbols():
 			if sym['heapify']:
-				code.header += ".globl {0}\n".format(sym['color'])
-				code.header += "\t.data\n"
-				code.header += "\t.align\t4\n"
-				code.header += "\t.size\t{0}, 4\n".format(sym['color'])
+				data.append(Directive("globl {0}".format(sym['color']), False))
+				data.append(Directive('data'))
+				data.append(Directive('align 4'))
+				data.append(Directive("size {0}, 4".format(sym['color'])))
 				
-				code.header += "{0}:\n".format(sym['color'])
-				code.header += "\t.long\t1\n"
-				code.header += "\t.section\t.data\n"
+				data.append(sym['color'])
+				data.append(Directive('long 1'))
+				data.append(Directive('section .data'))
 		
 		#Define our functions.
-		code.header += "\n# Functions\n"
 		for fun in node.functions:
-			code.append(selectInstructions(fun, cf))
+			funs.append(selectInstructions(fun, cf))
+		
+		#Concatenate our code.
+		code.append(data)
+		code.append(funs)
 		
 		return code
 	

@@ -49,7 +49,9 @@ interference = set([interSym0, interSym1, interSym2])
 
 wordSize = 4
 preIncrement = True
-memFormatString = "-{0:d}(%ebp)"
+#~memFormatString = "-{0:d}(%ebp)"
+memBaseReg = '%ebp'
+memDirection = 'down'
 
 ##################################
 # Architecture Specific Coloring #
@@ -66,15 +68,15 @@ def precolor(node, ig, cf):
 			ig[sym] |= set([interSym0, interSym2])
 	
 	elif isinstance(node, Function):
-		colors = [cf.getColor(set([]), Mem)]
+		offset = 8
 		
 		for sym in node.argSymbols:
-			sym['color'] = cf.getColor(set(colors), Mem)
-			sym['color'].formatString = "{0:d}(%ebp)"
+			sym['color'] = Mem(offset)
+			sym['color'].direction = 'up'
 			sym['color'].tagged = True
 			
-			colors.append(sym['color'])
-			
+			#Advance to the next argument offset.
+			offset += 4
 	
 	elif isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:

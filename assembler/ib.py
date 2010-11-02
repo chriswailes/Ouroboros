@@ -35,7 +35,7 @@ class Block(object):
 		return code
 
 	def append(self, inst):
-		if (isinstance(inst, Block) and len(inst.insts) > 0) or classGuard(inst, Instruction, Label):
+		if (isinstance(inst, Block) and len(inst.insts) > 0) or classGuard(inst, Directive, Instruction, Label):
 			self.insts.append(inst)
 	
 	def atEnd(self):
@@ -132,6 +132,16 @@ class Block(object):
 		for i in self.insts:
 			if isinstance(i, Block):
 				i.reset()
+
+class Directive(object):
+	def __init__(self, txt, indent = True):
+		self.txt = txt
+		self.indent = indent
+	
+	def __str__(self):
+		ret = "\t." if self.indent else '.'
+		
+		return ret + self.txt + "\n"
 
 class Labeler(object):
 	def __init__(self, prefix = 'L'):

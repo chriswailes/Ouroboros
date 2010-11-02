@@ -19,6 +19,9 @@ def init():
 def migrateFunctions(node, st = None, funs = []):
 	newChildren = []
 	
+	if isinstance(node, Module):
+		funs = []
+	
 	st = node.st if isinstance(node, BasicBlock) else st
 	
 	for child in node:

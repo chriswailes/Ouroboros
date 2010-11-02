@@ -93,7 +93,7 @@ def colorPrime(node, cf, ig, chains):
 			backward = sym['related-backward']
 			phi = sym['phi-related']
 			
-			if sym['heapify']:
+			if sym['heapify'] == 'data':
 				sym['color'] = cf.getDataLabel()
 			
 			elif len(phi) > 0:

@@ -5,28 +5,32 @@
 #include "hashtable_itr.h"
 #include "hashtable_utility.h"
 
-/* for old times sake */
+/*
+ * For old times sake.
+ */
 void print_int_nl(int x);
 int input();
 
-/* Structure and type-tag definitions   */
+/*
+ * Structure and type-tag definitions.
+ */
+#define MASK	3		/* 11 */
+#define SHIFT	2
 
-#define MASK 3    /* 11 */
-#define SHIFT 2
+#define INT_TAG	0	/* 00 */
+#define BOOL_TAG	1	/* 01 */
 
-#define INT_TAG 0     /* 00 */
-
-#define BOOL_TAG 1   /* 01 */
-
-/* The following is for a non-standard single-precision (21-bit fraction)
-   floating point number */
+/*
+ * The following is for a non-standard single-precision (21-bit fraction)
+ * floating point number
+ */
 #define FLOAT_TAG 2   /* 10 */
 
 /*
-  For larger objects, we have a pointer to the object, and the
-  object starts with a tag that says what it is.
-*/
-#define BIG_TAG 3   /* 11 */
+ * For larger objects, we have a pointer to the object, and the object starts
+ * with a tag that says what it is.
+ */
+#define BIG_TAG	3	/* 11 */
 
 enum big_type_tag { LIST, DICT, FUN, CLASS, OBJECT, UBMETHOD, BMETHOD };
 
