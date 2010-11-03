@@ -147,12 +147,11 @@ def flatten(node, st = None, inPlace = False):
 	elif isinstance(node, Function) and inPlace != Module:
 		closured = []
 		
-		print("Flattening {0}".format(node.name))
+		#~print("Flattening {0}".format(node.name))
 		
 		for sym in node['free']:
 			if sym['heapify'] == 'closure':
 				closured.append(sym)
-				node.argSymbols.append(sym)
 		
 		#Remove the variables that we have put into the closure from the list
 		#of free variables for this function.
@@ -161,7 +160,13 @@ def flatten(node, st = None, inPlace = False):
 		preStmts.append(node)
 		
 		if len(closured) > 0:
+			closureSym = st.getSymbol('!closure', True)
+			node.argSymbols.insert(0, closureSym)
+			
+			substitute(node, closureSym, closured)
+			
 			node = FunctionCall(Name('create_closure'), node.name, List(closured))
+			node.tag = OBJ
 		
 		else:
 			node = node.name
@@ -170,3 +175,17 @@ def flatten(node, st = None, inPlace = False):
 	preStmts = util.flatten(preStmts)
 	
 	return node if isinstance(node, Module) else (preStmts, node)
+
+def substitute(node, sym, closure):
+	newChildren = []
+	
+	for child in node:
+		newChild = substitute(child, sym, closure)
+		newChildren.append(newChild)
+	
+	node.setChildren(newChildren)
+	
+	if isinstance(node, Symbol) and node in closure:
+		node = Subscript(sym, Integer(closure.index(node)))
+	
+	return node

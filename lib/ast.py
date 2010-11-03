@@ -578,7 +578,7 @@ class Symbol(Value):
 			return False
 	
 	def __hash__(self):
-		return hash(str(self))
+		return id(self)
 	
 	def __ne__(self, other):
 		if isinstance(other, Symbol):

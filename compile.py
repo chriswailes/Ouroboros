@@ -69,6 +69,8 @@ if config.startStage == 'python':
 	#One of the symbols from each of these sets needs to be spilled.
 	spillSets = []
 	
+	exit(0)
+	
 	#Try and compile the AST, catching spills and iterating until they are all
 	#resolved.
 	while True:

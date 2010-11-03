@@ -429,13 +429,25 @@ def selectInstructions(node, cf, dest = None):
 			#call.
 			src = selectInstructions(node.name, cf)
 			
-			if isinstance(src, Mem):
+			if isinstance(src, Mem) or src == eax:
 				tmpColor = getTmpColor(cf, node)
 				code.append(move(src, tmpColor))
 				src = tmpColor
 			
 			#This is the case where we need to unpack the closure.
-			case0 = Block("#EMPTY\n")
+			case0 = Block()
+			
+			case0.append(OneOp('push', src))
+			case0.append(OneOp('call', ast.Name('get_free_vars'), None))
+			
+			case0.append(TwoOp('add', Immediate(4), esp))
+			case0.append(OneOp('push', eax))
+			case0.append(OneOp('push', src))
+			
+			case0.append(OneOp('call', ast.Name('get_fun_ptr'), None))
+			case0.append(TwoOp('add', Immediate(4), esp))
+			
+			case0.append(OneOp('call', '*' + str(eax), None))
 			
 			#The case where it is a direct call (made indirectly).
 			case1 = OneOp('call', '*' + str(src), None)

@@ -102,14 +102,16 @@ def colorPrime(node, cf, ig, chains):
 				for sym1 in phi:
 					sym1['color'] = sym['color']
 			
-			elif forward and isinstance(forward['color'], Register) and not forward['color'] in toColors(ig[sym] - set([forward])):
+			elif forward and forward.has_key('color') and isinstance(forward['color'], Register) and \
+			not forward['color'] in toColors(ig[sym] - set([forward])):
 				#If our forward looking relation's color is a register and
 				#doesn't cause interference we want to use it.
 				
 				#~print("Assigning color based on forward relationship. {0} gets {1}".format(sym, forward['color']))
 				sym['color'] = forward['color']
 			
-			elif backward and isinstance(backward['color'], Register) and not backward['color'] in toColors(ig[sym] - set([backward])):
+			elif backward and backward.has_key('color') and isinstance(backward['color'], Register) and \
+			not backward['color'] in toColors(ig[sym] - set([backward])):
 				#Next we will try our backward looking relation's color.
 				
 				#~print("Assigning color based on backward relationship. {0} gets {1}".format(sym, backward['color']))

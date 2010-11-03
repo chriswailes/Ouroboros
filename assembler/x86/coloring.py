@@ -49,8 +49,7 @@ interference = set([interSym0, interSym1, interSym2])
 
 wordSize = 4
 preIncrement = True
-#~memFormatString = "-{0:d}(%ebp)"
-memBaseReg = '%ebp'
+memBaseReg = ebp
 memDirection = 'down'
 
 ##################################

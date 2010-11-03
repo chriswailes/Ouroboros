@@ -15,9 +15,10 @@ def init():
 
 def chains(tree, relgraph):
 	
-	#~for sym in relgraph:
-		#~print("{0}: {1}".format(sym, sym.keys()))
-		#~print(sym['reads'])
+	print("Relgraph:")
+	for sym in relgraph:
+		print("{0}".format(sym))
+	print('')
 	
 	outerGraph = relgraph.copy()
 	
@@ -42,6 +43,8 @@ def chains(tree, relgraph):
 		#Build all possible paths using sym0 as the starting vertex.
 		while len(verts) > 0:
 			sym0 = verts.pop(0)
+			
+			print("{0} picked as starting vertex.".format(sym0))
 			
 			for sym1 in innerGraph[sym0]:
 				chains[sym1] = list(chains[sym0])

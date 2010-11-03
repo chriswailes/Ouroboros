@@ -51,15 +51,15 @@ def heapify(node):
 			#Mark this function's free variables for later use.
 			node['free'] = free
 			
-			print("Symbols for function {0}: {1}".format(node.name, syms))
-			print("Bound symbols: {0}".format(bound))
-			print("Free symbols: {0}".format(free))
-			
-			print("Free symbol scope:")
-			for sym in free:
-				print("\t{0} : {1}".format(sym, sym['scope']))
-			
-			print('')
+			#~print("Symbols for function {0}: {1}".format(node.name, syms))
+			#~print("Bound symbols: {0}".format(bound))
+			#~print("Free symbols: {0}".format(free))
+			#~
+			#~print("Free symbol scope:")
+			#~for sym in free:
+				#~print("\t{0} : {1}".format(sym, sym['scope']))
+			#~
+			#~print('')
 	
 		for child in node:
 			heapify(child)
