@@ -245,6 +245,19 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		return ast.Subscript(sym, sub)
 	
+	elif isinstance(node, oast.While):
+		jn = ast.Join()
+		
+		cond = translate(node.test, st, jn)
+		
+		if isinstance(cond, ast.Symbol):
+			print("FOO")
+			jn.addSymbol(cond, st)
+		
+		body = ast.BasicBlock(translate(node.body, st, jn))
+		
+		return ast.While(cond, body, jn)
+	
 	elif isinstance(node, oast.UnarySub):
 		operand = translate(node.expr, st, jn)
 		

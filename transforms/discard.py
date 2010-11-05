@@ -25,17 +25,28 @@ def discard(node):
 				
 				#Throw out variables that are never read.
 				if sym['reads'] != 0:
+					print("Saving {0} for having {1} read(s)\n".format(child, sym['reads']))
 					newChildren.append(child)
+				
+				else:
+					print("Discarding {0} for zero reads\n".format(child))
 			
 			#If it is a Statement or a FunctionCall we need to keep the child.
 			elif classGuard(child, Function, FunctionCall, Statement):
 				newChildren.append(child)
 			
-			#Anything that reaches here is an expression outside of a
-			#statement, and therefor has no effect on the program.  Therefor
-			#we remove any nested statements from the expression then throw
-			#it away.
+			elif isinstance(child, BasicBlock):
+				#We can discard the nested BasicBlock.
+				newChildren.append(discard(child).children)
+			
 			else:
+				#Anything that reaches here is an expression outside of a
+				#statement, and therefor has no effect on the program.
+				#Therefor we remove any nested statements from the expression
+				#then throw it away.
+				
+				print("Discarding {0}".format(child))
+				
 				newChildren.append(extractStmts(child))
 		
 		node.children = flatten(newChildren)

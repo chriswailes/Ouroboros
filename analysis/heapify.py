@@ -18,6 +18,9 @@ def init():
 
 def heapify(node):
 	if isinstance(node, Module):
+		print("Running heapify on {0}\n".format(node))
+		
+		print(node.toPython())
 		
 		#Mark the default heapify state of all symbols as False.
 		for sym in node.collectSymbols():
@@ -30,17 +33,19 @@ def heapify(node):
 	else:
 		if isinstance(node, Function):
 			syms  = node.collectSymbols()
-			bound = collectAssigned(node, [])
+			bound = node.collectSymbols('w')
 			free  = syms - bound
 			
-			#~print("Bound: {0}".format(bound))
+			print("Heapify for function {0}".format(node.name.name))
+			print("Used symbols {0}".format(syms))
+			print("Bound: {0}\n".format(bound))
 			
 			#Here we mark any new symbols as either 'global' or 'local'.  Global
 			#symbols are defined in the main function and can be put in the data
 			#section.  Local variables that apear as free variables in lambda
 			#definitions need to be packed into a closure.
 			for sym in bound:
-				#~print("Assigning scope to {0}".format(sym))
+				print("Assigning scope to {0}".format(sym))
 				if node.name.name == 'main':
 					sym['scope'] = 'global'
 				
@@ -49,7 +54,7 @@ def heapify(node):
 			
 			#Mark any free variables for heapification.
 			for sym in free:
-				#~print("Sym: {0}".format(sym))
+				print("Sym: {0}".format(sym))
 				sym['heapify'] = 'data' if sym['scope'] == 'global' else 'closure'
 			
 			#Mark this function's free variables for later use.
@@ -67,23 +72,3 @@ def heapify(node):
 	
 		for child in node:
 			heapify(child)
-
-
-def collectAssigned(node, assigned = []):
-	if isinstance(node, Function):
-		#~print("Collecting assignments for {0}".format(node.name))
-		#~print("Bound so far: {0}".format(assigned))
-		assigned.extend(list(node.argSymbols))
-	
-	elif isinstance(node, Assign):
-		assigned.append(extractSymbol(node.var))
-		
-		#~print("In assign from {0}".format(extractSymbol(node.var)))
-	
-	elif isinstance(node, Phi):
-		assigned.append(node.target)
-	
-	for child in node:
-		collectAssigned(child, assigned)
-	
-	return set(assigned)

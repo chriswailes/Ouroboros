@@ -613,4 +613,30 @@ def selectInstructions(node, cf, dest = None):
 		###############
 		
 		return code
-
+	
+	elif isinstance(node, ast.While):
+		code = Block()
+		
+		cond		= selectInstructions(node.cond, cf)
+		condBody	= selectInstructions(node.condBody, cf)
+		body		= selectInstructions(node.body, cf)
+		
+		l0 = getLabel()
+		l1 = getLabel()
+		
+		#Initial jump to the cond block.
+		code.append(OneOp('jmp', l1, None))
+		
+		#The body label and the body.
+		code.append(l0)
+		code.append(body)
+		
+		#Cond label and cond body.
+		code.append(l1)
+		code.append(condBody)
+		
+		#Test to see if we should loop.
+		code.append(TwoOp('cmp', FALS, cond))
+		code.append(OneOp('jg', l0, None))
+		
+		return code

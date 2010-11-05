@@ -268,6 +268,11 @@ def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz', test = False):
 	
 	return code
 
+def getLabel():
+	global labeler
+	
+	return labeler.nextLabel()
+
 def getTmpColor(cf, node, *interference):
 	interference = node['pre-alive'] | set(interference)
 	tmpColor = cf.getColor(interference, Register, True)

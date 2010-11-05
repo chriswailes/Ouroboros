@@ -78,6 +78,10 @@ def precolor(node, ig, cf):
 			offset += 4
 	
 	elif isinstance(node, FunctionCall):
+		#~print("In FunctionCall node")
+		#~print("Pre-alive: {0}".format(node['pre-alive']))
+		#~print("Post-alive: {0}".format(node['post-alive']))
+		
 		for sym in node['pre-alive']:
 			if sym in node['post-alive']:
 				ig[sym] |= interference

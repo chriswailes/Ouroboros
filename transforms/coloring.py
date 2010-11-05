@@ -39,7 +39,7 @@ def color(tree, ig, chains, cf = None):
 	print('Coloring:')
 	for sym in sorted(tree.collectSymbols(), key = lambda x: x.name):
 		if sym.has_key('color'):
-			print("{0} : {1} : {2}".format(sym, sym['color'], ig[sym]))
+			print("{0} : {1}".format(sym, sym['color']))
 	print('')
 	
 	return cf
@@ -94,16 +94,22 @@ def colorPrime(node, cf, ig, chains):
 		
 		#We need to find a color if the symbol doesn't already have one, or if
 		#the color it was pre-colored with interferes with a other colors.
-		if not sym.has_key('color') or sym['color'] in toColors(ig[sym]) or sym['heapify']:
+		if not sym.has_key('color') or sym['color'] in (toColors(ig[sym]) - toColors(sym['phi-related'])) or sym['heapify']:
 			forward  = sym['related-forward']
 			backward = sym['related-backward']
 			phi = sym['phi-related']
+			
+			if sym.has_key('color'):
+				print("{0} has color {1} but we are re-coloring it anyway".format(sym, sym['color']))
+				print("Interfering colors: {0}".format(toColors(ig[sym]) - toColors(phi)))
 			
 			if sym['heapify'] == 'data':
 				sym['color'] = cf.getDataLabel()
 			
 			elif len(phi) > 0:
 				sym['color'] = cf.getColor(maxConstraint(phi, ig))
+				
+				print("Assigning color based on PHI relationship: {0} -> {1}".format(sym, sym['color']))
 				
 				for sym1 in phi:
 					sym1['color'] = sym['color']

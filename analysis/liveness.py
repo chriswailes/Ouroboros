@@ -18,6 +18,7 @@ def init():
 
 def liveness(node, alive = []):
 	if isinstance(node, Module):
+		alive = []
 		for sym in node.collectSymbols():
 			if sym.has_key('tmp'):
 				del sym['tmp']
@@ -44,7 +45,7 @@ def liveness(node, alive = []):
 			sym['tmp'] = sym['reads']
 			alive.append(sym)
 	
-	elif classGuard(node, Symbol, Subscript):
+	elif isinstance(node, Symbol) or (isinstance(node, Subscript) and isinstance(node.symbol, Symbol)):
 		sym = extractSymbol(node)
 		
 		#~print("Reading {0}".format(sym))

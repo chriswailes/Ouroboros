@@ -25,7 +25,10 @@ def reads(node):
 				#~print("Claring reads from {0}".format(sym))
 				del sym['reads']
 	
+	#~print("In node {0}".format(node))
+	
 	if classGuard(node, Assign, Phi) and not extractSymbol(node).has_key('reads'):
+		#~print("Initializing symbol {0}".format(extractSymbol(node)))
 		extractSymbol(node)['reads'] = 0
 	
 	elif classGuard(node, Function):

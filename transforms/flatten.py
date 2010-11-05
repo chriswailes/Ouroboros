@@ -12,7 +12,7 @@ from lib import util
 
 from lib.symbol_table import SymbolTable
 
-analysis	= ['heapify']
+analysis	= ['liveness', 'heapify']
 args		= []
 
 def init():
@@ -31,9 +31,9 @@ def flatten(node, st = None, inPlace = False):
 	elif isinstance(node, Function):
 		st = node.st
 	
-	#Flatten each of our child nodes.  Dictionaries, if-expressions, and lists
-	#do their own flattening.
-	if not classGuard(node, Dictionary, IfExp, List):
+	#Flatten each of our child nodes.  Dictionaries, if-expressions, lists, and
+	#while loops do their own flattening.
+	if not classGuard(node, Dictionary, IfExp, List, While):
 		for child in node:
 			childPreStmts, newChild = flatten(child, st, newInPlace)
 			
@@ -85,7 +85,7 @@ def flatten(node, st = None, inPlace = False):
 		jn = Join()
 		
 		#Flattent he conditional expression.
-		condPreStmts, cond = flatten(node.cond, st, jn)
+		condPreStmts, cond = flatten(node.cond, st)
 		preStmts.append(condPreStmts)
 		
 		#Create the assignment variable for the then clause.
@@ -137,6 +137,24 @@ def flatten(node, st = None, inPlace = False):
 		funName = st.getName('get_subscript')
 		node = FunctionCall(funName, node.symbol, node.subscript)
 	
+	elif isinstance(node, While):
+		if not isinstance(node.cond, Symbol):
+			condBody, node.cond = flatten(node.cond, st)
+			
+			node.condBody = BasicBlock(condBody)
+		
+		bodyPreStmts, node.body = flatten(node.body, st)
+		preStmts.append(bodyPreStmts)
+		
+		reads = node.body.collectSymbols('r') | node.condBody.collectSymbols('r')
+		
+		#Add symbols the the Join node as necessary and replace their reads
+		#with reads from the Phi target.
+		for sym0 in reads:
+			if sym0 in node['pre-alive']:
+				sym1 = node.jn.addSymbol(sym0)
+				substitute1(node, sym0, sym1)
+	
 	#Here we do the actual flattening.
 	if classGuard(node, BinOp, FunctionCall, IfExp, UnaryOp) and not inPlace:
 		sym = st.getSymbol(assign = True)
@@ -146,8 +164,6 @@ def flatten(node, st = None, inPlace = False):
 	
 	elif isinstance(node, Function) and inPlace != Module:
 		closured = []
-		
-		#~print("Flattening {0}".format(node.name))
 		
 		for sym in node['free']:
 			if sym['heapify'] == 'closure':
@@ -163,7 +179,7 @@ def flatten(node, st = None, inPlace = False):
 			closureSym = st.getSymbol('!closure', True)
 			node.argSymbols.insert(0, closureSym)
 			
-			substitute(node, closureSym, closured)
+			substitute0(node, closureSym, closured)
 			
 			node = FunctionCall(Name('create_closure'), node.name, List(closured))
 			node.tag = OBJ
@@ -176,11 +192,29 @@ def flatten(node, st = None, inPlace = False):
 	
 	return node if isinstance(node, Module) else (preStmts, node)
 
-def substitute(node, sym, closure):
-	newChildren = [substitute(child, sym, closure) for child in node]
+def substitute0(node, sym, closure):
+	newChildren = [substitute0(child, sym, closure) for child in node]
 	node.setChildren(newChildren)
 	
 	if isinstance(node, Symbol) and node in closure:
 		node = Subscript(sym, Integer(closure.index(node)))
+	
+	return node
+
+def substitute1(node, sym0, sym1):
+	#~newChildren = [substitute1(child, sym0, sym1) for child in node]
+	newChildren = []
+	
+	for child in node:
+		if isinstance(child, Phi):
+			newChildren.append(child)
+		
+		else:
+			newChildren.append(substitute1(child, sym0, sym1))
+	
+	node.setChildren(newChildren)
+	
+	if isinstance(node, Symbol) and node == sym0:
+		node = sym1
 	
 	return node
