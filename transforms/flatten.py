@@ -10,7 +10,7 @@ from assembler.tagging import OBJ
 from lib.ast import *
 from lib import util
 
-from lib.symbol_table import SymbolTable, getSingleton
+from lib.symbol_table import SymbolTable
 
 analysis	= ['heapify']
 args		= []
@@ -28,8 +28,8 @@ def flatten(node, st = None, inPlace = False):
 	if util.classGuard(node, Assign, BasicBlock, Module):
 		newInPlace = node.__class__
 	
-		if isinstance(node, BasicBlock):
-			st = node.st
+	elif isinstance(node, Function):
+		st = node.st
 	
 	#Flatten each of our child nodes.  Dictionaries, if-expressions, and lists
 	#do their own flattening.
@@ -92,13 +92,13 @@ def flatten(node, st = None, inPlace = False):
 		sym = st.getSymbol(assign = True)
 		jn.addSymbol(sym, st)
 		
-		_, then = flatten(BasicBlock([Assign(sym, node.then)], st))
+		_, then = flatten(BasicBlock([Assign(sym, node.then)]), st)
 		
 		#Create the assignment variable for the else clause.
 		sym = st.getSymbol(assign = True)
 		jn.addSymbol(sym, st)
 		
-		_, els = flatten(BasicBlock([Assign(sym, node.els)], st))
+		_, els = flatten(BasicBlock([Assign(sym, node.els)]), st)
 		
 		#Updte our SymbolTable (this should have no effect as statements
 		#aren't allowed in IfExp nodes).
@@ -177,12 +177,7 @@ def flatten(node, st = None, inPlace = False):
 	return node if isinstance(node, Module) else (preStmts, node)
 
 def substitute(node, sym, closure):
-	newChildren = []
-	
-	for child in node:
-		newChild = substitute(child, sym, closure)
-		newChildren.append(newChild)
-	
+	newChildren = [substitute(child, sym, closure) for child in node]
 	node.setChildren(newChildren)
 	
 	if isinstance(node, Symbol) and node in closure:

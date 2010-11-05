@@ -109,9 +109,8 @@ class Join(Node):
 		return ret
 
 class BasicBlock(Node):
-	def __init__(self, children, st):
+	def __init__(self, children):
 		self.children = children
-		self.st = st
 	
 	def __repr__(self):
 		return 'BasicBlock(' + repr(self.children) + ')'
@@ -135,10 +134,11 @@ class BasicBlock(Node):
 ##############################
 
 class Function(Node):
-	def __init__(self, name, argSymbols, block):
+	def __init__(self, name, argSymbols, block, st):
 		self.name = name
 		self.argSymbols = argSymbols
 		self.block = block
+		self.st = st
 	
 	def __repr__(self):
 		return "Function({0}, {1}, {2})".format(repr(self.name), repr(self.argSymbols), repr(self.block))

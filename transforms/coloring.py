@@ -28,13 +28,19 @@ def color(tree, ig, chains, cf = None):
 	cf = cf or ColorFactory()
 	
 	precolor(tree, ig, cf)
+	
+	#~print('Interference')
+	#~for sym in ig:
+		#~print("{0} : {1}".format(sym, ig[sym]))
+	#~print('')
+	
 	colorPrime(tree, cf, ig, chains)
 	
-	#~print('Coloring:')
-	#~for sym in sorted(tree.collectSymbols(), key = lambda x: x.name):
-		#~if sym.has_key('color'):
-			#~print("{0}: {1}".format(sym, sym['color']))
-	#~print('')
+	print('Coloring:')
+	for sym in sorted(tree.collectSymbols(), key = lambda x: x.name):
+		if sym.has_key('color'):
+			print("{0} : {1} : {2}".format(sym, sym['color'], ig[sym]))
+	print('')
 	
 	return cf
 
@@ -103,7 +109,7 @@ def colorPrime(node, cf, ig, chains):
 					sym1['color'] = sym['color']
 			
 			elif forward and forward.has_key('color') and isinstance(forward['color'], Register) and \
-			not forward['color'] in toColors(ig[sym] - set([forward])):
+			forward['color'] not in toColors(ig[sym] - set([forward])):
 				#If our forward looking relation's color is a register and
 				#doesn't cause interference we want to use it.
 				
@@ -111,7 +117,7 @@ def colorPrime(node, cf, ig, chains):
 				sym['color'] = forward['color']
 			
 			elif backward and backward.has_key('color') and isinstance(backward['color'], Register) and \
-			not backward['color'] in toColors(ig[sym] - set([backward])):
+			backward['color'] not in toColors(ig[sym] - set([backward])):
 				#Next we will try our backward looking relation's color.
 				
 				#~print("Assigning color based on backward relationship. {0} gets {1}".format(sym, backward['color']))

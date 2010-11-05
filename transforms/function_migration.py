@@ -22,7 +22,7 @@ def migrateFunctions(node, st = None, funs = []):
 	if isinstance(node, Module):
 		funs = []
 	
-	st = node.st if isinstance(node, BasicBlock) else st
+	st = node.st if isinstance(node, Function) else st
 	
 	for child in node:
 		if isinstance(child, Function):

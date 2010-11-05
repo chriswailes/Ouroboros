@@ -200,7 +200,7 @@ class Register(Color):
 	
 	def __eq__(self, other):
 		if isinstance(other, Register):
-			return self.weight == other.weight and self.name == other.name
+			return self.name == other.name
 		else:
 			return False
 	
@@ -209,7 +209,7 @@ class Register(Color):
 			return False
 		
 		elif isinstance(other, Register):
-			return self.weight >= other.weight or self.name >= other.name
+			return self.weight >= other.weight or (self.weight == other.weight and self.name >= other.name)
 		
 		else:
 			return False
@@ -219,7 +219,7 @@ class Register(Color):
 			return False
 		
 		elif isinstance(other, Register):
-			return self.weight > other.weight or self.name > other.name
+			return self.weight > other.weight or (self.weight == other.weight and self.name > other.name)
 		
 		else:
 			return False
@@ -229,7 +229,7 @@ class Register(Color):
 			return True
 		
 		elif isinstance(other, Register):
-			return self.weight <= other.weight or self.name <= other.name
+			return self.weight <= other.weight or (self.weight == other.weight and self.name <= other.name)
 		
 		else:
 			return False
@@ -239,7 +239,7 @@ class Register(Color):
 			return True
 		
 		elif isinstance(other, Register):
-			return self.weight < other.weight or self.name < other.name
+			return self.weight < other.weight or (self.weight == other.weight and self.name < other.name)
 		
 		else:
 			return False

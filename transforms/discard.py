@@ -16,11 +16,6 @@ def init():
 	register('discard', discard, analysis, args)
 
 def discard(node):
-	#~if isinstance(node, Module):
-		#~print('Discard')
-		#~print(node)
-		#~print('')
-	
 	if isinstance(node, BasicBlock):
 		newChildren = []
 		
@@ -31,9 +26,6 @@ def discard(node):
 				#Throw out variables that are never read.
 				if sym['reads'] != 0:
 					newChildren.append(child)
-				#~else:
-					#~print("Discarding (0): {0}".format(child))
-					#~print(sym['reads'])
 			
 			#If it is a Statement or a FunctionCall we need to keep the child.
 			elif classGuard(child, Function, FunctionCall, Statement):
@@ -44,7 +36,6 @@ def discard(node):
 			#we remove any nested statements from the expression then throw
 			#it away.
 			else:
-				#~print("Discarding (1): {0}".format(child))
 				newChildren.append(extractStmts(child))
 		
 		node.children = flatten(newChildren)

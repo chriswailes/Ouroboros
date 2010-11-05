@@ -270,7 +270,7 @@ def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz', test = False):
 
 def getTmpColor(cf, node, *interference):
 	interference = node['pre-alive'] | set(interference)
-	tmpColor = cf.getColor(interference, Register)
+	tmpColor = cf.getColor(interference, Register, True)
 	
 	if tmpColor == None:
 		raise Spill(node['pre-alive'])

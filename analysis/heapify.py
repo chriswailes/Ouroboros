@@ -33,11 +33,14 @@ def heapify(node):
 			bound = collectAssigned(node, [])
 			free  = syms - bound
 			
+			#~print("Bound: {0}".format(bound))
+			
 			#Here we mark any new symbols as either 'global' or 'local'.  Global
 			#symbols are defined in the main function and can be put in the data
 			#section.  Local variables that apear as free variables in lambda
 			#definitions need to be packed into a closure.
 			for sym in bound:
+				#~print("Assigning scope to {0}".format(sym))
 				if node.name.name == 'main':
 					sym['scope'] = 'global'
 				
@@ -46,6 +49,7 @@ def heapify(node):
 			
 			#Mark any free variables for heapification.
 			for sym in free:
+				#~print("Sym: {0}".format(sym))
 				sym['heapify'] = 'data' if sym['scope'] == 'global' else 'closure'
 			
 			#Mark this function's free variables for later use.

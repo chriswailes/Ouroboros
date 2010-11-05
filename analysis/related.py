@@ -38,14 +38,14 @@ def related(node, graph = {}):
 			if isinstance(node.exp.left, Symbol):
 				sym1 = node.exp.left
 				
-				if not sym1 in node['post-alive']:
+				if sym1 not in node['post-alive'] and sym0 not in graph[sym1]:
 					graph[sym1].append(sym0)
 			
 			#Check the right operand if the BinOp is an add or a multiply.
 			if classGuard(node.exp, Add, Mul) and isinstance(node.exp.right, Symbol):
 				sym2 = node.exp.right
 				
-				if not sym2 in node['post-alive']:
+				if sym2 not in node['post-alive'] and sym0 not in graph[sym2]:
 					graph[sym2].append(sym0)
 				
 				#Pick the right over the left operand if it was defined

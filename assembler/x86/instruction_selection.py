@@ -14,7 +14,22 @@ from assembler.x86.coloring import eax, edx, ebp, esp, callee, caller
 from lib import ast
 from lib.util import classGuard
 
+shifts = {
+	2	: 1,
+	4	: 2,
+	8	: 3,
+	16	: 4,
+	32	: 5,
+	64	: 6,
+	128	: 7,
+	256	: 8,
+	512	: 9,
+	1024	: 10
+}
+
 def selectInstructions(node, cf, dest = None):
+	
+	global shifts
 	
 	#Error out if we receive a complex node that should have been flattened
 	#or translated out before instruction selection.
@@ -49,6 +64,7 @@ def selectInstructions(node, cf, dest = None):
 				src = pack(src, INT)
 			
 			return move(src, dest)
+		
 		else:
 			#Here the right side of the assignment is a complex expression.
 			#We will select instructions for it, giving the Symbol
@@ -148,8 +164,7 @@ def selectInstructions(node, cf, dest = None):
 				code.append(move(right, tmpColor1))
 				right = tmpColor1
 		
-		elif isinstance(right, Immediate) and isinstance(node, ast.Div) and \
-		not ((right.value % 2) == 0 and (right.value / 2) < 31):
+		elif isinstance(right, Immediate) and isinstance(node, ast.Div) and right.value not in shifts:
 			
 			#If the right hand side is an immediate it needs to be
 			#placed into a register for divide operations.
@@ -230,25 +245,25 @@ def selectInstructions(node, cf, dest = None):
 				code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'je', True))
 			
 		elif isinstance(node, ast.Div):
-			#Prepare out %edx.
-			code.append(Instruction('cltd'))
-			
-			if isinstance(right, Immediate) and (right.value % 2) == 0 and (right.value / 2) < 31:
+			if isinstance(right, Immediate) and right.value in shifts:
 				#We can shift to the right instead of dividing.
-				dist = right.value / 2
+				dist = shifts[right.value]
 				
-				code.append(TwoOp('sar', Immediate(dist), tmpColor0))
+				code.append(TwoOp('sar', Immediate(dist), eax))
 			
 			else:
-				code.append(OneOp('idiv', right, None))
+				#Prepare out %edx.
+				code.append(Instruction('cltd'))
 				
-				if tmpColor0 != eax:
-					code.append(move(eax, tmpColor0))
+				code.append(OneOp('idiv', right))
+				
+			if tmpColor0 != eax:
+				code.append(move(eax, tmpColor0))
 		
 		elif isinstance(node, ast.Mul):
-			if isinstance(left, Immediate) and (left.value % 2) == 0 and (left.value / 2) < 31:
+			if isinstance(left, Immediate) and left.value in shifts:
 				#We can shift to the left instead of multiplying.
-				dist = left.value / 2
+				dist = shifts[left.value]
 				
 				code.append(TwoOp('sal', Immediate(dist), tmpColor0))
 			
@@ -396,6 +411,11 @@ def selectInstructions(node, cf, dest = None):
 		code = Block()
 		
 		#Save any caller saved registers that are in use after this call.
+		
+		#~print("Function call: {0}".format(node))
+		#~print("Post-alive: {0}".format(node['post-alive']))
+		#~print("Coolors: {0}\n".format(toColors(node['post-alive'])))
+		
 		saveColors = toColors(node['post-alive'])
 		saveRegs(code, caller, saveColors)
 		
@@ -529,6 +549,9 @@ def selectInstructions(node, cf, dest = None):
 		#Pack immediates if they haven't been packed yet.
 		if isinstance(src, Immediate):
 			src = pack(src, INT)
+		
+		elif isinstance(src, ast.Name):
+			src = '$' + str(src)
 		
 		if src != eax:
 			code.append(move(src, eax))

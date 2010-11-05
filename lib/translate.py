@@ -98,8 +98,8 @@ def translate(node, st = None, jn = None, funcName = False):
 		argSymbols = map(lambda name: newST.getSymbol(name, True), node.argnames)
 		
 		code = translate(node.code, newST, jn)
-		block = ast.BasicBlock(code, newST)
-		fun = ast.Function(name, argSymbols, block)
+		block = ast.BasicBlock(code)
+		fun = ast.Function(name, argSymbols, block, newST)
 		
 		st.update(newST)
 		
@@ -116,7 +116,7 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		#A new SymbolTable needs to be constructed for the then branch.
 		stThen = SymbolTable(st)
-		then = ast.BasicBlock(translate(then, stThen, jn), stThen)
+		then = ast.BasicBlock(translate(then, stThen, jn))
 		
 		#Merge any Join nodes in the then clause into our current Join node.
 		mergeJoins(jn, then)
@@ -133,7 +133,7 @@ def translate(node, st = None, jn = None, funcName = False):
 		else:
 			els = translate(node.else_, stElse, jn)
 		
-		els = ast.BasicBlock(els, stElse)
+		els = ast.BasicBlock(els)
 		
 		#Merge any Join nodes in the els clause into our current Join node.
 		mergeJoins(jn, els)
@@ -158,9 +158,9 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		argSymbols = map(lambda name: newST.getSymbol(name, True), node.argnames)
 		
-		code = ast.Return(translate(node.code, newST, jn))
-		block = ast.BasicBlock([code], newST)
-		fun = ast.Function(name, argSymbols, block)
+		code  = ast.Return(translate(node.code, newST, jn))
+		block = ast.BasicBlock([code])
+		fun   = ast.Function(name, argSymbols, block, newST)
 		
 		st.update(newST)
 		
@@ -179,8 +179,8 @@ def translate(node, st = None, jn = None, funcName = False):
 		st = SymbolTable()
 		children = translate(node.node, st)
 		
-		block = ast.BasicBlock(children, st)
-		fun = ast.Function(st.getName('main'), [], block)
+		block = ast.BasicBlock(children)
+		fun = ast.Function(st.getName('main'), [], block, st)
 		
 		return ast.Module([fun])
 	
