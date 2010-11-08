@@ -17,20 +17,17 @@ def init():
 	register('function_migration', migrateFunctions, analysis, args)
 
 def migrateFunctions(node, st = None, funs = []):
-	newChildren = []
-	
-	if isinstance(node, Module):
-		funs = []
-	
-	st = node.st if isinstance(node, Function) else st
+	newChildren	= []
+	funs			= [] if isinstance(node, Module) else funs
+	st			= node.st if isinstance(node, Function) else st
 	
 	for child in node:
+		migrateFunctions(child, st, funs)
+		
 		if isinstance(child, Function):
 			funs.append(child)
-			migrateFunctions(child, st, funs)
 		
 		else:
-			migrateFunctions(child, st, funs)
 			newChildren.append(child)
 	
 	node.setChildren(newChildren)

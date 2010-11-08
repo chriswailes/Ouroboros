@@ -18,17 +18,11 @@ def init():
 
 def reads(node):
 	if isinstance(node, Module):
-		#~print('')
-		
 		for sym in node.collectSymbols():
 			if sym.has_key('reads'):
-				#~print("Claring reads from {0}".format(sym))
 				del sym['reads']
 	
-	#~print("In node {0}".format(node))
-	
 	if classGuard(node, Assign, Phi) and not extractSymbol(node).has_key('reads'):
-		#~print("Initializing symbol {0}".format(extractSymbol(node)))
 		extractSymbol(node)['reads'] = 0
 	
 	elif classGuard(node, Function):
@@ -36,18 +30,13 @@ def reads(node):
 			sym['reads'] = 0
 	
 	elif isinstance(node, Symbol):
-		
 		#This is kind of ugly, but because of Python's scoping rules we can
 		#read from a variable before it is 'in scope.'
+		
 		if node.has_key('reads'):
-			#~print("Normal read from {0}".format(node))
-			#~print(node['reads'])
 			node['reads'] += 1
-			#~print(node['reads'])
 		else:
-			#~print("Messed up Python read from {0}".format(node))
 			node['reads'] = 1
-			#~print(node['reads'])
 	
 	#This little hack is here to take care of cases where subscripts are
 	#applied to literal values. After the flatten transformation this branch
@@ -57,6 +46,3 @@ def reads(node):
 	
 	for child in node:
 		reads(child)
-	
-	#~if isinstance(node, Module):
-		#~print('')

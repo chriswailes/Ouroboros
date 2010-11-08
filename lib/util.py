@@ -79,6 +79,23 @@ def pad(level):
 		
 		return ret
 
+def substitute(node, callTest, substituteTest, replacement):
+	newChildren = []
+	
+	for child in node:
+		if callTest(child):
+			newChildren.append(substitute(child, callTest, substituteTest, replacement))
+		
+		else:
+			newChildren.append(child)
+	
+	node.setChildren(flatten(newChildren))
+	
+	if substituteTest(node):
+		node = replacement(node)
+	
+	return node
+
 class Enum(object):
 	def __init__(self, value):
 		self.value = value

@@ -14,6 +14,7 @@ import os
 from analysis.pass_manager import runPass
 
 from assembler import *
+from assembler.coloring import ColorFactory
 from assembler.redundant_moves import redundantMoves
 from assembler.instruction_selection import selectInstructions
 
@@ -38,7 +39,9 @@ if config.startStage == 'python':
 		print(tree)
 		print('')
 	
-	#Generate my AST	
+	##################
+	# AST Generation #
+	##################
 	tree = translate(tree)
 	
 	if config.verbose:
@@ -46,11 +49,27 @@ if config.startStage == 'python':
 		print(tree)
 		print('')
 	
-	#Run the AST transformation passes.
+	cf = ColorFactory()
+	
+	#######################
+	# AST Transformations #
+	#######################
+	
+	#Constant folding and propigation and discarding of useless nodes.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
-	runTransform(tree, ['flatten', 'function_migration'])
+	
+	#Simplification, declassification, and flattening of the AST.
+	runTransform(tree, ['simplify', 'flatten'])
+	
+	#Function migration.
+	runTransform(tree, 'function_migration')
+	
+	#Another round of constant propigation to take care of new constants
+	#introduced by the other passes.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
-	cf = runTransform(tree, 'color', {'cf':None})
+	
+	#Symbol coloring.
+	runTransform(tree, 'color', {'cf':cf})
 	
 	if config.verbose:
 		#Print my flattened (and folded) AST
@@ -69,11 +88,14 @@ if config.startStage == 'python':
 	#One of the symbols from each of these sets needs to be spilled.
 	spillSets = []
 	
-	#~exit(0)
+	#########################
+	# Instruction Selection #
+	#########################
 	
-	#Try and compile the AST, catching spills and iterating until they are all
-	#resolved.
 	while True:
+		#Attempt to compile the AST.  If a spill occurs we catch it and run
+		#the spill transformation before trying to color the AST again.  This
+		#process will continue until a successful coloring is found.
 		try:
 			#Compile the AST.
 			assembly = selectInstructions(tree, cf)
@@ -87,7 +109,7 @@ if config.startStage == 'python':
 			
 			cf = runTransform(tree, 'spill', {'spillSets':spillSets})
 			runTransform(tree, 'color', {'cf':cf})
-
+	
 	#Put the produced assembly into the output file.
 	outFile = open(config.sName, 'w')
 	outFile.write(str(assembly))

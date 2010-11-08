@@ -25,14 +25,10 @@ def discard(node):
 				
 				#Throw out variables that are never read.
 				if sym['reads'] != 0:
-					print("Saving {0} for having {1} read(s)\n".format(child, sym['reads']))
 					newChildren.append(child)
-				
-				else:
-					print("Discarding {0} for zero reads\n".format(child))
 			
 			#If it is a Statement or a FunctionCall we need to keep the child.
-			elif classGuard(child, Function, FunctionCall, Statement):
+			elif classGuard(child, Class, Function, FunctionCall, Statement):
 				newChildren.append(child)
 			
 			elif isinstance(child, BasicBlock):
@@ -44,9 +40,6 @@ def discard(node):
 				#statement, and therefor has no effect on the program.
 				#Therefor we remove any nested statements from the expression
 				#then throw it away.
-				
-				print("Discarding {0}".format(child))
-				
 				newChildren.append(extractStmts(child))
 		
 		node.children = flatten(newChildren)
@@ -61,29 +54,12 @@ def discard(node):
 def extractStmts(exp):
 	stmts = []
 	
-	if isinstance(exp, BinOp):
-		if classGuard(exp.left, Statement, FunctionCall):
-			stmts.append(exp.left)
-		else:
-			stmts.append(extractStmts(exp.left))
-		
-		if classGuard(exp.right, Statement, FunctionCall):
-			stmts.append(exp.right)
-		else:
-			stmts.append(extractStmts(exp.right))
-	
-	elif classGuard(exp, List, Dictionary):
+	if classGuard(exp, BinOp, Dictionary, List, UnaryOp):
 		for child in exp:
 			if classGuard(child, Statement, FunctionCall):
 				stmts.append(child)
 			
 			else:
 				stmts.append(extractStmts(child))
-	
-	elif isinstance(exp, UnaryOp):
-		if classGuard(exp.operand, Statement, FunctionCall):
-			stmts.append(exp.operand)
-		else:
-			stmts.append(extractStmts(exp.operand))
 	
 	return flatten(stmts)

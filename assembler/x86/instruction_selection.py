@@ -429,7 +429,7 @@ def selectInstructions(node, cf, dest = None):
 			if isinstance(src, Immediate):
 				src = pack(src, INT)
 			
-			elif isinstance(src, ast.Name):
+			elif isinstance(src, ast.Name) or (isinstance(src, Label) and src.reference):
 				src = '$' + str(src)
 			
 			code.append(OneOp('push', src))
@@ -515,11 +515,11 @@ def selectInstructions(node, cf, dest = None):
 		code = Block("# x86\n")
 		
 		data = Block("# Data\n")
-		funs = Block("# Functions\n")
+		funs = Block("\n# Functions\n")
 		
 		#Define our data section.
 		for sym in node.collectSymbols():
-			if sym['heapify']:
+			if sym['heapify'] and sym not in node.strings.values():
 				data.append(Directive("globl {0}".format(sym['color']), False))
 				data.append(Directive('data'))
 				data.append(Directive('align 4'))
@@ -528,6 +528,14 @@ def selectInstructions(node, cf, dest = None):
 				data.append(sym['color'])
 				data.append(Directive('long 1'))
 				data.append(Directive('section .data'))
+		
+		#Add any strings we may need to define.
+		for string in node.strings:
+			sym = node.strings[string]
+			
+			data.append(sym['color'])
+			data.append(Directive("string \"{0}\"".format(string)))
+			data.append(Directive('text'))
 		
 		#Define our functions.
 		for fun in node.functions:

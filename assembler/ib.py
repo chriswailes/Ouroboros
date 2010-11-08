@@ -157,6 +157,10 @@ class Label(object):
 		self.prefix = prefix
 		self.num = num
 		self.tagged = True
+		self.reference = False
+	
+	def __repr__(self):
+		return str(self)
 	
 	def __str__(self):
 		return "{0}{1}".format(self.prefix, self.num)

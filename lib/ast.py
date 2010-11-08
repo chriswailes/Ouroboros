@@ -141,8 +141,37 @@ class BasicBlock(Node):
 # Modules, Defs, and Classes #
 ##############################
 
+class Class(Node):
+	def __init__(self, name, bases, body):
+		self.name = name
+		self.bases = bases
+		self.body = body
+	
+	def __repr__(self):
+		return "Class({0}, Bases: {1}, Body: {2}".format(repr(self.name), repr(self.bases), repr(self.body))
+	
+	def getChildren(self):
+		tmp = [self.name] + self.bases + [self.body]
+		
+		return tmp
+	
+	def isSimple():
+		return False
+	
+	def setChildren(self, children):
+		self.name = children[0]
+		self.bases = children[1:-1] if len(children) > 2 else []
+		self.body = children[-1]
+	
+	def toPython(self, level = 0):
+		ret  = pad(level)
+		ret += "class {0}({1}):\n".format(self.name, [base.toPthon() for base in self.bases])
+		ret += self.body.toPython(level + 1)
+		
+		return ret
+
 class Function(Node):
-	def __init__(self, name, argSymbols, block, st):
+	def __init__(self, name, argSymbols, block, st, migrated = False):
 		self.name = name
 		self.argSymbols = argSymbols
 		self.block = block
@@ -176,9 +205,10 @@ class Function(Node):
 class Module(Node):
 	def __init__(self, functions):
 		self.functions = functions
+		self.strings = {}
 	
 	def __repr__(self):
-		return "Module({0})".format(repr(self.functions))
+		return "Module({0}, Strings: {1})".format(repr(self.functions), repr(self.strings))
 	
 	def getChildren(self):
 		return self.functions
@@ -388,6 +418,42 @@ class FunctionCall(Expression):
 			ret = ret[0:-2]
 		
 		return ret + ')'
+
+class GetAttr(Expression):
+	def __init__(self, exp, attrName):
+		self.exp = exp
+		self.attrName = attrName
+	
+	def __repr__(self):
+		return "GetAttr({0}, {1}".format(repr(self.exp), repr(self.attrName))
+	
+	def getChildren(self):
+		return [self.exp, self.attrName]
+	
+	def setChildren(self, children):
+		self.exp = children[0]
+		self.attrName = children[1]
+	
+	def toPython(self, level = 0):
+		return self.exp.toPython() + '.' + self.attrName.toPython()
+
+class SetAttr(Expression):
+	def __init__(self, exp, attrName):
+		self.exp = exp
+		self.attrName = attrName
+	
+	def __repr__(self):
+		return "SetAttr({0}, {1}".format(self.exp, self.attrName)
+	
+	def getChildren(self):
+		return [self.exp, self.attrName]
+	
+	def setChildren(self, children):
+		self.exp = children[0]
+		self.attrName = children[1]
+	
+	def toPython(self, level = 0):
+		return self.exp.toPython() + '.' + self.attrName.toPython()
 
 class BinOp(Expression):
 	def __init__(self, operator, left, right):

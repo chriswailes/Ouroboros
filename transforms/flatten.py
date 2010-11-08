@@ -12,7 +12,7 @@ from lib import util
 
 from lib.symbol_table import SymbolTable
 
-analysis	= ['liveness', 'heapify']
+analysis	= []
 args		= []
 
 def init():
@@ -31,9 +31,27 @@ def flatten(node, st = None, inPlace = False):
 	elif isinstance(node, Function):
 		st = node.st
 	
-	#Flatten each of our child nodes.  Dictionaries, if-expressions, lists, and
-	#while loops do their own flattening.
-	if not classGuard(node, Dictionary, IfExp, List, While):
+	#Flatten our children.
+	if isinstance(node, While):
+		if not isinstance(node.cond, Symbol):
+			condBody, node.cond = flatten(node.cond, st)
+			node.condBody = BasicBlock(condBody)
+		
+		bodyPreStmts, node.body = flatten(node.body, st)
+		preStmts.append(bodyPreStmts)
+	
+	elif isinstance(node, If):
+		for child in node:
+			childPreStmts, newChild = flatten(child, st, newInPlace)
+			
+			preStmts.append(childPreStmts)
+			newChildren.append(newChild)
+		
+		#Set our new child nodes.
+		newChildren = util.flatten(newChildren)
+		node.setChildren(newChildren)
+	
+	else:
 		for child in node:
 			childPreStmts, newChild = flatten(child, st, newInPlace)
 			
@@ -49,172 +67,14 @@ def flatten(node, st = None, inPlace = False):
 		newChildren = util.flatten(newChildren)
 		node.setChildren(newChildren)
 	
-	#Translate this node if neccessary.
-	if isinstance(node, Assign):
-		#Assignments to subscripts need to be flattened/translated into
-		#function calls.
-		if isinstance(node.var, Subscript):
-			funName = st.getName('set_subscript')
-			node = FunctionCall(funName, node.var.symbol, node.var.subscript, node.exp)
-	
-	elif isinstance(node, Dictionary):
-		pairs = node.value
-		
-		node = FunctionCall(st.getName('create_dict'))
-		node.tag = OBJ
-		
-		sym = st.getSymbol(assign = True)
-		preStmts.append(Assign(sym, node))
-		node = sym
-		
-		name = st.getName('set_subscript')
-		for key in pairs:
-			#Flatten the key
-			childPreStmts, key = flatten(key, st)
-			preStmts.append(childPreStmts)
-			
-			#Flatten the value
-			childPreStmts, value = flatten(pairs[key], st)
-			preStmts.append(childPreStmts)
-			
-			#Add the key/value pair to the dictionary.
-			preStmts.append(FunctionCall(name, sym, key, value))
-	
-	elif isinstance(node, IfExp):
-		#Create the new If node's Join node.
-		jn = Join()
-		
-		#Flattent he conditional expression.
-		condPreStmts, cond = flatten(node.cond, st)
-		preStmts.append(condPreStmts)
-		
-		#Create the assignment variable for the then clause.
-		sym = st.getSymbol(assign = True)
-		jn.addSymbol(sym, st)
-		
-		_, then = flatten(BasicBlock([Assign(sym, node.then)]), st)
-		
-		#Create the assignment variable for the else clause.
-		sym = st.getSymbol(assign = True)
-		jn.addSymbol(sym, st)
-		
-		_, els = flatten(BasicBlock([Assign(sym, node.els)]), st)
-		
-		#Updte our SymbolTable (this should have no effect as statements
-		#aren't allowed in IfExp nodes).
-		st.update(jn)
-		
-		#Append this new If node to our pre-statements and then replace the
-		#node with the target from the join node's (hopefully) only Phi node.
-		preStmts.append(If(cond, then, els, jn))
-		node = jn.phis[0].target
-	
-	elif isinstance(node, List):
-		children = node.value
-		
-		node = FunctionCall(st.getName('create_list'), Integer(len(node.value)))
-		node.tag = OBJ
-		
-		sym = st.getSymbol(assign = True)
-		preStmts.append(Assign(sym, node))
-		node = sym
-			
-		index = 0
-		name = st.getName('set_subscript')
-		for child in children:
-			#Flatten the value.
-			childPreStmts, newChild = flatten(child, st)
-			preStmts.append(childPreStmts)
-			
-			#Add the value to the list.
-			preStmts.append(FunctionCall(name, sym, Integer(index), newChild))
-			
-			index += 1
-	
-	elif isinstance(node, Subscript):
-		#If there is a read from a subscript it needs to be replaced with a
-		#function call.
-		funName = st.getName('get_subscript')
-		node = FunctionCall(funName, node.symbol, node.subscript)
-	
-	elif isinstance(node, While):
-		if not isinstance(node.cond, Symbol):
-			condBody, node.cond = flatten(node.cond, st)
-			
-			node.condBody = BasicBlock(condBody)
-		
-		bodyPreStmts, node.body = flatten(node.body, st)
-		preStmts.append(bodyPreStmts)
-		
-		reads = node.body.collectSymbols('r') | node.condBody.collectSymbols('r')
-		
-		#Add symbols the the Join node as necessary and replace their reads
-		#with reads from the Phi target.
-		for sym0 in reads:
-			if sym0 in node['pre-alive']:
-				sym1 = node.jn.addSymbol(sym0)
-				substitute1(node, sym0, sym1)
-	
-	#Here we do the actual flattening.
+	#Flatten the current node.
 	if classGuard(node, BinOp, FunctionCall, IfExp, UnaryOp) and not inPlace:
 		sym = st.getSymbol(assign = True)
 		preStmts.append(Assign(sym, node))
 		
 		node = sym
 	
-	elif isinstance(node, Function) and inPlace != Module:
-		closured = []
-		
-		for sym in node['free']:
-			if sym['heapify'] == 'closure':
-				closured.append(sym)
-		
-		#Remove the variables that we have put into the closure from the list
-		#of free variables for this function.
-		node['free'] -= set(closured)
-		
-		preStmts.append(node)
-		
-		if len(closured) > 0:
-			closureSym = st.getSymbol('!closure', True)
-			node.argSymbols.insert(0, closureSym)
-			
-			substitute0(node, closureSym, closured)
-			
-			node = FunctionCall(Name('create_closure'), node.name, List(closured))
-			node.tag = OBJ
-		
-		else:
-			node = node.name
-	
 	#Flatten our list of pre-statements.
 	preStmts = util.flatten(preStmts)
 	
 	return node if isinstance(node, Module) else (preStmts, node)
-
-def substitute0(node, sym, closure):
-	newChildren = [substitute0(child, sym, closure) for child in node]
-	node.setChildren(newChildren)
-	
-	if isinstance(node, Symbol) and node in closure:
-		node = Subscript(sym, Integer(closure.index(node)))
-	
-	return node
-
-def substitute1(node, sym0, sym1):
-	#~newChildren = [substitute1(child, sym0, sym1) for child in node]
-	newChildren = []
-	
-	for child in node:
-		if isinstance(child, Phi):
-			newChildren.append(child)
-		
-		else:
-			newChildren.append(substitute1(child, sym0, sym1))
-	
-	node.setChildren(newChildren)
-	
-	if isinstance(node, Symbol) and node == sym0:
-		node = sym1
-	
-	return node

@@ -48,6 +48,23 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		return ast.FunctionCall(name, *args)
 	
+	elif isinstance(node, oast.Class):
+		#~name = st.getName(node.name)
+		#~bases = [translate(base, st, jn) for base in node.bases]
+		#~body = ast.BasicBlock(translate(node.code, st, jn))
+		#~
+		#~return ast.Class(name, bases, body)
+		
+		sym = st.getSymbol(node.name, True)
+		name = st.getName(node.name, False, True)
+		
+		bases = [translate(base, st, jn) for base in node.bases]
+		body = ast.BasicBlock(translate(node.code, st, jn))
+		
+		klass = ast.Class(name, bases, body)
+		
+		return ast.Assign(sym, klass)
+	
 	elif isinstance(node, oast.Compare):
 		left = translate(node.expr, st, jn)
 		
@@ -95,15 +112,30 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		newST = SymbolTable(st)
 		
-		argSymbols = map(lambda name: newST.getSymbol(name, True), node.argnames)
+		argSymbols = [newST.getSymbol(argName, True) for argName in node.argnames]
 		
-		code = translate(node.code, newST, jn)
-		block = ast.BasicBlock(code)
+		block = ast.BasicBlock(translate(node.code, newST, jn))
+		
+		#Set up our callTest, substituteTest, and replacement lambda.
+		#~callTest		= lambda node: True
+		#~substituteTest	= lambda node: isinstance(node, ast.Symbol) and node == sym
+		#~replacement	= lambda node: name
+		
+		#Replace all references to this function with their proper name.
+		#~util.substitute(block, callTest, substituteTest, replacement)
+		
 		fun = ast.Function(name, argSymbols, block, newST)
+		fun['simplified'] = False
 		
 		st.update(newST)
 		
 		return ast.Assign(sym, fun)
+	
+	elif isinstance(node, oast.Getattr):
+		exp = translate(node.expr, st, jn)
+		name = st.getName(node.attrname)
+		
+		return ast.GetAttr(exp, name)
 	
 	elif isinstance(node, oast.If):
 		tests = node.tests
@@ -161,6 +193,7 @@ def translate(node, st = None, jn = None, funcName = False):
 		code  = ast.Return(translate(node.code, newST, jn))
 		block = ast.BasicBlock([code])
 		fun   = ast.Function(name, argSymbols, block, newST)
+		fun['simplified'] = False
 		
 		st.update(newST)
 		
@@ -181,6 +214,9 @@ def translate(node, st = None, jn = None, funcName = False):
 		
 		block = ast.BasicBlock(children)
 		fun = ast.Function(st.getName('main'), [], block, st)
+		
+		#Mark the main function as migrated so that it doesn't get moved later.
+		fun['simplified'] = True
 		
 		return ast.Module([fun])
 	
