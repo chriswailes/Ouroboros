@@ -58,6 +58,9 @@ if config.startStage == 'python':
 	#Constant folding and propigation and discarding of useless nodes.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
 	
+	#Declassify the AST.
+	runTransform(tree, 'declassify')
+	
 	#Simplification, declassification, and flattening of the AST.
 	runTransform(tree, ['simplify', 'flatten'])
 	
@@ -67,6 +70,9 @@ if config.startStage == 'python':
 	#Another round of constant propigation to take care of new constants
 	#introduced by the other passes.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
+	
+	print(tree)
+	print('')
 	
 	#Symbol coloring.
 	runTransform(tree, 'color', {'cf':cf})

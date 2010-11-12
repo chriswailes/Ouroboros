@@ -13,10 +13,12 @@ class SymbolTable(object):
 			self.symbols = other.symbols.copy()
 			self.names = other.names.copy()
 			self.singletons = other.singletons.copy()
+			self.strings = other.strings.copy()
 		else:
 			self.symbols = {}
 			self.names = {}
 			self.singletons = {}
+			self.strings = {}
 	
 	def __str__(self):
 		return "SymbolTable #{0}".format(id(self))
@@ -51,6 +53,12 @@ class SymbolTable(object):
 			self.singletons[trip] = ret
 		
 		return ret
+	
+	#~def getStrings(self, string):
+		#~if not self.strings.has_key(string):
+			#~self.strings[string] = String(string)
+		#~
+		#~return self.strings[string]
 	
 	def getSymbol(self, name = '!', assign = False):
 		#Left value  -> next assignment

@@ -16,12 +16,10 @@ def init():
 	from analysis.pass_manager import register
 	register('spans', spans, args, prereqs, result)
 
-def spans(node, count = 0, alive = {}):
+def spans(node, count = 0, alive = None):
 	inc = 1
 	
-	if isinstance(node, Module):
-		for sym in node.strings.values():
-			alive[sym] = 0
+	alive = {} if alive == None else alive
 	
 	#Count the spans over our children.
 	for child in node:

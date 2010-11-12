@@ -139,6 +139,9 @@ def simplify(node, st = None):
 		#Replace this node with the symbol that now holds the list.
 		node = sym
 	
+	elif isinstance(node, SetAttr):
+		node = FunctionCall(st.getName('set_attr'), node.exp, node.attrName, node.value)
+	
 	elif isinstance(node, Subscript):
 		#If there is a read from a subscript it needs to be replaced with a
 		#function call.
@@ -161,7 +164,7 @@ def simplify(node, st = None):
 				substituteTest	= lambda node: isinstance(node, Symbol) and node == sym0
 				replacement	= lambda node: sym1
 				
-				util.substitute1(node, callTest, substituteTest, replacement)
+				util.substitute(node, callTest, substituteTest, replacement)
 	
 	#Flatten our list of pre-statements.
 	preStmts = util.flatten(preStmts)

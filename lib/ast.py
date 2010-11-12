@@ -155,7 +155,7 @@ class Class(Node):
 		
 		return tmp
 	
-	def isSimple():
+	def isSimple(self):
 		return False
 	
 	def setChildren(self, children):
@@ -438,22 +438,24 @@ class GetAttr(Expression):
 		return self.exp.toPython() + '.' + self.attrName.toPython()
 
 class SetAttr(Expression):
-	def __init__(self, exp, attrName):
+	def __init__(self, exp, attrName, value):
 		self.exp = exp
 		self.attrName = attrName
+		self.value = value
 	
 	def __repr__(self):
-		return "SetAttr({0}, {1}".format(self.exp, self.attrName)
+		return "SetAttr({0}, {1}, {2})".format(self.exp, self.attrName, self.value)
 	
 	def getChildren(self):
-		return [self.exp, self.attrName]
+		return [self.exp, self.attrName, self.value]
 	
 	def setChildren(self, children):
 		self.exp = children[0]
 		self.attrName = children[1]
+		self.value = children[2]
 	
 	def toPython(self, level = 0):
-		return self.exp.toPython() + '.' + self.attrName.toPython()
+		return "{0}.{1} = {2}".format(*[child.toPython(level) for child in node])
 
 class BinOp(Expression):
 	def __init__(self, operator, left, right):
@@ -688,6 +690,22 @@ class Name(Value):
 	
 	def __str__(self):
 		return self.name if self.version == -1 else "__{0}_{1}".format(self.name, self.version)
+	
+	def toPython(self, level = 0):
+		return str(self)
+
+class String(Value):
+	def __init__(self, value):
+		self.value = value
+	
+	def __hash__(self):
+		hash(self.value)
+	
+	def __repr__(self):
+		return "String({0})".format(self.value)
+	
+	def __str__(self):
+		return "'{0}'".format(self.value)
 	
 	def toPython(self, level = 0):
 		return str(self)
