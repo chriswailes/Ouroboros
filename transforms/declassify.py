@@ -24,7 +24,7 @@ def declassify(node, st = None, strings = None, klass = None):
 	newChildren	= []
 	preStmts		= []
 	st			= node.st if isinstance(node, Function) else st
-	strings		= {} if strings == None else strings
+	strings		= node.strings if isinstance(node, Module) else strings
 	
 	if isinstance(node, Class):
 		sym = st.getSymbol(assign = True)
@@ -41,7 +41,8 @@ def declassify(node, st = None, strings = None, klass = None):
 		node = sym
 	
 	elif isinstance(node, Assign) and klass:
-		string = getString(strings, node.var.name)
+		string = node.var.name
+		string = strings.setdefault(string, String(string))
 		
 		node = SetAttr(klass, string, node.exp)
 	
@@ -66,12 +67,6 @@ def declassify(node, st = None, strings = None, klass = None):
 		node.strings = strings
 	
 	return node if isinstance(node, Module) else (preStmts, node)
-
-def getString(strings, string):
-	if not strings.has_key(string):
-		strings[string] = String(string)
-	
-	return strings[string]
 
 def simplifyClassBody(node, klass, st, assigned = []):
 	if isinstance(node, BasicBlock):

@@ -203,9 +203,9 @@ class Function(Node):
 		return ret
 
 class Module(Node):
-	def __init__(self, functions):
+	def __init__(self, functions, strings):
 		self.functions = functions
-		self.strings = {}
+		self.strings = strings
 	
 	def __repr__(self):
 		return "Module({0}, Strings: {1})".format(repr(self.functions), repr(self.strings))

@@ -114,6 +114,9 @@ def colorPrime(node, cf, ig, chains):
 				
 				sym['color'] = color
 	
+	elif isinstance(node, String):
+		node['color'] = cf.getDataLabel(True)
+	
 	#Color the node's children.
 	for child in node:
 		colorPrime(child, cf, ig, chains)

@@ -19,11 +19,12 @@ def init():
 def spans(node, count = 0, alive = None):
 	inc = 1
 	
-	alive = {} if alive == None else alive
+	if isinstance(node, Module):
+		alive = {}
 	
 	#Count the spans over our children.
 	for child in node:
-		subInc = spans(child, count)
+		subInc = spans(child, count, alive)
 		inc   += subInc
 		count += subInc
 	
@@ -63,7 +64,7 @@ def spans(node, count = 0, alive = None):
 	#nature.
 	if not classGuard(node, Symbol, Name):
 		for sym in alive:
-			if isinstance(node, Module) or not sym in node['post-alive']:
+			if isinstance(node, Module) or sym not in node['post-alive']:
 				sym['span-start'] = alive[sym]
 				sym['span-end'  ] = count - 1
 				sym['span'] = sym['span-end'] - sym['span-start']
@@ -72,5 +73,5 @@ def spans(node, count = 0, alive = None):
 	
 	for sym in deletes:
 		del alive[sym]
-		
+	
 	return inc

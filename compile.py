@@ -71,7 +71,7 @@ if config.startStage == 'python':
 	#introduced by the other passes.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
 	
-	print(tree)
+	print(tree.toPython())
 	print('')
 	
 	#Symbol coloring.

@@ -566,6 +566,9 @@ def selectInstructions(node, cf, dest = None):
 		
 		return code
 	
+	elif isinstance(node, ast.String):
+		return node['color']
+	
 	elif isinstance(node, ast.Symbol):
 		if node.has_key('color'):
 			return node['color']

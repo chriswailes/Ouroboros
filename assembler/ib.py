@@ -148,16 +148,16 @@ class Labeler(object):
 		self.prefix = prefix
 		self.cur = -1
 	
-	def nextLabel(self):
+	def nextLabel(self, reference = False):
 		self.cur += 1
-		return Label(self.prefix, self.cur)
+		return Label(self.prefix, self.cur, reference)
 
 class Label(object):
-	def __init__(self, prefix, num):
+	def __init__(self, prefix, num, reference = False):
 		self.prefix = prefix
 		self.num = num
 		self.tagged = True
-		self.reference = False
+		self.reference = reference
 	
 	def __repr__(self):
 		return str(self)

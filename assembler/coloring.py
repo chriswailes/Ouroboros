@@ -75,12 +75,6 @@ class ColorFactory(object):
 		else:
 			free = list(free)
 		
-		#~print('')
-		#~print("Colors: {0}".format(self.colors))
-		#~print("Interference: {0}".format(allocated))
-		#~print("Free: {0}".format(free))
-		#~print('')
-		
 		if len(free) > 0:
 			free.sort()
 			color = free[0]
@@ -102,8 +96,8 @@ class ColorFactory(object):
 		
 		return color
 	
-	def getDataLabel(self):
-		return self.labeler.nextLabel()
+	def getDataLabel(self, reference = False):
+		return self.labeler.nextLabel(reference)
 	
 	def swapPreference(self):
 		for color in self.colors:
