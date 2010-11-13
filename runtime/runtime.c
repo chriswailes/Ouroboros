@@ -77,65 +77,60 @@ pyobj inject_big(big_pyobj* p) {
   Projecting from pyobj.
 */
 int project_int(pyobj val) {
-  assert((val & MASK) == INT_TAG);
-  return val >> SHIFT;
+	assert((val & MASK) == INT_TAG);
+	return val >> SHIFT;
 }
 int project_bool(pyobj val) {
-  assert((val & MASK) == BOOL_TAG);
-  return val >> SHIFT;
+	assert((val & MASK) == BOOL_TAG);
+	return val >> SHIFT;
 }
 float project_float(pyobj val) {
-  assert((val & MASK) == FLOAT_TAG);
-  return (val >> SHIFT) << SHIFT;
+	assert((val & MASK) == FLOAT_TAG);
+	return (val >> SHIFT) << SHIFT;
 }
 big_pyobj* project_big(pyobj val) {
-  assert((val & MASK) == BIG_TAG);
-  return (big_pyobj*)(val & ~MASK);
+	assert((val & MASK) == BIG_TAG);
+	return (big_pyobj*)(val & ~MASK);
 }
 
 function project_function(pyobj val) {
-  big_pyobj* p = project_big(val);
-  assert(p->tag == FUN);
-  return p->u.f;
+	big_pyobj* p = project_big(val);
+	assert(p->tag == FUN);
+	return p->u.f;
 }
 class project_class(pyobj val) {
-  big_pyobj* p = project_big(val);
-  assert(p->tag == CLASS);
-  return p->u.cl;
+	big_pyobj* p = project_big(val);
+	assert(p->tag == CLASS);
+	return p->u.cl;
 }
 object project_object(pyobj val) {
-  big_pyobj* p = project_big(val);
-  assert(p->tag == OBJECT);
-  return p->u.obj;
+	big_pyobj* p = project_big(val);
+	assert(p->tag == OBJECT);
+	return p->u.obj;
 }
 bound_method project_bound_method(pyobj val) {
-  big_pyobj* p = project_big(val);
-  assert(p->tag == BMETHOD);
-  return p->u.bm;
+	big_pyobj* p = project_big(val);
+	assert(p->tag == BMETHOD);
+	return p->u.bm;
 }
 unbound_method project_unbound_method(pyobj val) {
-  big_pyobj* p = project_big(val);
-  assert(p->tag == UBMETHOD);
-  return p->u.ubm;
+	big_pyobj* p = project_big(val);
+	assert(p->tag == UBMETHOD);
+	return p->u.ubm;
 }
-
-
-/* Not used? */
-//~static int is_zero(pyobj val) {
-  //~return (val >> SHIFT) == 0;
-//~}
 
 static void print_int(int x) {
-  printf("%d", x);
+	printf("%d", x);
 }
 void print_int_nl(int x) {
-  printf("%d\n", x);
+	printf("%d\n", x);
 }
 static void print_bool(int b) {
-  if (b)
-    printf ("True");
-  else
-    printf ("False");
+	if (b) {
+		printf ("True");
+	} else {
+		printf ("False");
+	}
 }
 
 static void print_pyobj(pyobj x) {
@@ -169,15 +164,15 @@ static void print_pyobj(pyobj x) {
 }
 
 int input() {
-  int i;
-  scanf("%d", &i);
-  return i;
+	int i;
+	scanf("%d", &i);
+	return i;
 }
 
 pyobj input_int() {
-  int i;
-  scanf("%d", &i);
-  return inject_int(i);
+	int i;
+	scanf("%d", &i);
+	return inject_int(i);
 }
 
 /*
@@ -198,30 +193,31 @@ big_pyobj* create_list(pyobj length) {
   return list_to_big(l);
 }
 
-//~static pyobj make_list(pyobj length) {
-  //~return inject_big(create_list(length));
-//~}
-
-
-static char is_in_list(list ls, pyobj b)
-{
-    int i;
-    for(i = 0; i < ls.len; i++)
-      if (ls.data[i] == b)
-	return 1;
-    return 0;
+static char is_in_list(list ls, pyobj b) {
+	int i;
+	
+	for(i = 0; i < ls.len; i++) {
+		if (ls.data[i] == b) {
+			return 1;
+		}
+	}
+	
+	return 0;
 }
 
-static int list_equal(list x, list y)
-{
-  char eq = 1;
-  int i;
-  for (i = 0; i != min(x.len, y.len); ++i)
-    eq = eq && equal_pyobj(x.data[i], y.data[i]);
-  if (x.len == y.len)
-    return eq;
-  else
-    return 0;
+static int list_equal(list x, list y) {
+	char eq = 1;
+	int i;
+
+	for (i = 0; i != min(x.len, y.len); ++i) {
+		eq = eq && equal_pyobj(x.data[i], y.data[i]);
+	}
+	
+	if (x.len == y.len) {
+		return eq;
+	} else {
+		return 0;
+	}
 }
 
 
@@ -232,72 +228,78 @@ static int list_equal(list x, list y)
 static char inside;
 static list printing_list;
 
-static void print_dict(pyobj dict)
-{
-    big_pyobj* d;
-    char inside_reset = 0;
-    if(!inside) {
-        inside = 1;
-        inside_reset = 1;
-        printing_list.len = 0;
-	printing_list.data = 0;
-    }
-    d = project_big(dict);
+static void print_dict(pyobj dict) {
+	big_pyobj* d;
+	char inside_reset = 0;
+	
+	if(!inside) {
+		inside = 1;
+		inside_reset = 1;
+		printing_list.len = 0;
+		printing_list.data = 0;
+	}
+    
+	d = project_big(dict);
 
-    if(is_in_list(printing_list, dict)) {
-        printf("{...}");
-        return;
-    }
+	if(is_in_list(printing_list, dict)) {
+		printf("{...}");
+		return;
+	}
+	
     printf("{");
     int i = 0;
     int max = hashtable_count(d->u.d);
 
-    struct hashtable_itr *itr = hashtable_iterator(d->u.d);
-    if (max) {
-        do {
-            pyobj k = *(pyobj *)hashtable_iterator_key(itr);
-            pyobj v = *(pyobj *)hashtable_iterator_value(itr);
-            print_pyobj(k);
-            printf(": ");
-            if (is_in_list(printing_list, v)
-		|| equal_pyobj(v,dict)) {
-	      printf("{...}");
-            }
-            else {
-                /* tally this dictionary in our list of printing dicts */
-	      list a;
-	      a.len = 1;
-	      a.data = (pyobj*)malloc(sizeof(pyobj) * a.len);
-	      a.data[0] = dict;
-	      /* Yuk, concatenating (adding) lists is slow! */
-	      printing_list = list_add(printing_list, a);
-	      print_pyobj(v);
-            }
-            if(i != max - 1)
-                printf(", ");
-            i++;
-        } while (hashtable_iterator_advance(itr));
-    }
-    printf("}");
+	struct hashtable_itr *itr = hashtable_iterator(d->u.d);
+	if (max) {
+		do {
+			pyobj k = *(pyobj *)hashtable_iterator_key(itr);
+			pyobj v = *(pyobj *)hashtable_iterator_value(itr);
+			
+			print_pyobj(k);
+			printf(": ");
+			
+			if (is_in_list(printing_list, v) || equal_pyobj(v,dict)) {
+				printf("{...}");
+			} else {
+				/* tally this dictionary in our list of printing dicts */
+				list a;
+				a.len = 1;
+				a.data = (pyobj*)malloc(sizeof(pyobj) * a.len);
+				a.data[0] = dict;
+				
+				/* Yuk, concatenating (adding) lists is slow! */
+				printing_list = list_add(printing_list, a);
+				print_pyobj(v);
+			}
+			
+			if(i != max - 1) {
+				printf(", ");
+			}
+			
+			i++;
+		} while (hashtable_iterator_advance(itr));
+	}
+	
+	printf("}");
 
-    if(inside_reset) {
-        inside = 0;
-        printing_list.len = 0;
-	printing_list.data = 0;
-    }
+	if(inside_reset) {
+		inside = 0;
+		printing_list.len = 0;
+		printing_list.data = 0;
+	}
 }
 
 
 /* This hash function was chosen more or less at random -Jeremy */
-static int hash32shift(int key)
-{
-  key = ~key + (key << 15); /* key = (key << 15) - key - 1; */
-  key = key ^ (key >> 12);
-  key = key + (key << 2);
-  key = key ^ (key >> 4);
-  key = key * 2057; /* key = (key + (key << 3)) + (key << 11); */
-  key = key ^ (key >> 16);
-  return key;
+static int hash32shift(int key) {
+	key = ~key + (key << 15); /* key = (key << 15) - key - 1; */
+	key = key ^ (key >> 12);
+	key = key + (key << 2);
+	key = key ^ (key >> 4);
+	key = key * 2057; /* key = (key + (key << 3)) + (key << 11); */
+	key = key ^ (key >> 16);
+	return key;
 }
 
 
@@ -360,7 +362,6 @@ static unsigned int hash_any(void* o) {
 	
 	return 0;
 }
-
 
 static struct hashtable *current_cmp_a;
 static struct hashtable *current_cmp_b;
@@ -654,122 +655,139 @@ big_pyobj* add(big_pyobj* a, big_pyobj* b) {
 }
 
 int equal(big_pyobj* a, big_pyobj* b) {
-  switch (a->tag) {
-  case LIST:
-    switch (b->tag) {
-    case LIST:
-      return list_equal(a->u.l, b->u.l);
-    default:
-      return 0;
-    }
-  case DICT:
-    switch (b->tag) {
-    case DICT:
-      return dict_equal(a->u.d, b->u.d);
-    default:
-      return 0;
-    }
-  case CLASS:
-    switch (b->tag) {
-    case CLASS:
-      return a == b;
-    default:
-      return 0;
-    }
-  default:
-    return 0;
-  }
+	switch (a->tag) {
+		case LIST:
+			switch (b->tag) {
+				case LIST:
+					return list_equal(a->u.l, b->u.l);
+				
+				default:
+					return 0;
+			}
+	
+		case DICT:
+			switch (b->tag) {
+				case DICT:
+					return dict_equal(a->u.d, b->u.d);
+				
+				default:
+					return 0;
+			}
+	
+		case CLASS:
+			switch (b->tag) {
+				case CLASS:
+					return a == b;
+				
+				default:
+					return 0;
+			}
+	
+		default:
+			return 0;
+	}
 }
 
 int not_equal(big_pyobj* x, big_pyobj* y) { return !equal(x, y); }
 
-static pyobj subscript_assign(big_pyobj* c, pyobj key, pyobj val)
-{
-  switch (c->tag) {
-  case LIST:
-    return *list_subscript(c->u.l, key) = val;
-  case DICT:
-    return *dict_subscript(c->u.d, key) = val;
-  default:
-    printf("error in set subscript, not a list or dictionary\n");
-    assert(0);
-  }
+static pyobj subscript_assign(big_pyobj* c, pyobj key, pyobj val) {
+	switch (c->tag) {
+		case LIST:
+			return *list_subscript(c->u.l, key) = val;
+
+		case DICT:
+			return *dict_subscript(c->u.d, key) = val;
+
+		default:
+			printf("error in set subscript, not a list or dictionary\n");
+			assert(0);
+	}
 }
 
-pyobj set_subscript(pyobj c, pyobj key, pyobj val)
-{
-  switch (tag(c)) {
-  case BIG_TAG: {
-    big_pyobj* b = project_big(c);
-    return subscript_assign(b, key, val);
-  }
-  default:
-    printf("error in set_subscript, not a list or dictionary.\n");
-    assert(0);
-  }
-  assert(0);
+pyobj set_subscript(pyobj c, pyobj key, pyobj val) {
+	switch (tag(c)) {
+		case BIG_TAG: {
+			big_pyobj* b = project_big(c);
+			return subscript_assign(b, key, val);
+		}
+		
+		default:
+			printf("error in set_subscript, not a list or dictionary.\n");
+			assert(0);
+	}
+	
+	assert(0);
 }
 
-static pyobj subscript(big_pyobj* c, pyobj key)
-{
-  switch (c->tag) {
-  case LIST:
-    return *list_subscript(c->u.l, key);
-  case DICT:
-    return *dict_subscript(c->u.d, key);
-  default:
-    printf("error in set subscript, not a list or dictionary\n");
-    assert(0);
-  }
+static pyobj subscript(big_pyobj* c, pyobj key) {
+	switch (c->tag) {
+		case LIST:
+			return *list_subscript(c->u.l, key);
+		
+		case DICT:
+			return *dict_subscript(c->u.d, key);
+		
+		default:
+			printf("error in set subscript, not a list or dictionary\n");
+			assert(0);
+	}
 }
 
-pyobj get_subscript(pyobj c, pyobj key)
-{
-  switch (tag(c)) {
-  case BIG_TAG: {
-    big_pyobj* b = project_big(c);
-    return subscript(b, key);
-  }
-  default:
-    printf("error in get_subscript, not a list or dictionary\n");
-    assert(0);
-  }
+pyobj get_subscript(pyobj c, pyobj key) {
+	switch (tag(c)) {
+		case BIG_TAG: {
+			big_pyobj* b = project_big(c);
+			return subscript(b, key);
+		}
+		
+		default:
+			printf("error in get_subscript, not a list or dictionary\n");
+			assert(0);
+	}
 }
 
 void print_any(pyobj p) {
-  print_pyobj(p);
-  printf("\n");
+	print_pyobj(p);
+	printf("\n");
 }
 
-int is_true(pyobj v)
-{
-  switch (tag(v)) {
-  case INT_TAG:
-    return project_int(v) != 0;
-  case FLOAT_TAG:
-    return project_float(v) != 0;
-  case BOOL_TAG:
-    return project_bool(v) != 0;
-  case BIG_TAG: {
-    big_pyobj* b = project_big(v);
-    switch (b->tag) {
-    case LIST:
-      return b->u.l.len != 0;
-    case DICT:
-      return hashtable_count(b->u.d) > 0;
-    case FUN:
-      return 1;
-    case CLASS:
-      return 1;
-    case OBJECT:
-      return 1;
-    default:
-      printf("error, unhandled case in is_true\n");
-      assert(0);
-    }
-  }
-  } 
-  assert(0);
+int is_true(pyobj v) {
+	switch (tag(v)) {
+		case INT_TAG:
+			return project_int(v) != 0;
+		
+		case FLOAT_TAG:
+			return project_float(v) != 0;
+		
+		case BOOL_TAG:
+			return project_bool(v) != 0;
+		
+		case BIG_TAG: {
+			big_pyobj* b = project_big(v);
+			
+			switch (b->tag) {
+				case LIST:
+					return b->u.l.len != 0;
+				
+				case DICT:
+					return hashtable_count(b->u.d) > 0;
+				
+				case FUN:
+					return 1;
+				
+				case CLASS:
+					return 1;
+				
+				case OBJECT:
+					return 1;
+				
+				default:
+					printf("error, unhandled case in is_true\n");
+					assert(0);
+			}
+		}
+	} 
+	assert(0);
 }
 
 /* Support for Functions */
@@ -808,267 +826,313 @@ big_pyobj* set_free_vars(big_pyobj* b, pyobj free_vars) {
 
 /* Support for Objects and Classes */
 
-static unsigned int attrname_hash(void *ptr)
-{
-  unsigned char *str = (unsigned char *)ptr;
-  unsigned long hash = 5381;
-  int c;
-  while((c=*str++))
-    hash = ((hash << 5) + hash) ^ c;
-  return hash;
+static unsigned int attrname_hash(void *ptr) {
+	unsigned char *str = (unsigned char *)ptr;
+	unsigned long hash = 5381;
+	int c;
+	
+	while((c=*str++)) {
+		hash = ((hash << 5) + hash) ^ c;
+	}
+	
+	return hash;
 }
 
-static int attrname_equal(void *a, void *b)
-{
-  return !strcmp( (char*)a, (char*)b );
+static int attrname_equal(void *a, void *b) {
+	return !strcmp( (char*)a, (char*)b );
 }
 
-big_pyobj* create_class(pyobj bases)
-{
-  big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
-  ret->tag = CLASS;
-  ret->u.cl.attrs = create_hashtable(2, attrname_hash, attrname_equal);
+big_pyobj* create_class(pyobj bases) {
+	big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
+	ret->tag = CLASS;
+	ret->u.cl.attrs = create_hashtable(2, attrname_hash, attrname_equal);
 
-  big_pyobj* basesp = project_big(bases);
-  switch (basesp->tag) {
-  case LIST: {
-      int i;
-      ret->u.cl.nparents = basesp->u.l.len;
-      ret->u.cl.parents = (class*)malloc(sizeof(class) * ret->u.cl.nparents);
-      for (i = 0; i != ret->u.cl.nparents; ++i) {
-	  pyobj* parent = &basesp->u.l.data[i];
-	  if (tag(*parent) == BIG_TAG && project_big(*parent)->tag == CLASS)
-	      ret->u.cl.parents[i] = project_big(*parent)->u.cl;
-          else
-              exit(-1);
-      }
-      break;
-  }
-  default:
-    exit(-1);
-  }
-  return ret;
+	big_pyobj* basesp = project_big(bases);
+	
+	switch (basesp->tag) {
+		case LIST: {
+			int i;
+			ret->u.cl.nparents = basesp->u.l.len;
+			ret->u.cl.parents = (class*)malloc(sizeof(class) * ret->u.cl.nparents);
+
+			for (i = 0; i != ret->u.cl.nparents; ++i) {
+				pyobj* parent = &basesp->u.l.data[i];
+
+				if (tag(*parent) == BIG_TAG && project_big(*parent)->tag == CLASS) {
+					ret->u.cl.parents[i] = project_big(*parent)->u.cl;
+				} else {
+					exit(-1);
+				}
+			}
+			
+			break;
+		}
+
+		default:
+			exit(-1);
+	}
+	
+	return ret;
 }
 
 /* we leave calling the __init__ function for a separate step. */
 big_pyobj* create_object(pyobj cl) {
-  big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
-  ret->tag = OBJECT;
-  big_pyobj* clp = project_big(cl);
-  if (clp->tag == CLASS)
-    ret->u.obj.cl = clp->u.cl;
-  else {
-    printf("in make object, expected a class\n");
-    exit(-1);
-  }
-  ret->u.obj.attrs = create_hashtable(2, attrname_hash, attrname_equal);
-  return ret;
+	big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
+	ret->tag = OBJECT;
+	big_pyobj* clp = project_big(cl);
+	
+	if (clp->tag == CLASS) {
+		ret->u.obj.cl = clp->u.cl;
+	} else {
+		printf("in make object, expected a class\n");
+		exit(-1);
+	}
+	
+	ret->u.obj.attrs = create_hashtable(2, attrname_hash, attrname_equal);
+	return ret;
 }
 
 static pyobj* attrsearch_rec(class cl, char* attr) {
-    pyobj* ptr;
-    int i;
-    ptr = hashtable_search(cl.attrs, attr);
+	pyobj* ptr;
+	int i;
+	ptr = hashtable_search(cl.attrs, attr);
 
-    if(ptr == NULL) {
-        for(i=0; i != cl.nparents; ++i) {
-            ptr = attrsearch_rec(cl.parents[i], attr);
-            if (ptr != NULL)
-                return ptr;
-        }
-        return NULL;
-    } else
-        return ptr;
+	if(ptr == NULL) {
+		for(i=0; i != cl.nparents; ++i) {
+			ptr = attrsearch_rec(cl.parents[i], attr);
+		
+			if (ptr != NULL) {
+				return ptr;
+			}
+		}
+		
+		return NULL;
+	} else {
+		return ptr;
+	}
 }
 
 static pyobj* attrsearch(class cl, char* attr) {
-    pyobj* ret = attrsearch_rec(cl, attr);
-    if (ret == NULL) {
-        printf("attribute %s not found\n", attr);
-        exit(-1);
-    }
-    return ret;
+	pyobj* ret = attrsearch_rec(cl, attr);
+	
+	if (ret == NULL) {
+		printf("attribute %s not found\n", attr);
+		exit(-1);
+	}
+	
+	return ret;
 }
 
 static big_pyobj* create_bound_method(object receiver, function f) {
-  big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
-  ret->tag = BMETHOD;
-  ret->u.bm.fun = f;
-  ret->u.bm.receiver = receiver;
-  return ret;
+	big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
+	
+	ret->tag = BMETHOD;
+	ret->u.bm.fun = f;
+	ret->u.bm.receiver = receiver;
+	
+	return ret;
 }
 
 static big_pyobj* create_unbound_method(class cl, function f) {
-  big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
-  ret->tag = UBMETHOD;
-  ret->u.ubm.fun = f;
-  ret->u.ubm.cl = cl;
-  return ret;
+	big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
+	
+	ret->tag = UBMETHOD;
+	ret->u.ubm.fun = f;
+	ret->u.ubm.cl = cl;
+	
+	return ret;
 }
 
-int has_attr(pyobj o, char* attr)
-{
-  if (tag(o) == BIG_TAG) {
-    big_pyobj* b = project_big(o);
-    switch (b->tag) {
-    case CLASS: {
-      pyobj* attribute = attrsearch_rec(b->u.cl, attr);
-      return attribute != NULL;
-    }
-    case OBJECT: {
-      pyobj* attribute = hashtable_search(b->u.obj.attrs, attr);
-      if (attribute == NULL) {
-        attribute = attrsearch_rec(b->u.cl, attr);
-        return attribute != NULL;
-      } else {
-        return 1;
-      }
-    }
-    default:
-      return 0;
-    }
-  } else
-    return 0;
+int has_attr(pyobj o, char* attr) {
+	if (tag(o) == BIG_TAG) {
+		big_pyobj* b = project_big(o);
+		
+		switch (b->tag) {
+			case CLASS: {
+				pyobj* attribute = attrsearch_rec(b->u.cl, attr);
+				return attribute != NULL;
+			}
+			
+			case OBJECT: {
+				pyobj* attribute = hashtable_search(b->u.obj.attrs, attr);
+				
+				if (attribute == NULL) {
+					attribute = attrsearch_rec(b->u.cl, attr);
+					return attribute != NULL;
+				} else {
+					return 1;
+				}
+			}
+			
+			default:
+				return 0;
+		}
+	} else {
+		return 0;
+	}
 }
 
 static int inherits_rec(class c1, class c2) {
-  int ret = 0;
-  if (c1.attrs == c2.attrs) {
-    ret = 1;
-  } else {
-    int i;
-    for(i=0; i != c1.nparents; ++i) {
-      ret = inherits_rec(c1.parents[i], c2);
-      if (ret)
-        break;
-        }
-  } 
-  return ret;
+	int ret = 0;
+	
+	if (c1.attrs == c2.attrs) {
+		ret = 1;
+	} else {
+	
+		int i;
+		for(i=0; i != c1.nparents; ++i) {
+			ret = inherits_rec(c1.parents[i], c2);
+
+			if (ret) {
+				break;
+			}
+		}
+	} 
+
+	return ret;
 }
 
 int inherits(pyobj c1, pyobj c2) {
-  return inherits_rec(project_class(c1), project_class(c2));
+	return inherits_rec(project_class(c1), project_class(c2));
 }
 
-big_pyobj* get_class(pyobj o)
-{
-  big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
-  ret->tag = CLASS;
+big_pyobj* get_class(pyobj o) {
+	big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
+	ret->tag = CLASS;
 
-  big_pyobj* b = project_big(o);
-  switch (b->tag) {
-  case OBJECT:
-    ret->u.cl = b->u.obj.cl;
-    break;
-  case UBMETHOD:
-    ret->u.cl = b->u.ubm.cl;
-    break;
-  default:
-    printf("get_class expected object or unbound method\n");
-    exit(-1);
-  }
-  return ret;
+	big_pyobj* b = project_big(o);
+	
+	switch (b->tag) {
+		case OBJECT:
+			ret->u.cl = b->u.obj.cl;
+			break;
+		
+		case UBMETHOD:
+			ret->u.cl = b->u.ubm.cl;
+			break;
+		
+		default:
+			printf("get_class expected object or unbound method\n");
+			exit(-1);
+	}
+	
+	return ret;
 }
 
-big_pyobj* get_receiver(pyobj o)
-{
-  big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
-  ret->tag = OBJECT;
-  big_pyobj* b = project_big(o);
-  switch (b->tag) {
-  case BMETHOD:
-    ret->u.obj = b->u.bm.receiver;
-    break;
-  default:
-    printf("get_receiver expected bound method\n");
-    exit(-1);
-  }
-  return ret;
+big_pyobj* get_receiver(pyobj o) {
+	big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
+	ret->tag = OBJECT;
+	big_pyobj* b = project_big(o);
+	
+	switch (b->tag) {
+		case BMETHOD:
+			ret->u.obj = b->u.bm.receiver;
+			break;
+		
+		default:
+			printf("get_receiver expected bound method\n");
+			exit(-1);
+	}
+	
+	return ret;
 }
 
-big_pyobj* get_function(pyobj o)
-{
-  big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
-  ret->tag = FUN;
-  big_pyobj* b = project_big(o);
-  switch (b->tag) {
-  case BMETHOD:
-    ret->u.f = b->u.bm.fun;
-    break;
-  case UBMETHOD:
-    ret->u.f = b->u.ubm.fun;
-    break;
-  default:
-    printf("get_function expected a method\n");
-    exit(-1);
-  }
-  return ret;
+big_pyobj* get_function(pyobj o) {
+	big_pyobj* ret = (big_pyobj*)malloc(sizeof(big_pyobj));
+	ret->tag = FUN;
+	big_pyobj* b = project_big(o);
+	
+	switch (b->tag) {
+		case BMETHOD:
+			ret->u.f = b->u.bm.fun;
+			break;
+		
+		case UBMETHOD:
+			ret->u.f = b->u.ubm.fun;
+			break;
+		
+		default:
+			printf("get_function expected a method\n");
+			exit(-1);
+	}
+	
+	return ret;
 }
 
-pyobj get_attr(pyobj c, char* attr)
-{
-  big_pyobj* b = project_big(c);
-  switch (b->tag) {
-  case CLASS: {
-    pyobj* attribute = attrsearch(b->u.cl, attr);
-    if (is_function(*attribute)) {
-      return inject_big(create_unbound_method(b->u.cl, project_function(*attribute)));
-    } else {
-      return *attribute;
-    }
-  }
-  case OBJECT: {
-    pyobj* attribute = hashtable_search(b->u.obj.attrs, attr);
-    if (attribute == NULL) {
-        attribute = attrsearch(b->u.obj.cl, attr);
-        if (is_function(*attribute)) {
-          return inject_big(create_bound_method(b->u.obj, project_function(*attribute)));
-        } else {
-          return *attribute;
-        }
-    } else {
-      return *attribute;
-    }
-  }  
-  default:
-    printf("error in get attribute, not a class or object\n");
-    exit(-1);
-  }
+pyobj get_attr(pyobj c, char* attr) {
+	big_pyobj* b = project_big(c);
+	
+	switch (b->tag) {
+		case CLASS: {
+			pyobj* attribute = attrsearch(b->u.cl, attr);
+			
+			if (is_function(*attribute)) {
+				return inject_big(create_unbound_method(b->u.cl, project_function(*attribute)));
+			} else {
+				return *attribute;
+			}
+		}
+		
+		case OBJECT: {
+			pyobj* attribute = hashtable_search(b->u.obj.attrs, attr);
+			
+			if (attribute == NULL) {
+				attribute = attrsearch(b->u.obj.cl, attr);
+				
+				if (is_function(*attribute)) {
+					return inject_big(create_bound_method(b->u.obj, project_function(*attribute)));
+				} else {
+					return *attribute;
+				}
+				
+			} else {
+				return *attribute;
+			}
+		}
+		
+		default:
+			printf("error in get attribute, not a class or object\n");
+			exit(-1);
+	}
 }
 
-pyobj set_attr(pyobj obj, char* attr, pyobj val)
-{
-    char* k;
-    pyobj* v;
-    k = (char *)malloc(strlen(attr)+1);
-    v = (pyobj *)malloc(sizeof(pyobj));
-    strcpy(k, attr);
-    *v = val;
-    
-    struct hashtable* attrs;
-    
-    big_pyobj* b = project_big(obj);
-    switch (b->tag) {
-    case CLASS:
-      attrs = b->u.cl.attrs;
-      break;
-    case OBJECT:
-      attrs = b->u.obj.attrs;
-      break;
-    default:
-      printf("error, expected object or class in set attribute\n");
-      exit(-1);
-    }
+pyobj set_attr(pyobj obj, char* attr, pyobj val) {
+	char* k;
+	pyobj* v;
+	k = (char *)malloc(strlen(attr)+1);
+	v = (pyobj *)malloc(sizeof(pyobj));
+	strcpy(k, attr);
+	*v = val;
 
-    if(!hashtable_change(attrs, k, v))
-        if(!hashtable_insert(attrs, k, v)) {
-           printf("out of memory");
-           exit(-1);
-        }
-    return val;
+	struct hashtable* attrs;
+
+	big_pyobj* b = project_big(obj);
+	
+	switch (b->tag) {
+		case CLASS:
+			attrs = b->u.cl.attrs;
+			break;
+			
+		case OBJECT:
+			attrs = b->u.obj.attrs;
+			break;
+			
+		default:
+			printf("error, expected object or class in set attribute\n");
+			exit(-1);
+	}
+
+	if(!hashtable_change(attrs, k, v)) {
+		if(!hashtable_insert(attrs, k, v)) {
+			printf("out of memory");
+			exit(-1);
+		}
+	}
+	
+	return val;
 }
 
 pyobj error_pyobj(char* string) {
-  printf(string);
-  exit(-1);
+	printf(string);
+	exit(-1);
 }

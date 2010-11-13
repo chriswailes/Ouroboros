@@ -305,6 +305,12 @@ def selectInstructions(node, cf, dest = None):
 				jmp = 'je'
 			
 			#Build the case where we need to call the equal function.
+			if isinstance(left, Register):
+				case0.append(untag(left, OBJ))
+			
+			if isinstance(right, Register):
+				case0.append(untag(right, OBJ))
+			
 			case0.append(OneOp('push', right))
 			case0.append(OneOp('push', left))
 			
@@ -312,7 +318,15 @@ def selectInstructions(node, cf, dest = None):
 			case0.append(TwoOp('add', Immediate(8), esp))
 			
 			case0.append(tag(eax, BOOL))
-			case0.append(move(eax, tmpColor0))
+			
+			if isinstance(left, Register) and left != eax:
+				case0.append(tag(left))
+			
+			if isinstance(right, Register) and right != eax:
+				case0.append(tag(right))
+			
+			if tmpColor0 != eax:
+				case0.append(move(eax, tmpColor0))
 			
 			case2 = move(TRU, tmpColor0)
 			case3 = move(FALS, tmpColor0)

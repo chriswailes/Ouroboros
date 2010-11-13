@@ -13,12 +13,12 @@ args		= []
 
 def init():
 	from transforms.pass_manager import register
-	register('const_prop', propigateConstants, analysis, args)
+	register('const_prop', propagateConstants, analysis, args)
 
-def propigateConstants(tree):
+def propagateConstants(tree):
 	
 	#This will only propigate local constants.
-	consts = propigateConstantsPrime(tree, {})
+	consts = propagateConstantsPrime(tree, {})
 	
 	#Here we sort out the global constants.
 	globls = {}
@@ -29,9 +29,9 @@ def propigateConstants(tree):
 	#This pass will replace global constant values.  This is what propigates
 	#function names.  More work will need to go into this for proper scoping
 	#(if Python can be said to have proper scoping).
-	propigateConstantsPrime(tree, globls, False)
+	propagateConstantsPrime(tree, globls, False)
 
-def propigateConstantsPrime(node, consts, gather = True):
+def propagateConstantsPrime(node, consts, gather = True):
 	#Memorize or replace symbol values, as appropriate.
 	if gather and isinstance(node, Assign) and isinstance(node.var, Symbol) and classGuard(node.exp, Boolean, Integer, Name):
 		consts[node.var] = node.exp
@@ -41,7 +41,7 @@ def propigateConstantsPrime(node, consts, gather = True):
 	
 	#Values in Phi nodes should never be replaced.
 	if not isinstance(node, Phi):
-		newChildren = [propigateConstantsPrime(child, consts, gather) for child in node]
+		newChildren = [propagateConstantsPrime(child, consts, gather) for child in node]
 		node.setChildren(newChildren)
 	
 	return consts if isinstance(node, Module) else node

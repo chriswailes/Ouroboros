@@ -24,8 +24,11 @@ def discard(node):
 				sym = extractSymbol(child)
 				
 				#Throw out variables that are never read.
-				if sym['reads'] != 0:
+				if sym['reads'] != 0 or isinstance(child.exp, Class):
 					newChildren.append(child)
+				
+				else:
+					print("Discarding node: {0}\n".format(child))
 			
 			#If it is a Statement or a FunctionCall we need to keep the child.
 			elif classGuard(child, Class, Function, FunctionCall, Statement):

@@ -112,7 +112,7 @@ def tag(obj, typ = None):
 		raise Exception("Trying to tag a value that isn't in a register.")
 
 def untag(reg, typ = INT):
-	global TAG_SIZE
+	global TAG_SIZE, REST_MASK
 	
 	if config.arch == 'x86':
 		from assembler.x86.ib import TwoOp, OneOp

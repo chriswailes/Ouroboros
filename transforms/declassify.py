@@ -6,7 +6,7 @@ Description:	A transformation that transforms a class definition into simple
 			AST nodes.
 """
 
-from assembler.tagging import OBJ
+from assembler.tagging import BOOL, OBJ
 
 from lib.ast import *
 from lib import util
@@ -46,7 +46,31 @@ def declassify(node, st = None, strings = None, klass = None):
 		
 		node = SetAttr(klass, string, node.exp)
 	
-	else:
+	elif isinstance(node, FunctionCall):
+		if isinstance(node.name, Symbol) and node.name.has_key('type') and node.name['type'] == 'class':
+			sym = st.getSymbol(assign = True)
+			string = strings.setdefault('__init__', String('__init__'))
+			
+			base = node.name
+			fun = FunctionCall(st.getName('create_object'), base)
+			fun.tag = OBJ
+			
+			preStmts.append(Assign(sym, fun))
+			
+			cond = FunctionCall(st.getName('has_attr'), base, string)
+			cond.tag = BOOL
+			
+			then = BasicBlock([FunctionCall(GetAttr(base, string), sym, *node.args)])
+			els_ = BasicBlock([])
+			
+			preStmts.append(If(cond, then, els_, Join()))
+			
+			node = sym
+		
+		elif isinstance(node.name, GetAttr) and not node.name.exp.has_key('type'):
+			node.args.insert(0, node.name.exp)
+	
+	if not isinstance(node, Class):
 		#Declassify the children of this node.
 		for child in node:
 			childPreStmts, newChild = declassify(child, st, strings, klass)

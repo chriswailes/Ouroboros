@@ -30,14 +30,23 @@ def translate(node, st = None, strings = None, jn = None, funcName = False):
 	elif isinstance(node, oast.Assign):
 		#Translate the right hand side first so it can use the older version
 		#of the left hand side.
-		expr	= translate(node.expr, st, strings, jn)
-		var	= translate(node.nodes.pop(), st, strings, jn)
+		exp	= translate(node.expr, st, strings, jn)
+		var = node.nodes.pop()
 		
-		if jn != None:
-			#Add this new assignment to the join node.
-			jn.addSymbol(var, st)
+		if isinstance(var, oast.AssAttr):
+			string = strings.setdefault(var.attrname, ast.String(var.attrname))
+			var = translate(var.expr, st, strings, jn)
+			
+			return ast.SetAttr(var, string, exp)
 		
-		return ast.Assign(var, expr)
+		else:
+			var	= translate(var, st, strings, jn)
+			
+			if jn != None:
+				#Add this new assignment to the join node.
+				jn.addSymbol(var, st)
+			
+			return ast.Assign(var, exp)
 	
 	elif isinstance(node, oast.AssName):
 		return st.getSymbol(node.name, True)
@@ -51,6 +60,9 @@ def translate(node, st = None, strings = None, jn = None, funcName = False):
 	elif isinstance(node, oast.Class):
 		sym = st.getSymbol(node.name, True)
 		name = st.getName(node.name, False, True)
+		
+		#This is here temporarily.  It will be moved to the typify pass later.
+		sym['type'] = 'class'
 		
 		bases = [translate(base, st, strings, jn) for base in node.bases]
 		body = ast.BasicBlock(translate(node.code, st, strings, jn))
@@ -118,8 +130,7 @@ def translate(node, st = None, strings = None, jn = None, funcName = False):
 		return ast.Assign(sym, fun)
 	
 	elif isinstance(node, oast.Getattr):
-		exp = translate(node.expr, st, jn)
-		#~name = st.getName(node.attrname)
+		exp = translate(node.expr, st, strings, jn)
 		name = strings.setdefault(node.attrname, ast.String(node.attrname))
 		
 		return ast.GetAttr(exp, name)
