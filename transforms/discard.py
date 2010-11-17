@@ -27,6 +27,9 @@ def discard(node):
 				if sym['reads'] != 0 or isinstance(child.exp, Class):
 					newChildren.append(child)
 				
+				elif isinstance(child.exp, FunctionCall):
+					newChildren.append(child.exp)
+				
 				else:
 					print("Discarding node: {0}\n".format(child))
 			

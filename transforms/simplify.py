@@ -148,23 +148,23 @@ def simplify(node, st = None):
 		funName = st.getName('get_subscript')
 		node = FunctionCall(funName, node.symbol, node.subscript)
 	
-	elif isinstance(node, While):
-		reads = node.body.collectSymbols('r') | node.condBody.collectSymbols('r')
-		
-		#Set up our callTest lambda.
-		callTest = lambda node: not isinstance(node, Phi)
-		
-		#Add symbols the the Join node as necessary and replace their reads
-		#with reads from the Phi target.
-		for sym0 in reads:
-			if sym0 in node['pre-alive']:
-				sym1 = node.jn.addSymbol(sym0)
-				
-				#Set up our substituteTest and replacement lambdas.
-				substituteTest	= lambda node: isinstance(node, Symbol) and node == sym0
-				replacement	= lambda node: sym1
-				
-				util.substitute(node, callTest, substituteTest, replacement)
+	#~elif isinstance(node, While):
+		#~reads = node.body.collectSymbols('r') | node.condBody.collectSymbols('r')
+		#~
+		#~#Set up our callTest lambda.
+		#~callTest = lambda node: not isinstance(node, Phi)
+		#~
+		#~#Add symbols the the Join node as necessary and replace their reads
+		#~#with reads from the Phi target.
+		#~for sym0 in reads:
+			#~if sym0 in node['pre-alive']:
+				#~sym1 = node.jn.addSymbol(sym0)
+				#~
+				#~#Set up our substituteTest and replacement lambdas.
+				#~substituteTest	= lambda node: isinstance(node, Symbol) and node == sym0
+				#~replacement	= lambda node: sym1
+				#~
+				#~util.substitute(node, callTest, substituteTest, replacement)
 	
 	#Flatten our list of pre-statements.
 	preStmts = util.flatten(preStmts)

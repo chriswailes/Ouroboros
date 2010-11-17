@@ -55,6 +55,9 @@ if config.startStage == 'python':
 	# AST Transformations #
 	#######################
 	
+	print(tree.toPython())
+	print('')
+	
 	#Constant folding and propigation and discarding of useless nodes.
 	runTransform(tree, ['const_prop', 'discard', 'const_fold'])
 	

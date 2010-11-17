@@ -272,9 +272,10 @@ def selectInstructions(node, cf, dest = None):
 			
 			else:
 				code.append(TwoOp('imul', right, tmpColor0))
+				code.append(tag(right, INT))
 		
 		elif isinstance(node, ast.Sub):
-			if isinstance(right, Immediate) and right == 1:
+			if isinstance(right, Immediate) and right.value == 1:
 				code.append(OneOp('dec', tmpColor0))
 			
 			else:

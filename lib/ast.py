@@ -89,8 +89,12 @@ class Join(Node):
 				phi0 = phi1
 				break
 		
-		if phi0 != None and sym != phi0.target and sym not in phi0.srcs:
-			phi0.addSrc(sym)
+		if phi0 != None:
+			if sym != phi0.target and sym not in phi0.srcs:
+				phi0.addSrc(sym)
+			
+			else:
+				return sym
 		
 		elif st != None:
 			target = st.getSymbol(sym.name, True)
