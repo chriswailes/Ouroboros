@@ -62,9 +62,9 @@ def spans(node, count = 0, alive = None):
 	
 	#Symbols don't have any pre/post-alive information due to their Singleton
 	#nature.
-	if not classGuard(node, Symbol, Name):
+	if not classGuard(node, Name, String, Symbol):
 		for sym in alive:
-			if isinstance(node, Module) or sym not in node['post-alive']:
+			if isinstance(node, Function) or sym not in node['post-alive']:
 				sym['span-start'] = alive[sym]
 				sym['span-end'  ] = count - 1
 				sym['span'] = sym['span-end'] - sym['span-start']

@@ -23,7 +23,7 @@ def liveness(node, alive = []):
 			if sym.has_key('tmp'):
 				del sym['tmp']
 	
-	if not isinstance(node, Symbol):
+	if not classGuard(node, Name, String, Symbol):
 		node['pre-alive'] = set(alive)
 	
 	if isinstance(node, Function):
@@ -56,5 +56,5 @@ def liveness(node, alive = []):
 			sym['tmp'] = sym['reads']
 			alive.append(sym)
 	
-	if not isinstance(node, Symbol):
+	if not classGuard(node, Name, String, Symbol):
 		node['post-alive'] = set(alive)

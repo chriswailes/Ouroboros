@@ -22,10 +22,10 @@ def reads(node):
 			if sym.has_key('reads'):
 				del sym['reads']
 	
-	if classGuard(node, Assign, Phi) and not extractSymbol(node).has_key('reads'):
+	elif classGuard(node, Assign, Phi) and not extractSymbol(node).has_key('reads'):
 		extractSymbol(node)['reads'] = 0
 	
-	elif classGuard(node, Function):
+	elif isinstance(node, Function):
 		for sym in node.argSymbols:
 			sym['reads'] = 0
 	

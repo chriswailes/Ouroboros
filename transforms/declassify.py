@@ -44,6 +44,8 @@ def declassify(node, st = None, strings = None, klass = None):
 		string = node.var.name
 		string = strings.setdefault(string, String(string))
 		
+		#~sym = st.getSymbol()
+		
 		node = SetAttr(klass, string, node.exp)
 	
 	elif isinstance(node, FunctionCall):

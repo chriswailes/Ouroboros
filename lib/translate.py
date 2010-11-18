@@ -58,16 +58,16 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		return ast.FunctionCall(name, *args)
 	
 	elif isinstance(node, oast.Class):
+		bases = [translate(base, st, strings, jn, funcName, wile) for base in node.bases]
+		
+		body = translate(node.code, st, strings, jn, funcName, wile)
+		body = ast.BasicBlock(body)
+		
 		sym = st.getSymbol(node.name, True)
 		name = st.getName(node.name, False, True)
 		
 		#This is here temporarily.  It will be moved to the typify pass later.
 		sym['type'] = 'class'
-		
-		bases = [translate(base, st, strings, jn, funcName, wile) for base in node.bases]
-		
-		body = translate(node.code, st, strings, jn, funcName, wile)
-		body = ast.BasicBlock(body)
 		
 		klass = ast.Class(name, bases, body)
 		

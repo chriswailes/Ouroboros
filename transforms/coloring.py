@@ -112,6 +112,11 @@ def colorPrime(node, cf, ig, chains):
 				if color == None:
 					color = cf.getColor(ig[sym], preferCaller = not sym['spans-funcall'])
 				
+				#~print("Selected color {0} from {1}".format(color, sym))
+				#~if isinstance(color, Mem):
+					#~print(ig[sym])
+					#~print('')
+				
 				sym['color'] = color
 	
 	elif isinstance(node, String):

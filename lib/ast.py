@@ -196,7 +196,7 @@ class Function(Node):
 		return [self.block]
 	
 	def setChildren(self, children):
-		self.block = children[-1]
+		self.block = children[0]
 	
 	def toPython(self, level = 0):
 		argNames = ', '.join(map(lambda sym: str(sym), self.argSymbols))
@@ -459,7 +459,7 @@ class SetAttr(Expression):
 		self.value = children[2]
 	
 	def toPython(self, level = 0):
-		return "{0}.{1} = {2}".format(*[child.toPython(level) for child in node])
+		return "{0}.{1} = {2}".format(*[child.toPython(level) for child in self])
 
 class BinOp(Expression):
 	def __init__(self, operator, left, right):
