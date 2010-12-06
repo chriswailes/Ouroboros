@@ -8,6 +8,7 @@ Description:	The actual register allocation code.
 from assembler.coloring import *
 
 from lib.ast import *
+from lib.util import unset
 
 analysis0	= ['interference', 'related', 'chains', 'heapify']
 args0	= ['ig', 'chains', 'cf']
@@ -35,7 +36,7 @@ def color(tree, ig, chains, cf = None):
 def spill(tree, spillSets, ig):
 	cf = ColorFactory()
 	
-	clearColoring(tree)
+	unset(tree, ['color'])
 	
 	kicks = []
 	
@@ -56,10 +57,6 @@ def spill(tree, spillSets, ig):
 ####################
 # Helper Functions #
 ####################
-
-def clearColoring(tree):
-	for sym in tree.collectSymbols():
-		del sym['color']
 
 def colorPrime(node, cf, ig, chains):
 	#Color new symbol.

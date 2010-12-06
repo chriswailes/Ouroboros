@@ -25,28 +25,25 @@ class SymbolTable(object):
 			self.readSnapshots	= []
 			self.writeCounters	= {}
 	
-	def getName(self, name, bif = True, define = False):
-		#Left value  -> next assignment
-		#Right value -> current read
+	def getBIF(self, name):
+		return self.getSingleton(Name, name, -1)
+	
+	def getName(self, name, define = False):
+		key = (Name, name)
 		
-		if bif:
-			return self.getSingleton(name, -1, Name)
+		if self.writeCounters.has_key(key):
+			if define:
+				next = self.writeCounters[key] + 1
+				
+				self.setVersion(key, next)
 		
 		else:
-			if self.names.has_key(name):
-				if define:
-					a, _ = self.names[name]
-					self.names[name] = (a + 1, a + 1)
-			
-			else:
-				self.names[name] = (0, 0)
-			
-			_, b = self.names[name]
-			return self.getSingleton(name, b, Name)
+			self.setVersion(key, 0)
+		
+		return self.getSingleton(Name, name, self.readCounters[key])
 	
-	def getSingleton(self, name, version, typ = Symbol):
+	def getSingleton(self, typ, name, version):
 		trip = (typ, name, version)
-		ret = None
 		
 		if self.singletons.has_key(trip):
 			ret = self.singletons[trip]
@@ -57,22 +54,19 @@ class SymbolTable(object):
 		return ret
 	
 	def getSymbol(self, name, assign = False):
-		#Left value  -> next assignment
-		#Right value -> current read
-		
+		key = (Symbol, nam)
 		readBeforeWrite = False
 		
-		if self.symbols.has_key(name):
+		if self.writeCounters.has_key(key):
 			if assign:
-				a, _ = self.symbols[name]
-				self.symbols[name] = (a + 1, a + 1)
+				next = self.writeCounters[key] + 1
+				self.setVersion(key, next)
+		
 		else:
-			self.symbols[name] = (0, 0)
-			
+			self.setVersion(key, 0)
 			readBeforeWrite = not assign
 		
-		_, b = self.symbols[name]
-		ret = self.getSingleton(name, b)
+		ret = self.getSingleton(Symbol, name, self.readCounters[key])
 		ret['rbw'] = readBeforeWrite
 		
 		return ret
@@ -85,6 +79,9 @@ class SymbolTable(object):
 	
 	def rollback(self):
 		self.readCounters = self.readSnapshots.pop()
+	
+	def setVersion(key, version):
+		self.readCounters[key] = self.writeCounters[key] = version
 	
 	def snapshot(self):
 		self.readSnapshots.append(self.readCounters)

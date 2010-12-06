@@ -34,6 +34,17 @@ class Node(dict):
 	def isSimple(self):
 		return True
 	
+	def returns(self):
+		ret = False
+		
+		for child in self:
+			ret = child.returns()
+			
+			if ret:
+				break
+		
+		return ret
+	
 	def setChildren(self, children):
 		pass
 
@@ -47,7 +58,10 @@ class Phi(Node):
 		self.srcs = list(srcs)
 	
 	def __repr__(self):
-		return 'Phi(' + repr(self.target) + ', ' + repr(self.srcs) + ')'
+		return "Phi({!r}, {!r})".format(
+			self.target,
+			self.srcs
+		)
 	
 	def addSrc(self, src):
 		self.srcs.append(src)
@@ -83,7 +97,9 @@ class Join(Node):
 		self.phis = []
 	
 	def __repr__(self):
-		return 'Join(' + repr(self.phis) + ')'
+		return "Join({!r})".format(
+			self.phis
+		)
 	
 	def addSymbol(self, sym, st = None):
 		phi0 = None
@@ -129,7 +145,9 @@ class BasicBlock(Node):
 		self.children = children
 	
 	def __repr__(self):
-		return 'BasicBlock(' + repr(self.children) + ')'
+		return "BasicBlock({!r})".format(
+			self.children
+		)
 	
 	def getChildren(self):
 		return self.children
@@ -156,7 +174,11 @@ class Class(Node):
 		self.body = body
 	
 	def __repr__(self):
-		return "Class({0}, Bases: {1}, Body: {2}".format(repr(self.name), repr(self.bases), repr(self.body))
+		return "Class({!r}, Bases: {!r}, Body: {!r})".format(
+			self.name,
+			self.bases,
+			self.body
+		)
 	
 	def getChildren(self):
 		tmp = [self.name] + self.bases + [self.body]
@@ -186,7 +208,11 @@ class Function(Node):
 		self.st = st
 	
 	def __repr__(self):
-		return "Function({0}, {1}, {2})".format(repr(self.name), repr(self.argSymbols), repr(self.block))
+		return "Function({!r}, {!r}, {!r})".format(
+			self.name,
+			self.argSymbols,
+			self.block
+		)
 	
 	def collectSymbols(self, which = 'a'):
 		syms = self.block.collectSymbols(which)
@@ -216,7 +242,10 @@ class Module(Node):
 		self.strings = strings
 	
 	def __repr__(self):
-		return "Module({0}, Strings: {1})".format(repr(self.functions), repr(self.strings))
+		return "Module({!r}, Strings: {!r}".format(
+			self.functions,
+			self.strings
+		)
 	
 	def getChildren(self):
 		return self.functions
@@ -245,7 +274,10 @@ class Assign(Statement):
 		self.exp = exp
 	
 	def __repr__(self):
-		return "Assign({0}, {1})".format(repr(self.var), repr(self.exp))
+		return "Assign({!r}, {!r})".format(
+			self.var,
+			self.exp
+		)
 	
 	def collectSymbols(self, which = 'a'):
 		syms = self.exp.collectSymbols(which)
@@ -281,7 +313,12 @@ class If(Statement):
 			raise Exception("Not a basic block.")
 	
 	def __repr__(self):
-		return "If(Cond: {0}, Then: {1}, Else: {2}, Join: {3})".format(repr(self.cond), repr(self.then), repr(self.els), repr(self.jn))
+		return "If(Cond: {!r}, Then: {!r}, Else: {!r, Join: {!r})".format(
+			self.cond,
+			self.then,
+			self.els,
+			self.jn
+		)
 	
 	def collectSymbols(self, which = 'a'):
 		if which == 'w':
@@ -297,6 +334,9 @@ class If(Statement):
 	
 	def getChildren(self):
 		return [self.cond, self.then, self.els, self.jn]
+	
+	def returns(self):
+		return self.then.returns() and self.els.returns()
 	
 	def setChildren(self, children):
 		self.cond = children[0]
@@ -317,7 +357,13 @@ class If(Statement):
 		return ret
 	
 	def updateJoin(self):
-		syms = self.then.collectSymbols('w') | self.els.collectSymbols('w')
+		syms = set([])
+		
+		if not self.then.returns():
+			syms |= self.then.collectSymbols('w')
+		
+		if not self.els.returns():
+			syms |= self.els.collecTSymbols('w')
 		
 		for sym in syms:
 			jn.addSymbol(sym)
@@ -327,10 +373,15 @@ class Return(Statement):
 		self.value = value
 	
 	def __repr__(self):
-		return "Return({0})".format(repr(self.value))
+		return "Return({!r})".format(
+			self.value
+		)
 	
 	def getChildren(self):
 		return [self.value]
+	
+	def returns(self):
+		return True
 	
 	def setChildren(self, children):
 		self.value = children[0]
@@ -350,7 +401,12 @@ class While(Statement):
 		self.condBody = BasicBlock([])
 	
 	def __repr__(self):
-		return "While(Cond: {0}, CondBody: {1}, Body: {2}, Join: {3})".format(self.cond, self.condBody, self.body, self.jn)
+		return "While(Cond: {!r}, CondBody: {!r}, Body: {!r}, Join: {!r})".format(
+			self.cond,
+			self.condBody,
+			self.body,
+			self.jn
+		)
 	
 	def collectSymbols(self, which = 'a'):
 		if which == 'w':
@@ -414,7 +470,11 @@ class IfExp(Expression):
 		self.els	= els
 	
 	def __repr__(self):
-		return "IfExp(Cond: {0}, Then: {1}, Else: {2})".format(repr(self.cond), repr(self.then), repr(self.els))
+		return "IfExp(Cond: {!r}, Then: {!r}, Else: {!r})".format(
+			self.cond,
+			self.then,
+			self.els
+		)
 	
 	def getChildren(self):
 		return [self.cond, self.then, self.els]
@@ -444,7 +504,10 @@ class FunctionCall(Expression):
 		self.tag = False
 	
 	def __repr__(self):
-		return "FunctionCall({0}, {1})".format(repr(self.name), self.args)
+		return "FunctionCall({!r}, {!r})".format(
+			self.name,
+			self.args
+		)
 	
 	def getChildren(self):
 		return [self.name] + self.args
@@ -471,7 +534,10 @@ class GetAttr(Expression):
 		self.attrName = attrName
 	
 	def __repr__(self):
-		return "GetAttr({0}, {1}".format(repr(self.exp), repr(self.attrName))
+		return "GetAttr({!r}, {!r})".format(
+			self.exp,
+			self.attrName
+		)
 	
 	def getChildren(self):
 		return [self.exp, self.attrName]
@@ -490,7 +556,11 @@ class SetAttr(Expression):
 		self.value = value
 	
 	def __repr__(self):
-		return "SetAttr({0}, {1}, {2})".format(self.exp, self.attrName, self.value)
+		return "SetAttr({!r}, {!r}, {!r})".format(
+			self.exp,
+			self.attrName,
+			self.value
+		)
 	
 	def getChildren(self):
 		return [self.exp, self.attrName, self.value]
@@ -510,7 +580,11 @@ class BinOp(Expression):
 		self.right = right
 	
 	def __repr__(self):
-		return "{0}({1}, {2})".format(self.__class__.__name__, repr(self.left), repr(self.right))
+		return "{!r}({!r}, {!r})".format(
+			self.__class__.__name__,
+			self.left,
+			self.right
+		)
 	
 	def getChildren(self):
 		return [self.left, self.right]
@@ -534,7 +608,10 @@ class UnaryOp(Expression):
 		self.operand = operand
 	
 	def __repr__(self):
-		return "{0}({1})".format(self.__class__.__name__, repr(self.operand))
+		return "{!r}({!r})".format(
+			self.__class__.__name__,
+			self.operand
+		)
 	
 	def getChildren(self):
 		return [self.operand]
@@ -648,7 +725,9 @@ class Dictionary(Value, Literal):
 		return hash(self.pairs)
 	
 	def __repr__(self):
-		return "Dictionary({0})".format(repr(self.value))
+		return "Dictionary({!r})".format(
+			self.value
+		)
 	
 	def __str__(self):
 		return str(self.value)
@@ -685,7 +764,9 @@ class Integer(Value, Literal):
 		return hash(self.value)
 	
 	def __repr__(self):
-		return "Integer({0:d})".format(self.value)
+		return "Integer({0:d})".format(
+			self.value
+		)
 	
 	def __str__(self):
 		return "${0:d}".format(self.value)
@@ -701,7 +782,9 @@ class List(Value, Literal):
 		return hash(self.value)
 	
 	def __repr__(self):
-		return "List({0})".format(repr(self.value))
+		return "List({0})".format(
+			self.value
+		)
 	
 	def __str__(self):
 		return str(self.value)
@@ -732,7 +815,16 @@ class Name(Value):
 		return hash(self.name)
 	
 	def __repr__(self):
-		return "Name({0})".format(self.name) if self.version == -1 else "Name({0}:{1})".format(self.name, self.version)
+		if self.version == -1:
+			return "Name({!r})".format(
+				self.name
+			)
+		
+		else:
+			return "Name({!r}:{})".format(
+				self.name,
+				self.version
+			)
 	
 	def __str__(self):
 		return self.name if self.version == -1 else "__{0}_{1}".format(self.name, self.version)
@@ -748,7 +840,9 @@ class String(Value):
 		hash(self.value)
 	
 	def __repr__(self):
-		return "String({0})".format(self.value)
+		return "String({0})".format(
+			self.value
+		)
 	
 	def __str__(self):
 		return "'{0}'".format(self.value)
@@ -777,7 +871,9 @@ class Symbol(Value):
 			return True
 	
 	def __repr__(self):
-		return "Symbol({0})".format(self)
+		return "Symbol({!s})".format(
+			self
+		)
 	
 	def __str__(self):
 		return "{0}:{1:d}".format(self.name, self.version)
@@ -797,7 +893,10 @@ class Subscript(Value):
 		return hash(str(self.symbol) + str(self.subscript))
 	
 	def __repr__(self):
-		return "Subscript({0}, {1})".format(repr(self.symbol), repr(self.subscript))
+		return "Subscript({!r}, {!r})".format(
+			self.symbol,
+			self.subscript
+		)
 	
 	def __str__(self):
 		return "{0}[{1}]".format(self.symbol, self.subscript)

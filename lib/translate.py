@@ -60,7 +60,7 @@ def translate(node, st = None, strings = None, funcName = False):
 		body = ast.BasicBlock(body)
 		
 		sym	= st.getSymbol(node.name, True)
-		name	= st.getName(node.name, False, True)
+		name	= st.getName(node.name, True)
 		
 		#This is here temporarily.  It will be moved to the typify pass later.
 		sym['type'] = 'class'
@@ -112,7 +112,7 @@ def translate(node, st = None, strings = None, funcName = False):
 	
 	elif isinstance(node, oast.Function):
 		sym	= st.getSymbol(node.name, True)
-		name	= st.getName(node.name, False, True)
+		name	= st.getName(node.name, True)
 		
 		sym['type'] = 'function'
 		
@@ -171,7 +171,7 @@ def translate(node, st = None, strings = None, funcName = False):
 		return ast.IfExp(cond, then, els)
 	
 	elif isinstance(node, oast.Lambda):
-		name = st.getName('lambda', False, True)
+		name = st.getName('lambda', True)
 		
 		newST = SymbolTable(st)
 		
@@ -202,7 +202,7 @@ def translate(node, st = None, strings = None, funcName = False):
 		children = translate(node.node, st, strings, funcName)
 		
 		block = ast.BasicBlock(children)
-		fun = ast.Function(st.getName('main'), [], block, st)
+		fun = ast.Function(st.getBIF('main'), [], block, st)
 		
 		#Mark the main function as migrated so that it doesn't get moved later.
 		fun['simplified'] = True
@@ -219,7 +219,7 @@ def translate(node, st = None, strings = None, funcName = False):
 		ret = 'input_int' if node.name == 'input' else node.name
 		
 		if ret == 'input_int':
-			ret = st.getName(ret)
+			ret = st.getBIF(ret)
 		
 		else:
 			if ret == 'True':
@@ -248,7 +248,7 @@ def translate(node, st = None, strings = None, funcName = False):
 		children = [translate(e, st, strings, funcName) for e in node.getChildNodes()]
 		children = util.flatten(children)
 		
-		return ast.FunctionCall(st.getName('print_any'), *children)
+		return ast.FunctionCall(st.getBIF('print_any'), *children)
 	
 	elif isinstance(node, oast.Return):
 		return ast.Return(translate(node.value, st, strings, funcName))

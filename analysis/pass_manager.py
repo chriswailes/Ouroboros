@@ -5,6 +5,8 @@ Date:		2010/09/24
 Description:	The pass manager for the analysis passes.
 """
 
+from lib.util import unset
+
 class AnalysisPass(object):
 	def __init__(self, fun, args, prereqs, result, sets):
 		self.fun		= fun
@@ -71,14 +73,6 @@ def runPasses(tree, ps):
 		run = run | set([toRunName])
 	
 	return results
-
-def unset(node, sets):
-	for key in sets:
-		if node.has_key(key):
-			del node[key]
-	
-	for child in node:
-		unset(child, sets)
 
 #####################
 # Initialize Passes #
