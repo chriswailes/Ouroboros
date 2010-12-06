@@ -11,17 +11,15 @@ from lib.util import classGuard, extractSymbol
 args		= []
 prereqs	= ['reads']
 result	= None
+sets		= ['pre-alive', 'post-alive']
 
 def init():
 	from analysis.pass_manager import register
-	register('liveness', liveness, args, prereqs, result)
+	register('liveness', liveness, args, prereqs, result, sets)
 
 def liveness(node, alive = []):
 	if isinstance(node, Module):
 		alive = []
-		for sym in node.collectSymbols():
-			if sym.has_key('tmp'):
-				del sym['tmp']
 	
 	if not classGuard(node, Name, String, Symbol):
 		node['pre-alive'] = set(alive)

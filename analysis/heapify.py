@@ -10,10 +10,11 @@ from lib.ast import *
 args		= []
 prereqs	= ['scope']
 result	= None
+sets		= ['heapify']
 
 def init():
 	from analysis.pass_manager import register
-	register('heapify', heapify, args, prereqs, result)
+	register('heapify', heapify, args, prereqs, result, sets)
 
 def heapify(node):
 	if isinstance(node, Module):

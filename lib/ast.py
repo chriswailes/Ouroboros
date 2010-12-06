@@ -16,11 +16,15 @@ class Node(dict):
 		for n in self.getChildren():
 			yield n
 	
-	def collectSymbols(self, which = 'b'):
+	#Options are:
+	#	a - All symbols
+	#	r - Symbols that are read from
+	#	w - Symbols that are written to
+	def collectSymbols(self, which = 'a'):
 		symbols = set([])
 		
 		for n in self:
-			symbols |= n.collectSymbols(which)
+			symbols |= n.collectSymbols(which, descend)
 		
 		return symbols
 	
@@ -48,7 +52,7 @@ class Phi(Node):
 	def addSrc(self, src):
 		self.srcs.append(src)
 	
-	def collectSymbols(self, which):
+	def collectSymbols(self, which = 'a'):
 		syms = set([])
 		
 		if which != 'r':
@@ -184,10 +188,10 @@ class Function(Node):
 	def __repr__(self):
 		return "Function({0}, {1}, {2})".format(repr(self.name), repr(self.argSymbols), repr(self.block))
 	
-	def collectSymbols(self, which = 'b'):
+	def collectSymbols(self, which = 'a'):
 		syms = self.block.collectSymbols(which)
 		
-		if which == 'b' or which == 'w':
+		if which == 'a' or which == 'w':
 			syms |= set(self.argSymbols)
 		
 		return syms
@@ -243,7 +247,7 @@ class Assign(Statement):
 	def __repr__(self):
 		return "Assign({0}, {1})".format(repr(self.var), repr(self.exp))
 	
-	def collectSymbols(self, which):
+	def collectSymbols(self, which = 'a'):
 		syms = self.exp.collectSymbols(which)
 		
 		if which != 'r':
@@ -264,18 +268,32 @@ class Assign(Statement):
 		return ret
 
 class If(Statement):
-	def __init__(self, cond, then, els, jn):
-		self.cond = cond
-		self.jn = jn
+	def __init__(self, cond, then, els):
+		self.cond	= cond
+		self.jn	= Join()
 		
 		if isinstance(then, BasicBlock) and isinstance(els, BasicBlock):
 			self.then = then
 			self.els  = els
+			
+			self.updateJoin()
 		else:
 			raise Exception("Not a basic block.")
 	
 	def __repr__(self):
 		return "If(Cond: {0}, Then: {1}, Else: {2}, Join: {3})".format(repr(self.cond), repr(self.then), repr(self.els), repr(self.jn))
+	
+	def collectSymbols(self, which = 'a'):
+		if which == 'w':
+			return set(self.jn.getTargets())
+		
+		else:
+			syms = set([])
+			
+			for child in self:
+				syms |= child.collectSymbols(which)
+			
+			return syms
 	
 	def getChildren(self):
 		return [self.cond, self.then, self.els, self.jn]
@@ -297,6 +315,12 @@ class If(Statement):
 		ret += self.jn.toPython(level)
 		
 		return ret
+	
+	def updateJoin(self):
+		syms = self.then.collectSymbols('w') | self.els.collectSymbols('w')
+		
+		for sym in syms:
+			jn.addSymbol(sym)
 
 class Return(Statement):
 	def __init__(self, value):
@@ -315,15 +339,30 @@ class Return(Statement):
 		return pad(level) + 'return ' + self.value.toPython()
 
 class While(Statement):
-	def __init__(self, cond, body, jn):
+	def __init__(self, cond, body):
 		self.cond	= cond
-		self.body	= body
-		self.jn	= jn
+		self.jn	= Join()
+		
+		if isinstance(body, BasicBlock):
+			self.body = body
+			self.updateJoin()
 		
 		self.condBody = BasicBlock([])
 	
 	def __repr__(self):
 		return "While(Cond: {0}, CondBody: {1}, Body: {2}, Join: {3})".format(self.cond, self.condBody, self.body, self.jn)
+	
+	def collectSymbols(self, which = 'a'):
+		if which == 'w':
+			return set(self.jn.getTargets())
+		
+		else:
+			syms = set([])
+			
+			for child in self:
+				syms |= child.collectSymbols(which)
+			
+			return syms
 	
 	def getChildren(self):
 		return [self.cond, self.condBody, self.body, self.jn]
@@ -357,6 +396,9 @@ class While(Statement):
 		ret += self.jn.toPython(level + 2)
 		
 		return ret
+	
+	def updateJoin(self):
+		pass
 
 ###############
 # Expressions #
@@ -367,9 +409,9 @@ class Expression(Node):
 
 class IfExp(Expression):
 	def __init__(self, cond, then, els):
-		self.cond = cond
-		self.then = then
-		self.els = els
+		self.cond	= cond
+		self.then	= then
+		self.els	= els
 	
 	def __repr__(self):
 		return "IfExp(Cond: {0}, Then: {1}, Else: {2})".format(repr(self.cond), repr(self.then), repr(self.els))

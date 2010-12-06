@@ -11,10 +11,11 @@ from lib.util import extractSymbol
 args		= []
 prereqs	= ['liveness', 'spans']
 result	= 'relgraph'
+sets		= ['related-backward', 'phi-related']
 
 def init():
 	from analysis.pass_manager import register
-	register('related', related, args, prereqs, result)
+	register('related', related, args, prereqs, result, sets)
 
 def related(node, graph = {}):
 	if isinstance(node, Assign):

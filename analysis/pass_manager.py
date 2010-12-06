@@ -6,11 +6,12 @@ Description:	The pass manager for the analysis passes.
 """
 
 class AnalysisPass(object):
-	def __init__(self, fun, args, prereqs, result):
+	def __init__(self, fun, args, prereqs, result, sets):
 		self.fun		= fun
 		self.args		= set(args)
 		self.prereqs	= set(prereqs)
 		self.result	= result
+		self.sets		= set(sets + ['tmp'])
 
 passes = {}
 
@@ -24,9 +25,9 @@ def findReqs(p, reqs = set([])):
 	
 	return reqs
 
-def register(name, fun, args, prereqs, result):
+def register(name, fun, args, prereqs, result, sets):
 	global passes
-	passes[name] = AnalysisPass(fun, args, prereqs, result)
+	passes[name] = AnalysisPass(fun, args, prereqs, result, sets)
 
 def runPass(tree, p):
 	return runPasses(tree, [p])
@@ -39,7 +40,7 @@ def runPasses(tree, ps):
 	results = {}
 	
 	for p in ps:
-		remaining = remaining | findReqs(p)
+		remaining |= findReqs(p)
 	
 	while len(remaining) != 0:
 		toRun = None
@@ -53,6 +54,8 @@ def runPasses(tree, ps):
 		
 		if toRun == None:
 			raise Exception("Dependency resolution error: {0}".format(p))
+		
+		unset(tree, toRun.sets)
 		
 		arglist = []
 		for arg in toRun.args:
@@ -68,6 +71,14 @@ def runPasses(tree, ps):
 		run = run | set([toRunName])
 	
 	return results
+
+def unset(node, sets):
+	for key in sets:
+		if node.has_key(key):
+			del node[key]
+	
+	for child in node:
+		unset(child, sets)
 
 #####################
 # Initialize Passes #

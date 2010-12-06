@@ -10,18 +10,20 @@ from lib.ast import *
 class SymbolTable(object):
 	def __init__(self, other = None):
 		if other:
-			self.symbols = other.symbols.copy()
-			self.names = other.names.copy()
-			self.singletons = other.singletons.copy()
-			self.strings = other.strings.copy()
+			self.singletons	= other.singletons.copy()
+			self.tmpCounter	= other.tmpCounter
+			
+			self.readCounters	= other.readCounters.copy()
+			self.readSnapshots	= list(other.readSnapshots)
+			self.writeCounters	= other.writeCounters.copy()
+		
 		else:
-			self.symbols = {}
-			self.names = {}
-			self.singletons = {}
-			self.strings = {}
-	
-	def __str__(self):
-		return "SymbolTable #{0}".format(id(self))
+			self.singletons	= {}
+			self.tmpCounter	= 0
+			
+			self.readCounters	= {}
+			self.readSnapshots	= []
+			self.writeCounters	= {}
 	
 	def getName(self, name, bif = True, define = False):
 		#Left value  -> next assignment
@@ -49,18 +51,12 @@ class SymbolTable(object):
 		if self.singletons.has_key(trip):
 			ret = self.singletons[trip]
 		else:
-			ret = Symbol(name, version) if typ == Symbol else Name(name, version)
+			ret = typ(name, version)
 			self.singletons[trip] = ret
 		
 		return ret
 	
-	#~def getStrings(self, string):
-		#~if not self.strings.has_key(string):
-			#~self.strings[string] = String(string)
-		#~
-		#~return self.strings[string]
-	
-	def getSymbol(self, name = '!', assign = False):
+	def getSymbol(self, name, assign = False):
 		#Left value  -> next assignment
 		#Right value -> current read
 		
@@ -81,14 +77,25 @@ class SymbolTable(object):
 		
 		return ret
 	
+	def getTemp(self):
+		tmpName = "!{0}".format(self.tmpCounter)
+		self.tmpCounter += 1
+		
+		return self.getSymbol(tmpName, True)
+	
+	def rollback(self):
+		self.readCounters = self.readSnapshots.pop()
+	
+	def snapshot(self):
+		self.readSnapshots.append(self.readCounters)
+	
+	#This is here to deal with read-before-write symbols in functions.
 	def update(self, other):
 		if isinstance(other, SymbolTable):
-			for pair in other.symbols:
-				if self.symbols.has_key(pair):
-					_, b0 = self.symbols[pair]
-					a1, _ = other.symbols[pair]
-					
-					self.symbols[pair] = (a1, b0)
+			
+			#Update the temp counter so that we only get one instance of a
+			#temporary variable number throughout the entire program.
+			self.tmpCounter = other.tmpCounter
 			
 			for trip in other.singletons:
 				singleton = other.singletons[trip]
@@ -96,14 +103,5 @@ class SymbolTable(object):
 				if isinstance(singleton, Name) or singleton['rbw']:
 					self.singletons[trip] = singleton
 		
-		elif isinstance(other, Join):
-			for phi in other.phis:
-				if self.symbols.has_key(phi.target.name):
-					a0, _ = self.symbols[phi.target.name]
-					b1 = phi.target.version
-					
-					pair = (phi.target.name, b1)
-					self.symbols[phi.target.name] = (a0, b1)
-					
-					trip = (Symbol, phi.target.name, b1)
-					self.singletons[trip] = phi.target
+		else:
+			raise Exception("Trying to update a SymbolTable with something that isn't a SymbolTable")

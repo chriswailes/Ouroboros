@@ -8,10 +8,11 @@ Description:	Determines the liveness of varaibles at every node in the AST.
 args		= []
 prereqs	= ['spans']
 result	= 'ig'
+sets		= []
 
 def init():
 	from analysis.pass_manager import register
-	register('interference', interference, args, prereqs, result)
+	register('interference', interference, args, prereqs, result, sets)
 
 def interference(tree):
 	symbols = tree.collectSymbols()

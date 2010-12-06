@@ -11,11 +11,11 @@ from lib.util import classGuard
 args		= []
 prereqs	= []
 result	= None
+sets		= ['scope']
 
 def init():
 	from analysis.pass_manager import register
-	register('scope', scope, args, prereqs, result)
-
+	register('scope', scope, args, prereqs, result, sets)
 
 #This analysis pass marks any new symbols as either 'global' or 'local'.  Global
 #symbols are defined in the main function and can be put in the data

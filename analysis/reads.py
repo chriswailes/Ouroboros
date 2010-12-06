@@ -11,20 +11,19 @@ from lib.util import classGuard, extractSymbol
 args		= []
 prereqs	= []
 result	= None
+sets		= ['reads']
 
 def init():
 	from analysis.pass_manager import register
-	register('reads', reads, args, prereqs, result)
+	register('reads', reads, args, prereqs, result, sets)
 
 def reads(node):
-	if isinstance(node, Module):
-		for sym in node.collectSymbols():
-			if sym.has_key('reads'):
-				del sym['reads']
-	
-	elif classGuard(node, Assign, Phi) and not extractSymbol(node).has_key('reads'):
-		extractSymbol(node)['reads'] = 0
-	
+	if classGuard(node, Assign, Phi):
+		sym = extractSymbol(node)
+		
+		if not sym.has_key('reads'):
+			sym['reads'] = 0
+			
 	elif isinstance(node, Function):
 		for sym in node.argSymbols:
 			sym['reads'] = 0

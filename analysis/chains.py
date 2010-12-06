@@ -8,10 +8,11 @@ Description:	Find relationship chains.
 args		= ['relgraph']
 prereqs	= ['related']
 result	= 'chains'
+sets		= ['related-forward']
 
 def init():
 	from analysis.pass_manager import register
-	register('chains', chains, args, prereqs, result)
+	register('chains', chains, args, prereqs, result, sets)
 
 def chains(tree, relgraph):
 	outerGraph = relgraph.copy()

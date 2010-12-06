@@ -14,37 +14,33 @@ import util
 
 from symbol_table import SymbolTable
 
-def translate(node, st = None, strings = None, jn = None, funcName = False, wile = False):
+def translate(node, st = None, strings = None, funcName = False):
 	if isinstance(node, oast.Add):
-		left = translate(node.left, st, strings, jn, funcName, wile)
-		right = translate(node.right, st, strings, jn, funcName, wile)
+		left  = translate(node.left,  st, strings, funcName)
+		right = translate(node.right, st, strings, funcName)
 		
 		return ast.Add(left, right)
 	
 	elif isinstance(node, oast.And):
-		left = translate(node.nodes[0], st, strings, jn, funcName, wile)
-		right = translate(node.nodes[1], st, strings, jn, funcName, wile)
+		left	 = translate(node.nodes[0], st, strings, funcName)
+		right = translate(node.nodes[1], st, strings, funcName)
 		
 		return ast.And(left, right)
 	
 	elif isinstance(node, oast.Assign):
 		#Translate the right hand side first so it can use the older version
 		#of the left hand side.
-		exp = translate(node.expr, st, strings, jn, funcName, wile)
+		exp = translate(node.expr, st, strings, funcName)
 		var = node.nodes.pop()
 		
 		if isinstance(var, oast.AssAttr):
 			string = strings.setdefault(var.attrname, ast.String(var.attrname))
-			var = translate(var.expr, st, strings, jn, funcName, wile)
+			var = translate(var.expr, st, strings, funcName)
 			
 			return ast.SetAttr(var, string, exp)
 		
 		else:
-			var	= translate(var, st, strings, jn, funcName, wile)
-			
-			if jn != None:
-				#Add this new assignment to the join node.
-				jn.addSymbol(var, st)
+			var = translate(var, st, strings, funcName)
 			
 			return ast.Assign(var, exp)
 	
@@ -52,19 +48,19 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		return st.getSymbol(node.name, True)
 	
 	elif isinstance(node, oast.CallFunc):
-		name = translate(node.node, st, strings, jn, True, wile)
-		args = [translate(a, st, strings, jn) for a in node.args]
+		name = translate(node.node, st, strings, True)
+		args = [translate(a, st, strings) for a in node.args]
 		
 		return ast.FunctionCall(name, *args)
 	
 	elif isinstance(node, oast.Class):
-		bases = [translate(base, st, strings, jn, funcName, wile) for base in node.bases]
+		bases = [translate(base, st, strings, funcName) for base in node.bases]
 		
-		body = translate(node.code, st, strings, jn, funcName, wile)
+		body = translate(node.code, st, strings, funcName)
 		body = ast.BasicBlock(body)
 		
-		sym = st.getSymbol(node.name, True)
-		name = st.getName(node.name, False, True)
+		sym	= st.getSymbol(node.name, True)
+		name	= st.getName(node.name, False, True)
 		
 		#This is here temporarily.  It will be moved to the typify pass later.
 		sym['type'] = 'class'
@@ -74,11 +70,11 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		return ast.Assign(sym, klass)
 	
 	elif isinstance(node, oast.Compare):
-		left = translate(node.expr, st, strings, jn, funcName, wile)
+		left = translate(node.expr, st, strings, funcName)
 		
 		op, right = node.ops[0]
 		
-		right = translate(right, st, strings, jn, funcName, wile)
+		right = translate(right, st, strings, funcName)
 		
 		if op == '==':
 			return ast.Eq(left, right)
@@ -98,25 +94,25 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		for pair in node.items:
 			key, value = pair
 			
-			key = translate(key, st, strings, jn, funcName, wile)
-			value = translate(value, st, strings, jn, funcName, wile)
+			key = translate(key, st, strings, funcName)
+			value = translate(value, st, strings, funcName)
 			
 			pairs[key] = value
 		
 		return ast.Dictionary(pairs)
 	
 	elif isinstance(node, oast.Discard):
-		return translate(node.expr, st, strings, jn, funcName, wile)
+		return translate(node.expr, st, strings, funcName)
 	
 	elif isinstance(node, oast.Div):
-		left = translate(node.left, st, strings, jn, funcName, wile)
-		right = translate(node.right, st, strings, jn, funcName, wile)
+		left  = translate(node.left,  st, strings, funcName)
+		right = translate(node.right, st, strings, funcName)
 		
 		return ast.Div(left, right)
 	
 	elif isinstance(node, oast.Function):
-		sym = st.getSymbol(node.name, True)
-		name = st.getName(node.name, False, True)
+		sym	= st.getSymbol(node.name, True)
+		name	= st.getName(node.name, False, True)
 		
 		sym['type'] = 'function'
 		
@@ -124,7 +120,7 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		
 		argSymbols = [newST.getSymbol(argName, True) for argName in node.argnames]
 		
-		body = translate(node.code, newST, strings, jn, funcName, wile)
+		body = translate(node.code, newST, strings, funcName)
 		body = ast.BasicBlock(body)
 		
 		fun = ast.Function(name, argSymbols, body, newST)
@@ -135,8 +131,8 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		return ast.Assign(sym, fun)
 	
 	elif isinstance(node, oast.Getattr):
-		exp = translate(node.expr, st, strings, jn, funcName, wile)
-		name = strings.setdefault(node.attrname, ast.String(node.attrname))
+		exp	= translate(node.expr, st, strings, funcName)
+		name	= strings.setdefault(node.attrname, ast.String(node.attrname))
 		
 		return ast.GetAttr(exp, name)
 	
@@ -144,45 +140,33 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		tests = node.tests
 		cond, then = tests.pop(0)
 		
+		#Translate the conditional expression.
 		cond = translate(cond, st, strings)
 		
-		#Create our join node.
-		jn = ast.Join()
+		#Snapshot the SymbolTable
+		st.snapshot()
 		
-		#A new SymbolTable needs to be constructed for the then branch.
-		stThen = SymbolTable(st)
-		then = ast.BasicBlock(translate(then, stThen, strings, jn, funcName, wile))
+		#Translate the 'then' clause.
+		then = translate(then, st, strings, funcName)
+		then = ast.BasicBlock(then)
 		
-		#Merge any Join nodes in the then clause into our current Join node.
-		mergeJoins(jn, then)
+		#Roll-back the SymbolTable for the 'else' clause.
+		st.rollback()
 		
-		els = None
-		
-		#A new SymbolTable needs to be constructed for the else branch.
-		stElse = SymbolTable(st)
-		#The SymbolTable needs to be updated to the new assignment versions.
-		stElse.update(stThen)
-		
+		#Translate the 'else' clause.
 		if len(tests) > 0:
-			els = [translate(oast.If(tests, node.else_), stElse, jn, funcName, wile)]
+			els = [translate(oast.If(tests, node.else_), st, funcName)]
 		else:
-			els = translate(node.else_, stElse, strings, jn, funcName, wile)
+			els = translate(node.else_, st, strings, funcName)
 		
 		els = ast.BasicBlock(els)
-		
-		#Merge any Join nodes in the els clause into our current Join node.
-		mergeJoins(jn, els)
-		
-		#Update the current SymbolTable
-		st.update(stElse)
-		st.update(jn)
 		
 		return ast.If(cond, then, els, jn)
 	
 	elif isinstance(node, oast.IfExp):
-		cond = translate(node.test, st, strings, jn, funcName, wile)
-		then = translate(node.then, st, strings, jn, funcName, wile)
-		els = translate(node.else_, st, strings, jn, funcName, wile)
+		cond = translate(node.test, st, strings, funcName)
+		then = translate(node.then, st, strings, funcName)
+		els = translate(node.else_, st, strings, funcName)
 		
 		return ast.IfExp(cond, then, els)
 	
@@ -193,7 +177,7 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		
 		argSymbols = map(lambda name: newST.getSymbol(name, True), node.argnames)
 		
-		code  = ast.Return(translate(node.code, newST, strings, jn, funcName, wile))
+		code  = ast.Return(translate(node.code, newST, strings, funcName))
 		block = ast.BasicBlock([code])
 		fun   = ast.Function(name, argSymbols, block, newST)
 		fun['simplified'] = False
@@ -206,7 +190,7 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		elements = []
 		
 		for n in node.nodes:
-			elements.append(translate(n, st, strings, jn, funcName, wile))
+			elements.append(translate(n, st, strings, funcName))
 		
 		return ast.List(elements)
 		
@@ -215,7 +199,7 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		st = SymbolTable()
 		strings = {}
 		
-		children = translate(node.node, st, strings, jn, funcName, wile)
+		children = translate(node.node, st, strings, funcName)
 		
 		block = ast.BasicBlock(children)
 		fun = ast.Function(st.getName('main'), [], block, st)
@@ -226,8 +210,8 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 		return ast.Module([fun], strings)
 	
 	elif isinstance(node, oast.Mul):
-		left = translate(node.left, st, strings, jn, funcName, wile)
-		right = translate(node.right, st, strings, jn, funcName, wile)
+		left  = translate(node.left,  st, strings, funcName)
+		right = translate(node.right, st, strings, funcName)
 		
 		return ast.Mul(left, right)
 	
@@ -244,79 +228,60 @@ def translate(node, st = None, strings = None, jn = None, funcName = False, wile
 			elif ret == 'False':
 				ret = ast.Fals()
 			
-			elif wile:
-				ret = st.getSymbol(ret)
-				
-				if not ret.has_key('type') or ret['type'] != 'function':
-					ret = jn.addSymbol(ret, st)
-			
 			else:
 				ret = st.getSymbol(ret)
 		
 		return ret
 	
 	elif isinstance(node, oast.Not):
-		operand = translate(node.expr, st, strings, jn, funcName, wile)
+		operand = translate(node.expr, st, strings, funcName)
 		
 		return ast.Not(operand)
 	
 	elif isinstance(node, oast.Or):
-		left = translate(node.nodes[0], st, strings, jn, funcName, wile)
-		right = translate(node.nodes[1], st, strings, jn, funcName, wile)
+		left  = translate(node.nodes[0], st, strings, funcName)
+		right = translate(node.nodes[1], st, strings, funcName)
 		
 		return ast.Or(left, right)
 		
 	elif isinstance(node, oast.Printnl):
-		children = [translate(e, st, strings, jn, funcName, wile) for e in node.getChildNodes()]
+		children = [translate(e, st, strings, funcName) for e in node.getChildNodes()]
 		children = util.flatten(children)
 		
 		return ast.FunctionCall(st.getName('print_any'), *children)
 	
 	elif isinstance(node, oast.Return):
-		return ast.Return(translate(node.value, st, strings, jn, funcName, wile))
+		return ast.Return(translate(node.value, st, strings, funcName))
 		
 	elif isinstance(node, oast.Stmt):
-		stmts = [translate(s, st, strings, jn, funcName, wile) for s in node.getChildNodes()]
+		stmts = [translate(s, st, strings, funcName) for s in node.getChildNodes()]
 		
 		return util.flatten(stmts)
 	
 	elif isinstance(node, oast.Sub):
-		left = translate(node.left, st, strings, jn, funcName, wile)
-		right = translate(node.right, st, strings, jn, funcName, wile)
+		left  = translate(node.left,  st, strings, funcName)
+		right = translate(node.right, st, strings, funcName)
 		
 		return ast.Sub(left, right)
 	
 	elif isinstance(node, oast.Subscript):
-		sym = translate(node.expr, st, strings, jn, funcName, wile)
-		sub = translate(node.subs[0], st, strings, jn, funcName, wile)
+		sym = translate(node.expr, st, strings, funcName)
+		sub = translate(node.subs[0], st, strings, jn, funcName)
 		
 		return ast.Subscript(sym, sub)
 	
 	elif isinstance(node, oast.While):
-		jn = ast.Join()
+		cond = translate(node.test, st, strings, funcName, True)
 		
-		cond = translate(node.test, st, strings, jn, funcName, True)
-		
-		#~if isinstance(cond, ast.Symbol):
-			#~jn.addSymbol(cond, st)
-		
-		body = translate(node.body, st, strings, jn, funcName, True)
+		body = translate(node.body, st, strings, funcName, True)
 		body = ast.BasicBlock(body)
 		
-		return ast.While(cond, body, jn)
+		return ast.While(cond, body)
 	
 	elif isinstance(node, oast.UnarySub):
-		operand = translate(node.expr, st, strings, jn, funcName, wile)
+		operand = translate(node.expr, st, strings, funcName)
 		
 		return ast.Negate(operand)
 	
 	else:
-		None
-
-def mergeJoins(jn, block):
-	for n in block:
-		if isinstance(n, ast.If):
-			for t in n.jn.getTargets():
-				#Symbols that don't exist in the scope of jn0 won't be added
-				#because we don't provide a SymbolTable to jn.addSymbol.
-				jn.addSymbol(t)
+		raise Exception('Unsupported AST node encountered.')

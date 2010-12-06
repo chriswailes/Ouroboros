@@ -11,10 +11,11 @@ from lib.util import extractSymbol
 args		= []
 prereqs	= ['liveness']
 result	= None
+sets		= ['spans-funcall', 'span-start', 'span-end', 'span']
 
 def init():
 	from analysis.pass_manager import register
-	register('spans', spans, args, prereqs, result)
+	register('spans', spans, args, prereqs, result, sets)
 
 def spans(node, count = 0, alive = None):
 	inc = 1

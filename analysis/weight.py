@@ -11,13 +11,13 @@ from lib.util import extractSymbol
 args		= []
 prereqs	= ['reads', 'spans']
 result	= None
+sets		= ['weight']
 
 def init():
 	from analysis.pass_manager import register
-	register('weight', weight, args, prereqs, result)
+	register('weight', weight, args, prereqs, result, sets)
 
 def weight(node, depth = 0.0):
-	
 	if isinstance(node, Assign):
 		sym = extractSymbol(node)
 		
