@@ -7,7 +7,6 @@ Description:	A transformation that moves function definitions out of the body
 """
 
 from lib.ast import *
-from lib import util
 
 analysis	= []
 args		= []
@@ -16,7 +15,7 @@ def init():
 	from transforms.pass_manager import register
 	register('function_migration', migrateFunctions, analysis, args)
 
-def migrateFunctions(node, st = None, funs = []):
+def migrateFunctions(node, st = None, funs = None):
 	newChildren	= []
 	funs			= [] if isinstance(node, Module) else funs
 	st			= node.st if isinstance(node, Function) else st

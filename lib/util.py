@@ -39,16 +39,18 @@ def extractSymbol(node):
 	
 	return ret
 
-def flatten(seq):
-	l = []
-	for elt in seq:
-		t = type(elt)
-		if t is tuple or t is list:
-			for elt2 in flatten(elt):
-				l.append(elt2)
-		else:
-			l.append(elt)
-	return l
+def flatten(orig):
+	new = []
+	
+	for el0 in orig:
+		if el0:
+			if classGuard(el0, list, tuple):
+				for elt1 in flatten(el0):
+					new.append(el1)
+			else:
+				new.append(el0)
+	
+	return new
 
 def reType(value):
 	from lib.ast import List, Dictionary, Integer, Tru, Fals

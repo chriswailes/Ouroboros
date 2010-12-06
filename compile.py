@@ -2,7 +2,7 @@
 
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/08/26
 Description:	This file is the actual compiler.
 """

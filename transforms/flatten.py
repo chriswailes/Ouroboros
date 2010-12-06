@@ -69,7 +69,7 @@ def flatten(node, st = None, inPlace = False):
 	
 	#Flatten the current node.
 	if classGuard(node, BinOp, FunctionCall, IfExp, UnaryOp) and not inPlace:
-		sym = st.getSymbol(assign = True)
+		sym = st.getTemp()
 		preStmts.append(Assign(sym, node))
 		
 		node = sym

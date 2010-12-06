@@ -61,14 +61,15 @@ def runTransformPrime(tree, addArgs, transform):
 
 from transforms import coloring
 from transforms import const_fold
-from transforms import const_prop
+from transforms import dead_code
+from transforms import dead_store
 from transforms import declassify
-from transforms import discard
 from transforms import flatten
 from transforms import function_migration
 from transforms import simplify
+from transforms import value_prop
 
-toInit = [coloring, const_fold, const_prop, declassify, discard, flatten, function_migration, simplify]
+toInit = [coloring, const_fold, dead_code, dead_store, declassify, flatten, function_migration, simplify, value_prop]
 
 for p in toInit:
 	p.init()

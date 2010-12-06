@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/09/01
 Description:	A transformation that folds constants.
 """
@@ -131,11 +131,5 @@ def foldConstants(node):
 			if cond:
 				newNode = opKlass(nodeKlass(node.operand.left), nodeKlass(node.operand.right))
 				node = foldConstants(newNode)
-	
-	elif classGuard(node, If, IfExp) and isinstance(node.cond, Literal):
-		#We can reduce If and IfExp nodes if we can calculate their
-		#conditional values at compile time.
-		
-		node = node.then if node.cond.value else node.els
 	
 	return node

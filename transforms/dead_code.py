@@ -1,42 +1,46 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/09/03
-Description:	Removes expressions whos values aren't stored.
+Description:	Removes expressions whos values aren't stored and branches whos
+			conditional can be calculated at runtime..
 """
 
 from lib.ast import *
-from lib.util import classGuard, extractSymbol, flatten
+from lib.util import classGuard, flatten
 
-analysis	= ['reads']
+analysis	= []
 args		= []
 
 def init():
 	from transforms.pass_manager import register
-	register('discard', discard, analysis, args)
+	register('dead_code', eliminateDeadCode, analysis, args)
 
-def discard(node):
+def eliminateDeadCode(node):
 	if isinstance(node, BasicBlock):
 		newChildren = []
 		
 		for child in node:
-			if isinstance(child, Assign):
-				sym = extractSymbol(child)
-				
-				#Throw out variables that are never read.
-				if sym['reads'] != 0 or classGuard(child.exp, Class, Symbol):
-					newChildren.append(child)
-				
-				elif isinstance(child.exp, FunctionCall):
-					newChildren.append(child.exp)
+			#If statements or expressions with a literal conditional value
+			#can be eliminated and replaced with the appropriate BasicBlock's
+			#children.
+			if classGuard(child, If, IfExp) and isinstance(node.cond, Literal):
+				block = child.then if child.cond.value else child.els
+				newChildren.append(block.children)
 			
-			#If it is a Statement or a FunctionCall we need to keep the child.
 			elif classGuard(child, Class, Function, FunctionCall, Statement):
 				newChildren.append(child)
 			
 			elif isinstance(child, BasicBlock):
 				#We can discard the nested BasicBlock.
-				newChildren.append(discard(child).children)
+				newChildren.append(eliminateDeadCode(child).children)
+			
+			elif isinstance(child, Return):
+				newChildren.append(node)
+				
+				#All nodes after the Return node will be discarded due to
+				#unreachability.
+				break
 			
 			else:
 				#Anything that reaches here is an expression outside of a
@@ -45,11 +49,11 @@ def discard(node):
 				#then throw it away.
 				newChildren.append(extractStmts(child))
 		
-		node.children = flatten(newChildren)
+		node.setChildren(flatten(newChildren))
 	
 	else:
 		for child in node:
-			discard(child)
+			eliminateDeadCode(child)
 	
 	return node
 

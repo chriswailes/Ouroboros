@@ -27,7 +27,7 @@ def declassify(node, st = None, strings = None, klass = None):
 	strings		= node.strings if isinstance(node, Module) else strings
 	
 	if isinstance(node, Class):
-		sym = st.getSymbol(assign = True)
+		sym = st.getTemp()
 		
 		fun = FunctionCall(st.getName('create_class'), List(node.bases))
 		fun.tag = OBJ
@@ -44,13 +44,11 @@ def declassify(node, st = None, strings = None, klass = None):
 		string = node.var.name
 		string = strings.setdefault(string, String(string))
 		
-		#~sym = st.getSymbol()
-		
 		node = SetAttr(klass, string, node.exp)
 	
 	elif isinstance(node, FunctionCall):
 		if isinstance(node.name, Symbol) and node.name.has_key('type') and node.name['type'] == 'class':
-			sym = st.getSymbol(assign = True)
+			sym = st.getTemp()
 			string = strings.setdefault('__init__', String('__init__'))
 			
 			base = node.name
@@ -63,9 +61,9 @@ def declassify(node, st = None, strings = None, klass = None):
 			cond.tag = BOOL
 			
 			then = BasicBlock([FunctionCall(GetAttr(base, string), sym, *node.args)])
-			els_ = BasicBlock([])
+			els  = BasicBlock([])
 			
-			preStmts.append(If(cond, then, els_, Join()))
+			preStmts.append(If(cond, then, els))
 			
 			node = sym
 		
@@ -103,8 +101,5 @@ def simplifyClassBody(node, klass, st, assigned = []):
 	
 	if isinstance(node, Assign):
 		node = FunctionCall(st.getName('set_attr'), klass, node.var, node.exp)
-	
-	elif isinstance(node, Symbol):
-		pass
 	
 	return node

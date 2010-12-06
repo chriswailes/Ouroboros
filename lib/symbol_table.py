@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/08/26
 Description:	The symbol table used by Pycom.
 """
@@ -72,7 +72,7 @@ class SymbolTable(object):
 		return ret
 	
 	def getTemp(self):
-		tmpName = "!{0}".format(self.tmpCounter)
+		tmpName = "!{}".format(self.tmpCounter)
 		self.tmpCounter += 1
 		
 		return self.getSymbol(tmpName, True)

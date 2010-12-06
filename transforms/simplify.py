@@ -26,33 +26,24 @@ def simplify(node, st = None):
 	
 	#Pre-simplification clauses.
 	if isinstance(node, IfExp):
-		#Create the new If node's Join node.
-		jn = Join()
-		
 		#Simplify he conditional expression.
 		condPreStmts, cond = simplify(node.cond, st)
 		preStmts.append(condPreStmts)
 		
-		#Create the assignment variable for the then clause.
-		sym = st.getSymbol(assign = True)
-		jn.addSymbol(sym, st)
+		#Create the assignment variable for the different clauses.
+		sym0 = st.getTemp()
+		sym1 = st.getSymbol(sym0.name, True)
 		
-		then = BasicBlock([Assign(sym, node.then)])
+		#Build our new nodes.
+		then = BasicBlock([Assign(sym0, node.then)])
+		els  = BasicBlock([Assign(sym1, node.els )])
 		
-		#Create the assignment variable for the else clause.
-		sym = st.getSymbol(assign = True)
-		jn.addSymbol(sym, st)
-		
-		els = BasicBlock([Assign(sym, node.els)])
-		
-		#Update our SymbolTable (this should have no effect as statements
-		#aren't allowed in IfExp nodes).
-		st.update(jn)
+		if_  = simplify(If(cond, then, els))
 		
 		#Append this new If node to our pre-statements and then replace the
-		#node with the target from the join node's (hopefully) only Phi node.
-		preStmts.append(simplify(If(cond, then, els, jn), st))
-		node = jn.phis[0].target
+		#node with the target from the join node's only Phi node.
+		preStmts.append(if_)
+		node = if_.jn.phis[0].target
 	
 	#Simplify the children of this node.
 	for child in node:
@@ -78,7 +69,7 @@ def simplify(node, st = None):
 		fun = FunctionCall(st.getName('create_dict'))
 		fun.tag = OBJ
 		
-		sym = st.getSymbol(assign = True)
+		sym = st.getTemp()
 		preStmts.append(Assign(sym, fun))
 		
 		name = st.getName('set_subscript')
@@ -129,7 +120,7 @@ def simplify(node, st = None):
 		fun = FunctionCall(st.getName('create_list'), Integer(len(node.value)))
 		fun.tag = OBJ
 		
-		sym = st.getSymbol(assign = True)
+		sym = st.getTemp()
 		preStmts.append(Assign(sym, fun))
 		
 		name = st.getName('set_subscript')
@@ -147,24 +138,6 @@ def simplify(node, st = None):
 		#function call.
 		funName = st.getName('get_subscript')
 		node = FunctionCall(funName, node.symbol, node.subscript)
-	
-	#~elif isinstance(node, While):
-		#~reads = node.body.collectSymbols('r') | node.condBody.collectSymbols('r')
-		#~
-		#~#Set up our callTest lambda.
-		#~callTest = lambda node: not isinstance(node, Phi)
-		#~
-		#~#Add symbols the the Join node as necessary and replace their reads
-		#~#with reads from the Phi target.
-		#~for sym0 in reads:
-			#~if sym0 in node['pre-alive']:
-				#~sym1 = node.jn.addSymbol(sym0)
-				#~
-				#~#Set up our substituteTest and replacement lambdas.
-				#~substituteTest	= lambda node: isinstance(node, Symbol) and node == sym0
-				#~replacement	= lambda node: sym1
-				#~
-				#~util.substitute(node, callTest, substituteTest, replacement)
 	
 	#Flatten our list of pre-statements.
 	preStmts = util.flatten(preStmts)
