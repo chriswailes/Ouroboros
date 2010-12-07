@@ -11,7 +11,7 @@ from lib.util import extractSymbol
 args		= []
 prereqs	= ['liveness']
 result	= None
-sets		= ['spans-funcall', 'span-start', 'span-end', 'span']
+sets		= ['spans-funcall', 'span-start', 'span-end', 'span-length']
 
 def init():
 	from analysis.pass_manager import register
@@ -38,8 +38,8 @@ def spans(node, count = 0, alive = None):
 		if sym in node['post-alive']:
 			alive[sym] = count
 		else:
-			sym['span-start'] = sym['span-end'] = count
-			sym['span'] = 0
+			sym['span-start']	= sym['span-end'] = count
+			sym['span-length']	= 0
 	
 	elif isinstance(node, Function):
 		for sym in node.argSymbols:
@@ -48,8 +48,8 @@ def spans(node, count = 0, alive = None):
 			if sym in node['post-alive']:
 				alive[sym] = count
 			else:
-				sym['span-start'] = sym['span-end'] = count
-				sym['span'] = 0
+				sym['span-start']	= sym['span-end'] = count
+				sym['span-length']	= 0
 	
 	elif isinstance(node, FunctionCall):
 		#Mark functions that span this function call.
@@ -66,9 +66,9 @@ def spans(node, count = 0, alive = None):
 	if not classGuard(node, Name, String, Symbol):
 		for sym in alive:
 			if isinstance(node, Function) or sym not in node['post-alive']:
-				sym['span-start'] = alive[sym]
-				sym['span-end'  ] = count - 1
-				sym['span'] = sym['span-end'] - sym['span-start']
+				sym['span-start']	= alive[sym]
+				sym['span-end'  ]	= count - 1
+				sym['span-length']	= sym['span-end'] - sym['span-start']
 				
 				deletes.append(sym)
 	

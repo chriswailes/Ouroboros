@@ -17,22 +17,22 @@ def init():
 	register('heapify', heapify, args, prereqs, result, sets)
 
 def heapify(node):
-	if isinstance(node, Module):
-		#Mark the default heapify state of all symbols as False.
-		for sym in node.collectSymbols():
-			sym['heapify'] = False
-	
-	elif isinstance(node, Function):
+	if isinstance(node, Function):
 		syms  = node.collectSymbols()
 		bound = node.collectSymbols('w')
-		free  = syms - bound
 		
-		#Mark any free variables for heapification.
-		for sym in free:
-			sym['heapify'] = 'data' if sym['scope'] == 'global' else 'closure'
+		for sym in syms:
+			if sym in bound:
+				sym['heapify'] = False
+			
+			elif sym['scope'] == 'global':
+				sym['heapify'] = 'data'
+			
+			else:
+				sym['heapify'] = 'closure'
 		
 		#Mark this function's free variables for later use.
-		node['free'] = free
+		node['free'] = syms - bound
 	
 	#Run heapify on the node's children.
 	for child in node:

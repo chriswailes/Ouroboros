@@ -37,10 +37,11 @@ def reads(node):
 		else:
 			node['reads'] = 1
 	
-	#This little hack is here to take care of cases where subscripts are
-	#applied to literal values. After the flatten transformation this branch
-	#will be taken whenever we see a subscript.
 	elif isinstance(node, Subscript) and isinstance(node.symbol, Symbol):
+		#This little hack is here to take care of cases where subscripts are
+		#applied to literal values. After the flatten transformation this
+		#branch will be taken whenever we see a subscript.
+		
 		node.symbol['reads'] += 1
 	
 	for child in node:

@@ -30,7 +30,7 @@ def weight(node, depth = 0.0):
 		node['tmp'] -= 1
 		
 		if node['tmp'] == 0:
-			node['weight'] = node['weight'] / float(node['span'])
+			node['weight'] = node['weight'] / float(node['span-length'])
 	
 	for child in node:
 		if isinstance(node, BasicBlock):

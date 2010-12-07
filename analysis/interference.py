@@ -25,7 +25,7 @@ def interference(tree):
 		for sym1 in symbols:
 			if sym0 != sym1:
 				if sym0['span-start'] <= sym1['span-start'] <= sym0['span-end']:
-					ig[sym0] = ig[sym0] | set([sym1])
-					ig[sym1] = ig[sym1] | set([sym0])
+					ig[sym0] |= set([sym1])
+					ig[sym1] |= set([sym0])
 	
 	return ig

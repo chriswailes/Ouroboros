@@ -5,71 +5,73 @@ Date:		2010/09/24
 Description:	Find relationship chains.
 """
 
-args		= ['relgraph']
+args		= ['']
 prereqs	= ['related']
-result	= 'chains'
-sets		= ['related-forward']
+result	= ''
+sets		= ['chain']
 
 def init():
 	from analysis.pass_manager import register
 	register('chains', chains, args, prereqs, result, sets)
 
-def chains(tree, relgraph):
-	outerGraph = relgraph.copy()
+def chains(tree):
+	syms = tree.collectSymbols()
 	
-	finalChains = []
-	chainDict = {}
-	
-	#The outer loop finds new starting symbols, and will end when we have
-	#produced all of our chains.
-	while len(outerGraph) > 0:
-		innerGraph = outerGraph.copy()
-		sym0 = innerGraph.keys()[0]
+	while len(outerSyms) > 0:
+		chains	= {}
+		syms		= sorted(syms, key = lambda sym: sym['span-start'])
 		
-		#Find the symbol with the earliest definition point among those still
-		#remaining.
-		for sym1 in innerGraph:
-			if sym1['span-start'] < sym0['span-start']:
-				sym0 = sym1
-		
-		chains = {sym0:[sym0]}
-		verts = [sym0]
-		
-		#Build all possible paths using sym0 as the starting vertex.
-		while len(verts) > 0:
-			sym0 = verts.pop(0)
+		#Build chains from the set of symbols still left.
+		for sym0 in syms:
+			chains[sym0] = []
 			
-			for sym1 in innerGraph[sym0]:
-				chains[sym1] = list(chains[sym0])
-				chains[sym1].append(sym1)
-				
-				verts.append(sym1)
+			for sym1 in sym0['related']:
+				if len(chains[sym1]) > len(chains[sym0]):
+					chains[sym0] = chains[sym1].copy()
+			
+			#Add this symbol to the end of the chain.
+			chains[sym0].append(sym0)
 		
-		#Locate the longest path found.
+		#Find the longest of the chains that we have just built.
 		longestChain = []
-		for sym in chains:
-			if len(longestChain) < len(chains[sym]):
-				longestChain = chains[sym]
 		
-		#Add this to our final list of chains.
-		finalChains.append(longestChain)
+		for chain in chains.values():
+			if len(chain) > len(longestChain):
+				longestChain = chain
 		
-		#Prune the path from the outer graph.
-		for sym0 in longestChain:
-			del outerGraph[sym0]
+		longestChain = Chain(longestChain)
+		
+		#Remove the symbols in the longest chain from our symbol list, and
+		#give each one a refference to the chain they are a part of.
+		for sym in longestChain:
+			syms.remove(sym)
 			
-			for sym1 in outerGraph:
-				if sym0 in outerGraph[sym1]:
-					outerGraph[sym1].remove(sym0)
+			sym['chain'] = longestChain
+
+###############
+# Chain Class #
+###############
+
+class Chain(object):
+	def __init__(self, syms):
+		self.syms = set(syms)
 	
-	#Build the chain dictionary and mark the forward relations.
-	for chain in finalChains:
-		prevSym = None
+	def __iter__(self):
+		for sym in self.syms:
+			yield sym
+	
+	def split(sym, splitAfter = False):
+		if sym not in self.syms:
+			raise Exception("Trying to split a chain on a symbol that isn't a member.")
 		
-		for sym in chain:
-			sym['related-forward'] = prevSym
-			prevSym = sym
-			
-			chainDict[sym] = chain
-	
-	return chainDict
+		index = self.syms.index(sym)
+		
+		if splitAfter:
+			index += 1
+		
+		old = self.syms[0:index]
+		new = self.syms[index:]
+		
+		self.syms = old
+		
+		return Chain(new)

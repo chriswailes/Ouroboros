@@ -421,13 +421,13 @@ class While(Statement):
 			return syms
 	
 	def getChildren(self):
-		return [self.cond, self.condBody, self.body, self.jn]
+		return [self.jn, self.cond, self.condBody, self.body]
 	
 	def setChildren(self, children):
-		self.cond		= children[0]
-		self.condBody	= children[1]
-		self.body		= children[2]
-		self.jn		= children[3]
+		self.jn		= children[0]
+		self.cond		= children[1]
+		self.condBody	= children[2]
+		self.body		= children[3]
 	
 	def toPython(self, level = 0):
 		ret  = pad(level)

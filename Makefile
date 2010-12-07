@@ -7,7 +7,10 @@ CC		= gcc
 CFLAGS	= -O3 -Wall -fPIC -march=native
 LFLAGS	= -lm -Lruntime/ -lpyrun
 
-SUBDIRS	= analysis assembler lib runtime transforms
+SLOCOPS	= --wide
+
+PYDIRS	= analysis assembler lib transforms
+SUBDIRS	= $(PYDIRS) runtime
 
 all: runtime
 
@@ -26,7 +29,7 @@ runtime-static:
 
 .PHONY: stats
 stats:
-	wc -l `find . -name \*.py`
+	sloccount $(SLOCOPS) $(PYDIRS)
 
 .PHONY: clean
 clean:
