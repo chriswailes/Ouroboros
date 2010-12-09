@@ -161,7 +161,7 @@ def translate(node, st = None, strings = None, funcName = False):
 		
 		els = ast.BasicBlock(els)
 		
-		return ast.If(cond, then, els, jn)
+		return ast.If(cond, then, els, st)
 	
 	elif isinstance(node, oast.IfExp):
 		cond = translate(node.test, st, strings, funcName)

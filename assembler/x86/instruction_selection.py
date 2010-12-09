@@ -147,7 +147,7 @@ def selectInstructions(node, cf, dest = None):
 				code.append(move(left, eax))
 				left = eax
 			
-			elif left != dest:
+			elif left != dest and right != dest:
 				code.append(move(left, tmpColor0))
 				left = tmpColor0
 		

@@ -43,9 +43,9 @@ def flatten(orig):
 	new = []
 	
 	for el0 in orig:
-		if el0:
+		if el0 != None:
 			if classGuard(el0, list, tuple):
-				for elt1 in flatten(el0):
+				for el1 in flatten(el0):
 					new.append(el1)
 			else:
 				new.append(el0)

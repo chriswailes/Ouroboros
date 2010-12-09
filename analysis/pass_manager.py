@@ -80,13 +80,14 @@ from analysis import chains
 from analysis import heapify
 from analysis import interference
 from analysis import liveness
+from analysis import precolor
 from analysis import reads
 from analysis import related
 from analysis import scope
 from analysis import spans
 from analysis import weight
 
-toInit = [chains, heapify, interference, liveness, reads, related, scope, spans, weight]
+toInit = [chains, heapify, interference, liveness, precolor, reads, related, scope, spans, weight]
 
 for p in toInit:
 	p.init()

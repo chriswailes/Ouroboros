@@ -38,7 +38,7 @@ def simplify(node, st = None):
 		then = BasicBlock([Assign(sym0, node.then)])
 		els  = BasicBlock([Assign(sym1, node.els )])
 		
-		if_  = simplify(If(cond, then, els))
+		if_  = simplify(If(cond, then, els, st))
 		
 		#Append this new If node to our pre-statements and then replace the
 		#node with the target from the join node's only Phi node.

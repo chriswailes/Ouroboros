@@ -5,9 +5,9 @@ Date:		2010/09/24
 Description:	Find relationship chains.
 """
 
-args		= ['']
+args		= []
 prereqs	= ['heapify', 'related']
-result	= ''
+result	= None
 sets		= ['chain']
 
 def init():
@@ -18,9 +18,9 @@ def chains(tree):
 	syms = set()
 	
 	#Build PhiChains
-	for sym0 in tree.collectSymbols():
-		if len(sym0['phi-related']) > 0 and not self.has_key('chain'):
-			PhiChain(sym0['phi-related'])
+	for sym in tree.collectSymbols():
+		if len(sym['phi-related']) > 0 and not sym.has_key('chain'):
+			sym['chain'] =  PhiChain(sym['phi-related'])
 		
 		else:
 			syms.add(sym)
@@ -47,7 +47,7 @@ def chains(tree):
 				cond &= len(chains[sym1]) > len(chains[sym0])
 				
 				if cond:
-					chains[sym0] = chains[sym1].copy()
+					chains[sym0] = list(chains[sym1])
 			
 			#Add this symbol to the end of the chain.
 			chains[sym0].append(sym0)
@@ -71,7 +71,7 @@ def chains(tree):
 
 class BasicChain(object):
 	def __init__(self, syms):
-		self.syms = set(syms)
+		self.syms = list(syms)
 		
 		self.mark()
 	
@@ -82,13 +82,22 @@ class BasicChain(object):
 	def __len__(self):
 		return len(self.syms)
 	
+	def getPreColors(self):
+		preColors = set()
+		
+		for sym in self:
+			if sym['precolor']:
+				preColors.add(sym['precolor'])
+		
+		return preColors
+	
 	def interference(self):
 		interferingSyms = set()
 		
 		for sym in self:
 			interferingSyms |= sym['interference']
 		
-		return interferingeSyms
+		return interferingSyms
 	
 	def last(self):
 		return self.syms[-1]
@@ -96,7 +105,7 @@ class BasicChain(object):
 	def mark(self):
 		#Give each symbol in the chain a refference to it.
 		
-		for sym in self.syms:
+		for sym in self:
 			sym['chain'] = self
 	
 	def preferCaller(self):
@@ -124,16 +133,13 @@ class Chain(BasicChain):
 		
 		return color
 	
-	def getPreColors(self):
-		preColors = set()
+	def join(self, other):
+		self.syms += other.syms
+		self.mark()
 		
-		for sym in self:
-			if sym['precolor']:
-				preColors.add(sym['precolor'])
-		
-		return preColors
+		return self
 	
-	def split(sym, splitAfter = False):
+	def split(self, sym, splitAfter = False):
 		if sym not in self.syms:
 			raise Exception("Trying to split a chain on a symbol that isn't a member.")
 		

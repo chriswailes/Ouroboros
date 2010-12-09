@@ -9,7 +9,7 @@ from lib.ast import *
 
 from assembler.x86.coloring import interference, interSym0, interSym2
 
-def interfere(tree):
+def interfere(node):
 	if isinstance(node, Div):
 		for sym in node['pre-alive']:
 			sym['interference'] |= set([interSym0, interSym2])

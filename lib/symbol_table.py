@@ -54,7 +54,7 @@ class SymbolTable(object):
 		return ret
 	
 	def getSymbol(self, name, assign = False):
-		key = (Symbol, nam)
+		key = (Symbol, name)
 		readBeforeWrite = False
 		
 		if self.writeCounters.has_key(key):
@@ -80,7 +80,7 @@ class SymbolTable(object):
 	def rollback(self):
 		self.readCounters = self.readSnapshots.pop()
 	
-	def setVersion(key, version):
+	def setVersion(self, key, version):
 		self.readCounters[key] = self.writeCounters[key] = version
 	
 	def snapshot(self):

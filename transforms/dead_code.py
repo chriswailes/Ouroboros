@@ -24,7 +24,7 @@ def eliminateDeadCode(node):
 			#If statements or expressions with a literal conditional value
 			#can be eliminated and replaced with the appropriate BasicBlock's
 			#children.
-			if classGuard(child, If, IfExp) and isinstance(node.cond, Literal):
+			if classGuard(child, If, IfExp) and isinstance(child.cond, Literal):
 				block = child.then if child.cond.value else child.els
 				newChildren.append(block.children)
 			

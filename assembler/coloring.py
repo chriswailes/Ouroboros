@@ -127,7 +127,7 @@ class Mem(Color):
 			from x86_64.coloring import memBaseReg, memDirection
 		
 		self.baseReg = memBaseReg
-		self.direction = direction | memDirection
+		self.direction = direction or memDirection
 	
 	def __eq__(self, other):
 		if isinstance(other, Mem):

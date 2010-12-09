@@ -24,7 +24,7 @@ class Node(dict):
 		symbols = set([])
 		
 		for n in self:
-			symbols |= n.collectSymbols(which, descend)
+			symbols |= n.collectSymbols(which)
 		
 		return symbols
 	
@@ -53,7 +53,7 @@ class Node(dict):
 			if self.has_key(key):
 				del self[key]
 		
-		for child in node:
+		for child in self:
 			child.unset(*keys)
 
 ###############
@@ -109,7 +109,7 @@ class Join(Node):
 			self.phis
 		)
 	
-	def addSymbol(self, sym, st = None):
+	def addSymbol(self, sym, st):
 		phi0 = None
 		
 		for phi1 in self.phis:
@@ -124,7 +124,7 @@ class Join(Node):
 			else:
 				return sym
 		
-		elif st != None:
+		else:
 			target = st.getSymbol(sym.name, True)
 			phi0 = Phi(target, sym)
 			self.phis.append(phi0)
@@ -308,9 +308,10 @@ class Assign(Statement):
 		return ret
 
 class If(Statement):
-	def __init__(self, cond, then, els):
+	def __init__(self, cond, then, els, st):
 		self.cond	= cond
 		self.jn	= Join()
+		self.st	= st
 		
 		if isinstance(then, BasicBlock) and isinstance(els, BasicBlock):
 			self.then = then
@@ -321,7 +322,7 @@ class If(Statement):
 			raise Exception("Not a basic block.")
 	
 	def __repr__(self):
-		return "If(Cond: {!r}, Then: {!r}, Else: {!r, Join: {!r})".format(
+		return "If(Cond: {!r}, Then: {!r}, Else: {!r}, Join: {!r})".format(
 			self.cond,
 			self.then,
 			self.els,
@@ -371,10 +372,10 @@ class If(Statement):
 			syms |= self.then.collectSymbols('w')
 		
 		if not self.els.returns():
-			syms |= self.els.collecTSymbols('w')
+			syms |= self.els.collectSymbols('w')
 		
 		for sym in syms:
-			jn.addSymbol(sym)
+			self.jn.addSymbol(sym, self.st)
 
 class Return(Statement):
 	def __init__(self, value):
@@ -588,7 +589,7 @@ class BinOp(Expression):
 		self.right = right
 	
 	def __repr__(self):
-		return "{!r}({!r}, {!r})".format(
+		return "{}({!r}, {!r})".format(
 			self.__class__.__name__,
 			self.left,
 			self.right
@@ -616,7 +617,7 @@ class UnaryOp(Expression):
 		self.operand = operand
 	
 	def __repr__(self):
-		return "{!r}({!r})".format(
+		return "{}({!r})".format(
 			self.__class__.__name__,
 			self.operand
 		)

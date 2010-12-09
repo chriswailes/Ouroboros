@@ -8,7 +8,7 @@ Description:	This analysis pass is a wrapper around the architecture specific
 
 args		= []
 prereqs	= []
-result	= ''
+result	= None
 sets		= ['precolor']
 
 from lib.config import config

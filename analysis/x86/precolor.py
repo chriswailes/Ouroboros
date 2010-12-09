@@ -10,7 +10,7 @@ from lib.ast import *
 from assembler.coloring import Mem
 from assembler.x86.coloring import eax
 
-def precolor(tree):
+def precolor(node):
 	if isinstance(node, Div) and isinstance(node.left, Symbol):
 		node.left['precolor'] = eax
 	
@@ -33,5 +33,8 @@ def precolor(tree):
 		
 		node['precolor'] = eax
 	
+	elif isinstance(node, Symbol) and not node.has_key('precolor'):
+		node['precolor'] = None
+	
 	for child in node:
-		precolor(child, cf)
+		precolor(child)

@@ -22,13 +22,16 @@ def eliminateDeadStores(node):
 	for child in node:
 		newChildren.append(eliminateDeadStores(child))
 	
+	#~print("FOO")
+	#~print(newChildren)
+	
 	node.setChildren(flatten(newChildren))
 	
 	if isinstance(node, Assign) and node.var['reads'] == 0:
 		if isinstance(node.exp, FunctionCall):
 			return node.exp
 		
-		elif isinstance(node.exp, Class:
+		elif isinstance(node.exp, Class):
 			return node
 		
 		else:

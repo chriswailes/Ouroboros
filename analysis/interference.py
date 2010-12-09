@@ -8,7 +8,7 @@ Description:	Determines interference for symbols both due to overlapping live
 
 args		= []
 prereqs	= ['spans']
-result	= ''
+result	= None
 sets		= ['interference']
 
 from lib.config import config

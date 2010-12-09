@@ -10,7 +10,7 @@ from lib.util import extractSymbol
 
 args		= []
 prereqs	= ['liveness', 'spans']
-result	= ''
+result	= None
 sets		= ['related', 'phi-related']
 
 def init():
@@ -43,7 +43,7 @@ def related(node):
 				#this is an Add or Mul node.
 				sym1 = node.exp.right
 				
-				if sym2 not in node['post-alive']:
+				if sym1 not in node['post-alive']:
 					sym0['related'].add(sym1)
 		
 		elif isinstance(node.exp, UnaryOp) and isinstance(node.exp.operand, Symbol):
@@ -60,6 +60,7 @@ def related(node):
 	elif isinstance(node, Phi):
 		target = node.target
 		
+		target['related']		= set()
 		target['phi-related']	= set()
 		
 		for sym0 in node:
