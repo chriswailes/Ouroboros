@@ -1,31 +1,39 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/09/24
-Description:	Determines the liveness of varaibles at every node in the AST.
+Description:	Determines interference for symbols both due to overlapping live
+			ranges as well as architectural hazards.
 """
 
 args		= []
 prereqs	= ['spans']
-result	= 'ig'
-sets		= []
+result	= ''
+sets		= ['interference']
+
+from lib.config import config
 
 def init():
 	from analysis.pass_manager import register
-	register('interference', interference, args, prereqs, result, sets)
+	register('interference', interfere, args, prereqs, result, sets)
 
-def interference(tree):
+def interfere(tree):
 	symbols = tree.collectSymbols()
-	ig = {}
 	
 	for sym0 in symbols:
-		ig[sym0] = set([])
+		sym0['interference'] = set()
 	
 	for sym0 in symbols:
 		for sym1 in symbols:
 			if sym0 != sym1:
 				if sym0['span-start'] <= sym1['span-start'] <= sym0['span-end']:
-					ig[sym0] |= set([sym1])
-					ig[sym1] |= set([sym0])
+					sym0['interference'].add(sym1)
+					sym1['interference'].add(sym0)
 	
-	return ig
+	if config.arch == 'x86':
+		from x86 import interference as arch
+	
+	elif config.arch == 'x86_64':
+		from x86_64 import interference as arch
+	
+	arch.interfere(tree)

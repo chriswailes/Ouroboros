@@ -5,8 +5,6 @@ Date:		2010/09/24
 Description:	The pass manager for the analysis passes.
 """
 
-from lib.util import unset
-
 class AnalysisPass(object):
 	def __init__(self, fun, args, prereqs, result, sets):
 		self.fun		= fun
@@ -57,7 +55,7 @@ def runPasses(tree, ps):
 		if toRun == None:
 			raise Exception("Dependency resolution error: {0}".format(p))
 		
-		unset(tree, toRun.sets)
+		tree.unset(*toRun.sets)
 		
 		arglist = []
 		for arg in toRun.args:

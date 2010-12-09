@@ -17,16 +17,16 @@ def precolor(tree, ig, cf):
 	precolor(tree, ig, cf)
 
 def toColors(l):
-	colors = []
+	colors = set()
 	
 	for o in l:
 		if isinstance(o, Color):
-			colors.append(o)
+			colors.add(o)
 		
-		elif isinstance(o, Symbol) and o.has_key('color'):
-			colors.append(o['color'])
+		elif isinstance(o, Symbol) and o.has_key('color') and o['color']:
+			colors.add(o['color'])
 	
-	return set(colors)
+	return colors
 
 class ColorFactory(object):
 	def __init__(self):
@@ -54,7 +54,7 @@ class ColorFactory(object):
 		self.colors = set(regs)
 		self.offset = 0
 	
-	def getColor(self, interference = set([]), test = None, preferCaller = False):
+	def getColor(self, interference = set(), test = None, preferCaller = False):
 		color = None
 		
 		if preferCaller:
@@ -113,12 +113,12 @@ class Color(object):
 		return str(self)
 
 class Mem(Color):
-	def __init__(self, offset):
+	def __init__(self, offset, direction = None, tagged = False):
 		self.offset = offset
 		
 		self.formatString = "{0}{1:d}({2})"
 		
-		self.tagged = False
+		self.tagged = tagged
 		self.tag = None
 		
 		if config.arch == 'x86':
@@ -127,7 +127,7 @@ class Mem(Color):
 			from x86_64.coloring import memBaseReg, memDirection
 		
 		self.baseReg = memBaseReg
-		self.direction = memDirection
+		self.direction = direction | memDirection
 	
 	def __eq__(self, other):
 		if isinstance(other, Mem):

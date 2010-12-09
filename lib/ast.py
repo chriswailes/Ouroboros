@@ -47,6 +47,14 @@ class Node(dict):
 	
 	def setChildren(self, children):
 		pass
+	
+	def unset(self, *keys):
+		for key in keys:
+			if self.has_key(key):
+				del self[key]
+		
+		for child in node:
+			child.unset(*keys)
 
 ###############
 # SSA Classes #

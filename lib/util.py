@@ -98,14 +98,6 @@ def substitute(node, callTest, substituteTest, replacement):
 	
 	return node
 
-def unset(node, sets):
-	for key in sets:
-		if node.has_key(key):
-			del node[key]
-	
-	for child in node:
-		unset(child, sets)
-
 class Enum(object):
 	def __init__(self, value):
 		self.value = value

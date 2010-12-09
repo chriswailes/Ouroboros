@@ -6,8 +6,8 @@ Description:	The __init__.py file for the assembler module.
 """
 
 class Spill(Exception):
-	def __init__(self, symbols):
-		self.symbols = symbols
+	def __init__(self, syms):
+		self.symbols = set(syms)
 	
 	def __str__(self):
 		"Spill: {0}".format(self.symbols)
