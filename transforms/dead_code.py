@@ -23,7 +23,7 @@ def eliminateDeadCode(node):
 		newChild = eliminateDeadCode(child)
 		
 		if isinstance(node, BasicBlock):
-			if classGuard(newChild, Class, Function, FunctionCall, Statement):
+			if classGuard(newChild, Class, Function, FunctionCall, SetAttr, Statement):
 				newChildren.append(newChild)
 			
 			elif isinstance(newChild, BasicBlock):

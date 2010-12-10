@@ -53,6 +53,7 @@ class Node(dict):
 	def unset(self, *keys):
 		for key in keys:
 			if self.has_key(key):
+				#~print("Deleting {} from {}".format(key, self))
 				del self[key]
 		
 		for child in self:
@@ -379,17 +380,17 @@ class If(Statement):
 	def updateJoin(self):
 		syms = set([])
 		
-		print("Updating a Join")
+		#~print("Updating a Join")
 		
 		if not self.then.returns():
 			syms |= self.then.collectSymbols('wol')
 		
-		print("First: {}".format(syms))
+		#~print("First: {}".format(syms))
 		
 		if not self.els.returns():
 			syms |= self.els.collectSymbols('wol')
 		
-		print("Second: {}".format(syms))
+		#~print("Second: {}".format(syms))
 		
 		for sym in syms:
 			self.jn.addSymbol(sym, self.st)

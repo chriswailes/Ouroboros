@@ -15,18 +15,25 @@ def init():
 	register('chains', chains, args, prereqs, result, sets)
 
 def chains(tree):
-	syms = set()
+	syms = []
+	
+	#~print("Setting chains")
 	
 	#Build PhiChains
 	for sym in tree.collectSymbols():
 		if len(sym['phi-related']) > 0:
 			if not sym.has_key('chain'):
-				sym['chain'] =  PhiChain([sym] + list(sym['phi-related']))
+				#Create our phi chain.  The constructor will store the
+				#reference to the chain in each of its member symbols.  This
+				#will create the references necessary to avoid having the
+				#chain CGed right away.
+				
+				PhiChain(sym['phi-related'])
 		
 		else:
-			syms.add(sym)
+			syms.append(sym)
 	
-	print("Staring symbols: {}".format(syms))
+	#~print("Staring symbols: {}".format([id(sym) for sym in syms]))
 	
 	#Build Chains
 	while len(syms) > 0:
@@ -62,12 +69,13 @@ def chains(tree):
 			if len(chain) > len(longestChain):
 				longestChain = chain
 		
-		longestChain = Chain(longestChain)
+		#Create our longest chain.  The constructor will store the reference
+		#to the chain in each of its member symbols.  This will create the
+		#references necessary to avoid having the chain CGed right away.
+		Chain(longestChain)
 		
-		#Remove the symbols in the longest chain from our symbol list.
-		for sym in longestChain:
-			print("Removing {} -> {}".format(sym, sym['chain']))
-			syms.remove(sym)
+		#Remove the symbols from the longest chain from our symbol table.
+		syms = set(syms) - set(longestChain)
 	
 	print('')
 
@@ -78,7 +86,6 @@ def chains(tree):
 class BasicChain(object):
 	def __init__(self, syms):
 		self.syms = list(syms)
-		
 		self.mark()
 	
 	def __iter__(self):
@@ -117,7 +124,7 @@ class BasicChain(object):
 	def mark(self):
 		#Give each symbol in the chain a refference to it.
 		
-		for sym in self:
+		for sym in self.syms:
 			sym['chain'] = self
 	
 	def preferCaller(self):

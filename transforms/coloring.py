@@ -27,11 +27,23 @@ def init():
 ##################
 
 def color(tree, cf):
+	
+	###################
+	# String Coloring #
+	###################
+	
+	for string in tree.strings:
+		tree.strings[string]['color'] = cf.getDataLabel(True)
+	
+	###################
+	# Symbol Coloring #
+	###################
+	
 	syms = sorted(tree.collectSymbols(), key = lambda sym: sym['span-start'])
 	
 	for sym in syms:
-		print("Attempting to color {}".format(sym))
-		print(sym.keys())
+		print("Attempting to color {} : {}".format(sym, id(sym)))
+		#~print(sym.keys())
 		
 		chain		= sym['chain']
 		interference	= toColors(sym['interference'] - set(chain.syms))
@@ -49,7 +61,7 @@ def color(tree, cf):
 			#is a function argument.  Therefor we must take its precolor as
 			#its color.
 			
-			print("Coloring based on pre-color")
+			#~print("Coloring based on pre-color")
 			
 			color = sym['precolor']
 		
@@ -57,8 +69,8 @@ def color(tree, cf):
 			#Here we will try and give all phi-related symbols the same
 			#color.
 			
-			print("Coloring based on PhiChain")
-			print(chain)
+			#~print("Coloring based on PhiChain")
+			#~print(chain)
 			
 			colors = list(chain.getColors())
 			
@@ -67,7 +79,7 @@ def color(tree, cf):
 				#symbols we will try and get a new one that meets the
 				#maximum constraint of all the symbols.
 				
-				print("Picking a new color for this PhiChain")
+				#~print("Picking a new color for this PhiChain")
 				
 				if len(preColors) == 1 and preColors[0] not in chain.interference():
 					color = preColors[0]
@@ -90,22 +102,22 @@ def color(tree, cf):
 				#between them.  We will see if it causes interference,
 				#and if not, we will use it.
 				
-				print("PhiChain has one existing color.")
-				print("Interference: {}".format(interference))
+				#~print("PhiChain has one existing color.")
+				#~print("Interference: {}".format(interference))
 				
 				if colors[0] not in interference and isinstance(colors[0], Register):
-					print("Using existing PhiChain color")
+					#~print("Using existing PhiChain color")
 					color = colors[0]
 			
 			else:
 				#There are several choices in colors from this symbol's
 				#phi-relatives.  If any of them work we will use them.
 				
-				print("PhiChain has multiple colors.")
+				#~print("PhiChain has multiple colors.")
 				
 				for c in colors:
 					if c not in interference and isinstance(c, Register):
-						print("Picked {} from PhiChain's colors.".format(c))
+						#~print("Picked {} from PhiChain's colors.".format(c))
 						color = c
 						break
 		

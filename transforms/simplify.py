@@ -134,7 +134,7 @@ def simplify(node, st = None):
 		node = sym
 	
 	elif isinstance(node, SetAttr):
-		node = FunctionCall(st.getName('set_attr'), node.exp, node.attrName, node.value)
+		node = FunctionCall(st.getBIF('set_attr'), node.exp, node.attrName, node.value)
 	
 	elif isinstance(node, Subscript):
 		#If there is a read from a subscript it needs to be replaced with a

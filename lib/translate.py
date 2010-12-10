@@ -271,9 +271,9 @@ def translate(node, st = None, strings = None, funcName = False):
 		return ast.Subscript(sym, sub)
 	
 	elif isinstance(node, oast.While):
-		cond = translate(node.test, st, strings, funcName, True)
+		cond = translate(node.test, st, strings, funcName)
 		
-		body = translate(node.body, st, strings, funcName, True)
+		body = translate(node.body, st, strings, funcName)
 		body = ast.BasicBlock(body)
 		
 		return ast.While(cond, body)

@@ -134,33 +134,40 @@ static void print_bool(int b) {
 }
 
 static void print_pyobj(pyobj x) {
-  switch (tag(x)) {
-  case INT_TAG:
-    print_int(project_int(x));
-    break;
-  case BOOL_TAG:
-    print_bool(project_bool(x));
-    break;
-  case FLOAT_TAG:
-    print_float(project_float(x));
-    break;
-  case BIG_TAG: {
-    big_pyobj* b = project_big(x);
-    switch (b->tag) {
-    case DICT:
-      print_dict(x);
-      break;
-    case LIST:
-      print_list(x);
-      break;
-    default:
-      assert(0);
-    }
-    break;
-  }
-  default:
-    assert(0);
-  }
+	switch (tag(x)) {
+		case INT_TAG:
+			print_int(project_int(x));
+			break;
+		
+		case BOOL_TAG:
+			print_bool(project_bool(x));
+			break;
+		
+		case FLOAT_TAG:
+			print_float(project_float(x));
+			break;
+		
+		case BIG_TAG: {
+			big_pyobj* b = project_big(x);
+			
+			switch (b->tag) {
+				case DICT:
+					print_dict(x);
+					break;
+				
+				case LIST:
+					print_list(x);
+					break;
+				
+				default:
+				assert(0);
+			}
+			break;
+		}
+		
+		default:
+			assert(0);
+	}
 }
 
 int input() {

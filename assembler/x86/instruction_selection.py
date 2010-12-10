@@ -515,10 +515,6 @@ def selectInstructions(node, cf, dest = None):
 		then = selectInstructions(node.then, cf)
 		els  = selectInstructions(node.els,  cf)
 		
-		#~print("If: {0}".format(cond))
-		#~print("Then: {0}".format(then))
-		#~print("Else: {0}".format(els))
-		
 		#Here we compare the conditional to False, and if it is less then or
 		#equal to False (either False or 0) we will go to the else case.
 		return buildITE(cond, then, els, FALS, 'jle')

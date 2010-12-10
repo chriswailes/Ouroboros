@@ -29,12 +29,16 @@ def declassify(node, st = None, strings = None, klass = None):
 	if isinstance(node, Class):
 		sym = st.getTemp()
 		
-		fun = FunctionCall(st.getName('create_class'), List(node.bases))
+		fun = FunctionCall(st.getBIF('create_class'), List(node.bases))
 		fun.tag = OBJ
 		
 		preStmts.append(Assign(sym, fun))
 		
+		print("Body: {}".format(node.body))
+		
 		_, body = declassify(node.body, st, strings, sym)
+		
+		print("Body: {}".format(body))
 		
 		preStmts.append(body)
 		
@@ -44,6 +48,8 @@ def declassify(node, st = None, strings = None, klass = None):
 		string = node.var.name
 		string = strings.setdefault(string, String(string))
 		
+		print("Re-writing assignment to SetAttr")
+		
 		node = SetAttr(klass, string, node.exp)
 	
 	elif isinstance(node, FunctionCall):
@@ -52,18 +58,18 @@ def declassify(node, st = None, strings = None, klass = None):
 			string = strings.setdefault('__init__', String('__init__'))
 			
 			base = node.name
-			fun = FunctionCall(st.getName('create_object'), base)
+			fun = FunctionCall(st.getBIF('create_object'), base)
 			fun.tag = OBJ
 			
 			preStmts.append(Assign(sym, fun))
 			
-			cond = FunctionCall(st.getName('has_attr'), base, string)
+			cond = FunctionCall(st.getBIF('has_attr'), base, string)
 			cond.tag = BOOL
 			
 			then = BasicBlock([FunctionCall(GetAttr(base, string), sym, *node.args)])
 			els  = BasicBlock([])
 			
-			preStmts.append(If(cond, then, els))
+			preStmts.append(If(cond, then, els, st))
 			
 			node = sym
 		
@@ -82,7 +88,7 @@ def declassify(node, st = None, strings = None, klass = None):
 			else:
 				preStmts.append(childPreStmts)
 				newChildren.append(newChild)
-		
+	
 		#Set the node's new children.
 		newChildren = util.flatten(newChildren)
 		node.setChildren(newChildren)
@@ -100,6 +106,6 @@ def simplifyClassBody(node, klass, st, assigned = []):
 		node.setChildren([simplifyClassBody(child, klass, st, assigned) for child in node])
 	
 	if isinstance(node, Assign):
-		node = FunctionCall(st.getName('set_attr'), klass, node.var, node.exp)
+		node = FunctionCall(st.getBIF('set_attr'), klass, node.var, node.exp)
 	
 	return node

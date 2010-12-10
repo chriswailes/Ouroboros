@@ -61,15 +61,14 @@ def related(node):
 		target = node.target
 		
 		target['related']		= set()
-		target['phi-related']	= set()
+		target['phi-related']	= set([target])
 		
 		for sym0 in node:
 			target['phi-related'].add(sym0)
 			sym0['phi-related'].add(target)
 			
 			for sym1 in node:
-				if sym0 != sym1:
-					sym0['phi-related'].add(sym1)
+				sym0['phi-related'].add(sym1)
 	
 	for child in node:
 		related(child)

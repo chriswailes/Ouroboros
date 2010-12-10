@@ -16,18 +16,21 @@ def init():
 	from transforms.pass_manager import register
 	register('dead_store', eliminateDeadStores, analysis, args)
 
-def eliminateDeadStores(node):
+def eliminateDeadStores(node, klass = 0):
 	newChildren = []
 	
+	if isinstance(node, Class):
+		klass += 1
+	
 	for child in node:
-		newChildren.append(eliminateDeadStores(child))
+		newChildren.append(eliminateDeadStores(child, klass))
 	
 	node.setChildren(flatten(newChildren))
 	
 	if isinstance(node, Assign):
 		sym = extractSymbol(node.var)
 		
-		if sym['reads'] == 0:
+		if sym['reads'] == 0 and klass == 0:
 			if classGuard(node.exp, Class, FunctionCall):
 				return node
 			

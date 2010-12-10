@@ -55,8 +55,6 @@ def runPasses(tree, ps):
 		if toRun == None:
 			raise Exception("Dependency resolution error: {0}".format(p))
 		
-		tree.unset(*toRun.sets)
-		
 		arglist = []
 		for arg in toRun.args:
 			arglist.append(results[arg])
@@ -65,6 +63,7 @@ def runPasses(tree, ps):
 			results[toRun.result] = toRun.fun(tree, *arglist)
 		
 		else:
+			tree.unset(*toRun.sets)
 			toRun.fun(tree, *arglist)
 		
 		remaining = remaining - set([toRunName])

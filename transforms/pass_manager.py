@@ -5,6 +5,8 @@ Date:		2010/09/24
 Description:	The pass manager for the transformation passes.
 """
 
+from lib.ast import Module
+
 from analysis import pass_manager as apm
 
 class TransformPass(object):
@@ -33,6 +35,9 @@ def register(name, fun, analysis, args):
 
 def runTransform(tree, transform, addArgs = {}):
 	global passes
+	
+	if not isinstance(tree, Module):
+		raise Exception("Root node of tree wasn't a module.")
 	
 	if isinstance(transform, list):
 		transforms = []
