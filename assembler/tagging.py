@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/10/12
 Description:	Constants and functions for dealing with polymorphism.
 """

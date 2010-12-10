@@ -53,7 +53,6 @@ class Node(dict):
 	def unset(self, *keys):
 		for key in keys:
 			if self.has_key(key):
-				#~print("Deleting {} from {}".format(key, self))
 				del self[key]
 		
 		for child in self:
@@ -125,7 +124,7 @@ class Join(Node):
 				phi0.addSrc(sym)
 			
 			else:
-				return sym
+				return phi0.target
 		
 		else:
 			target = st.getSymbol(sym.name, True)
@@ -136,6 +135,20 @@ class Join(Node):
 	
 	def getChildren(self):
 		return self.phis
+	
+	def getTarget(self, sym):
+		phi0 = None
+		
+		for phi1 in self.phis:
+			if phi1.target.name == sym.name:
+				phi0 = phi1
+				break
+		
+		if phi0 != None:
+			return phi0.target
+		
+		else:
+			return None
 	
 	def getTargets(self):
 		return [phi.target for phi in self.phis]
@@ -341,7 +354,6 @@ class If(Statement):
 		)
 	
 	def collectSymbols(self, which = 'a'):
-		
 		if which == 'wol':
 			syms = set(self.jn.getTargets())
 		
@@ -380,22 +392,14 @@ class If(Statement):
 	def updateJoin(self):
 		syms = set([])
 		
-		#~print("Updating a Join")
-		
 		if not self.then.returns():
 			syms |= self.then.collectSymbols('wol')
-		
-		#~print("First: {}".format(syms))
 		
 		if not self.els.returns():
 			syms |= self.els.collectSymbols('wol')
 		
-		#~print("Second: {}".format(syms))
-		
 		for sym in syms:
 			self.jn.addSymbol(sym, self.st)
-		
-		print('')
 
 class Return(Statement):
 	def __init__(self, value):
@@ -419,26 +423,27 @@ class Return(Statement):
 		return pad(level) + 'return ' + self.value.toPython()
 
 class While(Statement):
-	def __init__(self, cond, body):
-		self.cond	= cond
-		self.jn	= Join()
+	def __init__(self, cond, body, st):
+		
+		self.jn		= Join()
+		self.cond		= cond
+		self.condBody	= BasicBlock([])
+		self.st		= st
 		
 		if isinstance(body, BasicBlock):
 			self.body = body
 			self.updateJoin()
-		
-		self.condBody = BasicBlock([])
 	
 	def __repr__(self):
-		return "While(Cond: {!r}, CondBody: {!r}, Body: {!r}, Join: {!r})".format(
+		return "While(Join: {!r}, Cond: {!r}, CondBody: {!r}, Body: {!r})".format(
+			self.jn,
 			self.cond,
 			self.condBody,
-			self.body,
-			self.jn
+			self.body
 		)
 	
 	def collectSymbols(self, which = 'a'):
-		if which == 'w':
+		if which == 'wol':
 			return set(self.jn.getTargets())
 		
 		else:
@@ -483,7 +488,25 @@ class While(Statement):
 		return ret
 	
 	def updateJoin(self):
-		pass
+		syms  = self.cond.collectSymbols('r')
+		
+		syms |= self.condBody.collectSymbols('r')
+		syms |= self.condBody.collectSymbols('wol')
+		
+		syms |= self.body.collectSymbols('r')
+		syms |= self.body.collectSymbols('wol')
+		
+		callTest = lambda node: not isinstance(node, Phi)
+		
+		for sym in syms:
+			target = self.jn.addSymbol(sym, self.st)
+			
+			substituteTest	= lambda node: node is sym
+			replacement	= lambda node: target
+			
+			self.cond		= substitute(self.cond, callTest, substituteTest, replacement)
+			self.condBody	= substitute(self.condBody, callTest, substituteTest, replacement)
+			self.body		= substitute(self.body, callTest, substituteTest, replacement)
 
 ###############
 # Expressions #

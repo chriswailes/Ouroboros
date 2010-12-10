@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/10/21
 Description:	A transformation that moves function definitions out of the body
 			of a module and into the module's functions variable.

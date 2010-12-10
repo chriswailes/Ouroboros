@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/09/20
 Description:	Generic assembler coloring classes and functions.
 """

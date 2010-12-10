@@ -1,5 +1,5 @@
 #Author		= Chris Wailes <chris.wailes@gmail.com
-#Project		= CSCI 5525 HW1
+#Project		= Ouroboros
 #Date		= 2010/09/03
 #Description	= Makefile for pycom/assembler
 

@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/09/02
 Description:	The instruction selection code for the x86 architecture.
 """
@@ -383,6 +383,10 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.Function):
 		code = Block()
 		
+		#Mark that the arguments are taged.
+		#~for color in toColors(node.argSymbols):
+			#~color.tagged = True
+		
 		code.append(Directive("globl {0}".format(node.name), False))
 		code.append(Directive('align 4', False))
 		code.append(Label(node.name, ''))
@@ -426,11 +430,6 @@ def selectInstructions(node, cf, dest = None):
 		code = Block()
 		
 		#Save any caller saved registers that are in use after this call.
-		
-		#~print("Function call: {0}".format(node))
-		#~print("Post-alive: {0}".format(node['post-alive']))
-		#~print("Coolors: {0}\n".format(toColors(node['post-alive'])))
-		
 		saveColors = toColors(node['post-alive'])
 		saveRegs(code, caller, saveColors)
 		
@@ -509,11 +508,18 @@ def selectInstructions(node, cf, dest = None):
 		return code
 	
 	elif isinstance(node, ast.If):
-		#~print("Selecting Instructions for {0}".format(node))
-		
 		cond = selectInstructions(node.cond, cf)
 		then = selectInstructions(node.then, cf)
 		els  = selectInstructions(node.els,  cf)
+		
+		thenSyms = node.then.collectSymbols('r')
+		elseSyms = node.els.collectSymbols('r')
+		
+		#Insert Phi moves.
+		for phi in node.jn:
+			for sym in phi.srcs:
+				if sym['color'] != phi.target['color']:
+					(then if sym in thenSyms else els).append(move(sym['color'], phi.target['color']))
 		
 		#Here we compare the conditional to False, and if it is less then or
 		#equal to False (either False or 0) we will go to the else case.
@@ -642,6 +648,12 @@ def selectInstructions(node, cf, dest = None):
 		cond		= selectInstructions(node.cond, cf)
 		condBody	= selectInstructions(node.condBody, cf)
 		body		= selectInstructions(node.body, cf)
+		
+		#Insert Phi moves.
+		for phi in node.jn.phis:
+			for src in phi:
+				if src['color'] != phi.target['color']:
+					(code if src in node['pre-alive'] else body).append(move(src['color'], phi.target['color']))
 		
 		l0 = getLabel()
 		l1 = getLabel()

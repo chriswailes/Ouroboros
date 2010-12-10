@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/09/24
 Description:	Find relationship chains.
 """
@@ -17,8 +17,6 @@ def init():
 def chains(tree):
 	syms = []
 	
-	#~print("Setting chains")
-	
 	#Build PhiChains
 	for sym in tree.collectSymbols():
 		if len(sym['phi-related']) > 0:
@@ -28,12 +26,12 @@ def chains(tree):
 				#will create the references necessary to avoid having the
 				#chain CGed right away.
 				
-				PhiChain(sym['phi-related'])
+				phiSet = buildFullPhiSet(sym['phi-related'])
+				
+				PhiChain(phiSet)
 		
 		else:
 			syms.append(sym)
-	
-	#~print("Staring symbols: {}".format([id(sym) for sym in syms]))
 	
 	#Build Chains
 	while len(syms) > 0:
@@ -76,8 +74,22 @@ def chains(tree):
 		
 		#Remove the symbols from the longest chain from our symbol table.
 		syms = set(syms) - set(longestChain)
+
+def buildFullPhiSet(syms):
+	fullSet	= set()
+	seen		= set()
 	
-	print('')
+	while len(syms) > 0:
+		sym = syms.pop()
+		
+		if sym not in fullSet:
+			fullSet.add(sym)
+			
+			syms |= sym['phi-related'] - seen
+		
+		seen.add(sym)
+	
+	return fullSet
 
 ###############
 # Chain Class #
