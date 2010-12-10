@@ -17,9 +17,11 @@ class Node(dict):
 			yield n
 	
 	#Options are:
-	#	a - All symbols
-	#	r - Symbols that are read from
-	#	w - Symbols that are written to
+	#	a	- All symbols
+	#	r	- Symbols that are read from
+	#	w	- Symbols that are written to
+	#	wol	- "Write - One Level" This returns symbols that are written to,
+	#			without decending into If or While nodes.
 	def collectSymbols(self, which = 'a'):
 		symbols = set([])
 		
@@ -225,7 +227,7 @@ class Function(Node):
 	def collectSymbols(self, which = 'a'):
 		syms = self.block.collectSymbols(which)
 		
-		if which == 'a' or which == 'w':
+		if which == 'a' or which == 'w' or which == 'wol':
 			syms |= set(self.argSymbols)
 		
 		return syms
@@ -306,6 +308,14 @@ class Assign(Statement):
 		ret += "{0} = {1}".format(self.var.toPython(), self.exp.toPython())
 		
 		return ret
+	
+	def unset(self, *keys):
+		for key in keys:
+			if self.has_key(key):
+				del self[key]
+		
+		self.var.unset(*keys)
+		self.exp.unset(*keys)
 
 class If(Statement):
 	def __init__(self, cond, then, els, st):
@@ -330,16 +340,17 @@ class If(Statement):
 		)
 	
 	def collectSymbols(self, which = 'a'):
-		if which == 'w':
-			return set(self.jn.getTargets())
+		
+		if which == 'wol':
+			syms = set(self.jn.getTargets())
 		
 		else:
-			syms = set([])
+			syms = set()
 			
 			for child in self:
 				syms |= child.collectSymbols(which)
 			
-			return syms
+		return syms
 	
 	def getChildren(self):
 		return [self.cond, self.then, self.els, self.jn]
@@ -368,14 +379,22 @@ class If(Statement):
 	def updateJoin(self):
 		syms = set([])
 		
+		print("Updating a Join")
+		
 		if not self.then.returns():
-			syms |= self.then.collectSymbols('w')
+			syms |= self.then.collectSymbols('wol')
+		
+		print("First: {}".format(syms))
 		
 		if not self.els.returns():
-			syms |= self.els.collectSymbols('w')
+			syms |= self.els.collectSymbols('wol')
+		
+		print("Second: {}".format(syms))
 		
 		for sym in syms:
 			self.jn.addSymbol(sym, self.st)
+		
+		print('')
 
 class Return(Statement):
 	def __init__(self, value):
@@ -888,7 +907,7 @@ class Symbol(Value):
 		return "{0}:{1:d}".format(self.name, self.version)
 	
 	def collectSymbols(self, which = 'b'):
-		return set([self]) if which != 'w' else set([])
+		return set([self]) if which == 'a' or which == 'r' else set([])
 	
 	def toPython(self, level = 0):
 		return str(self)

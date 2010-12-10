@@ -7,7 +7,7 @@ Description:	Removes variables that are never read from and functions that are
 """
 
 from lib.ast import *
-from lib.util import classGuard, flatten
+from lib.util import classGuard, extractSymbol, flatten
 
 analysis	= ['reads']
 args		= []
@@ -22,20 +22,20 @@ def eliminateDeadStores(node):
 	for child in node:
 		newChildren.append(eliminateDeadStores(child))
 	
-	#~print("FOO")
-	#~print(newChildren)
-	
 	node.setChildren(flatten(newChildren))
 	
-	if isinstance(node, Assign) and node.var['reads'] == 0:
-		if isinstance(node.exp, FunctionCall):
-			return node.exp
+	if isinstance(node, Assign):
+		sym = extractSymbol(node.var)
 		
-		elif isinstance(node.exp, Class):
-			return node
+		if sym['reads'] == 0:
+			if classGuard(node.exp, Class, FunctionCall):
+				return node
+			
+			else:
+				return None
 		
 		else:
-			return None
+			return node
 	
 	elif isinstance(node, Phi) and node.target['reads'] == 0:
 		return None

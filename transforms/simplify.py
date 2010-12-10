@@ -24,7 +24,10 @@ def simplify(node, st = None):
 	preStmts		= []
 	st			= node.st if isinstance(node, Function) else st
 	
-	#Pre-simplification clauses.
+	##############################
+	# Pre-simplification Clauses #
+	##############################
+	
 	if isinstance(node, IfExp):
 		#Simplify he conditional expression.
 		condPreStmts, cond = simplify(node.cond, st)
@@ -38,7 +41,7 @@ def simplify(node, st = None):
 		then = BasicBlock([Assign(sym0, node.then)])
 		els  = BasicBlock([Assign(sym1, node.els )])
 		
-		if_  = simplify(If(cond, then, els, st))
+		_, if_  = simplify(If(cond, then, els, st), st)
 		
 		#Append this new If node to our pre-statements and then replace the
 		#node with the target from the join node's only Phi node.
@@ -63,16 +66,16 @@ def simplify(node, st = None):
 	
 	#Post-simplification clauses.
 	if isinstance(node, Assign) and isinstance(node.var, Subscript):
-		node = FunctionCall(st.getName('set_subscript'), node.var.symbol, node.var.subscript, node.exp)
+		node = FunctionCall(st.getBIF('set_subscript'), node.var.symbol, node.var.subscript, node.exp)
 	
 	elif isinstance(node, Dictionary):
-		fun = FunctionCall(st.getName('create_dict'))
+		fun = FunctionCall(st.getBIF('create_dict'))
 		fun.tag = OBJ
 		
 		sym = st.getTemp()
 		preStmts.append(Assign(sym, fun))
 		
-		name = st.getName('set_subscript')
+		name = st.getBIF('set_subscript')
 		for key in node.value:
 			#Add the key/value pair to the dictionary.
 			preStmts.append(FunctionCall(name, sym, key, node.value[key]))
@@ -107,23 +110,23 @@ def simplify(node, st = None):
 			
 			util.substitute(node, callTest, substituteTest, replacement)
 			
-			node = FunctionCall(Name('create_closure'), node.name, List(closure))
+			node = FunctionCall(st.getBIF('create_closure'), node.name, List(closure))
 			node.tag = OBJ
 		
 		else:
 			node = node.name
 	
 	elif isinstance(node, GetAttr):
-		node = FunctionCall(st.getName('get_attr'), node.exp, node.attrName)
+		node = FunctionCall(st.getBIF('get_attr'), node.exp, node.attrName)
 	
 	elif isinstance(node, List):
-		fun = FunctionCall(st.getName('create_list'), Integer(len(node.value)))
+		fun = FunctionCall(st.getBIF('create_list'), Integer(len(node.value)))
 		fun.tag = OBJ
 		
 		sym = st.getTemp()
 		preStmts.append(Assign(sym, fun))
 		
-		name = st.getName('set_subscript')
+		name = st.getBIF('set_subscript')
 		for index in range(0, len(node.value)):
 			preStmts.append(FunctionCall(name, sym, Integer(index), node.value[index]))
 		
@@ -136,7 +139,7 @@ def simplify(node, st = None):
 	elif isinstance(node, Subscript):
 		#If there is a read from a subscript it needs to be replaced with a
 		#function call.
-		funName = st.getName('get_subscript')
+		funName = st.getBIF('get_subscript')
 		node = FunctionCall(funName, node.symbol, node.subscript)
 	
 	#Flatten our list of pre-statements.

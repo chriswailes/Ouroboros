@@ -17,26 +17,20 @@ def init():
 	register('dead_code', eliminateDeadCode, analysis, args)
 
 def eliminateDeadCode(node):
-	if isinstance(node, BasicBlock):
-		newChildren = []
+	newChildren = []
+	
+	for child in node:
+		newChild = eliminateDeadCode(child)
 		
-		for child in node:
-			#If statements or expressions with a literal conditional value
-			#can be eliminated and replaced with the appropriate BasicBlock's
-			#children.
-			if classGuard(child, If, IfExp) and isinstance(child.cond, Literal):
-				block = child.then if child.cond.value else child.els
-				newChildren.append(block.children)
+		if isinstance(node, BasicBlock):
+			if classGuard(newChild, Class, Function, FunctionCall, Statement):
+				newChildren.append(newChild)
 			
-			elif classGuard(child, Class, Function, FunctionCall, Statement):
-				newChildren.append(child)
+			elif isinstance(newChild, BasicBlock):
+				newChildren.append(newChild.children)
 			
-			elif isinstance(child, BasicBlock):
-				#We can discard the nested BasicBlock.
-				newChildren.append(eliminateDeadCode(child).children)
-			
-			elif isinstance(child, Return):
-				newChildren.append(node)
+			elif isinstance(newChild, Return):
+				newChildren.append(newChild)
 				
 				#All nodes after the Return node will be discarded due to
 				#unreachability.
@@ -47,15 +41,21 @@ def eliminateDeadCode(node):
 				#statement, and therefor has no effect on the program.
 				#Therefor we remove any nested statements from the expression
 				#then throw it away.
-				newChildren.append(extractStmts(child))
+				newChildren.append(extractStmts(newChild))
 		
-		node.setChildren(flatten(newChildren))
+		else:
+			newChildren.append(newChild)
+	
+	node.setChildren(flatten(newChildren))
+	
+	if classGuard(node, If, IfExp) and isinstance(node.cond, Literal):
+		#If statements or expressions with a literal conditional value can be
+		#eliminated and replaced with the appropriate BasicBlock's children.
+			
+		return node.then if node.cond.value else node.els
 	
 	else:
-		for child in node:
-			eliminateDeadCode(child)
-	
-	return node
+		return node
 
 #Extracts statements from expressions and returns them.
 def extractStmts(exp):

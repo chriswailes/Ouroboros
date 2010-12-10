@@ -6,12 +6,19 @@ Description:	This file contains a x86 specific precoloring analysis pass.
 """
 
 from lib.ast import *
+from lib.util import classGuard, extractSymbol
 
 from assembler.coloring import Mem
 from assembler.x86.coloring import eax
 
 def precolor(node):
-	if isinstance(node, Div) and isinstance(node.left, Symbol):
+	if classGuard(node, Assign, Phi):
+		sym = extractSymbol(node)
+		
+		if not sym.has_key('precolor'):
+			sym['precolor'] = None
+	
+	elif isinstance(node, Div) and isinstance(node.left, Symbol):
 		node.left['precolor'] = eax
 	
 	elif isinstance(node, Function):
@@ -32,9 +39,6 @@ def precolor(node):
 		#Values are returned from functions in the %eax register.
 		
 		node['precolor'] = eax
-	
-	elif isinstance(node, Symbol) and not node.has_key('precolor'):
-		node['precolor'] = None
 	
 	for child in node:
 		precolor(child)

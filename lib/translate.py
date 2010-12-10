@@ -266,7 +266,7 @@ def translate(node, st = None, strings = None, funcName = False):
 	
 	elif isinstance(node, oast.Subscript):
 		sym = translate(node.expr, st, strings, funcName)
-		sub = translate(node.subs[0], st, strings, jn, funcName)
+		sub = translate(node.subs[0], st, strings, funcName)
 		
 		return ast.Subscript(sym, sub)
 	

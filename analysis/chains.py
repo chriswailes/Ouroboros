@@ -19,11 +19,14 @@ def chains(tree):
 	
 	#Build PhiChains
 	for sym in tree.collectSymbols():
-		if len(sym['phi-related']) > 0 and not sym.has_key('chain'):
-			sym['chain'] =  PhiChain(sym['phi-related'])
+		if len(sym['phi-related']) > 0:
+			if not sym.has_key('chain'):
+				sym['chain'] =  PhiChain([sym] + list(sym['phi-related']))
 		
 		else:
 			syms.add(sym)
+	
+	print("Staring symbols: {}".format(syms))
 	
 	#Build Chains
 	while len(syms) > 0:
@@ -44,7 +47,7 @@ def chains(tree):
 				
 				cond  = sym1 in syms
 				cond &= not sym1['heapify']
-				cond &= len(chains[sym1]) > len(chains[sym0])
+				cond &= chains.has_key(sym1) and len(chains[sym1]) > len(chains[sym0])
 				
 				if cond:
 					chains[sym0] = list(chains[sym1])
@@ -63,7 +66,10 @@ def chains(tree):
 		
 		#Remove the symbols in the longest chain from our symbol list.
 		for sym in longestChain:
+			print("Removing {} -> {}".format(sym, sym['chain']))
 			syms.remove(sym)
+	
+	print('')
 
 ###############
 # Chain Class #
@@ -82,11 +88,17 @@ class BasicChain(object):
 	def __len__(self):
 		return len(self.syms)
 	
+	def __repr__(self):
+		return "{}({})".format(
+			self.__class__.__name__,
+			self.syms
+		)
+	
 	def getPreColors(self):
 		preColors = set()
 		
 		for sym in self:
-			if sym['precolor']:
+			if sym.has_key('precolor') and sym['precolor']:
 				preColors.add(sym['precolor'])
 		
 		return preColors
