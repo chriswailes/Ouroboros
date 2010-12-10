@@ -1,8 +1,12 @@
 #Author		= Chris Wailes <chris.wailes@gmail.com
-#Project		= CSCI 5525 HW1
+#Project		= Ouroboros
 #Date		= 2010/09/19
 #Description	= Makefile for pycom/analysis
+
+SUBDIRS	= x86
 
 .PHONY: clean
 clean:
 	rm -f *.pyc *.pyo
+	
+	for sd in $(SUBDIRS); do (cd $$sd; make clean); done

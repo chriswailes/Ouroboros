@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/09/18
 Description:	Finds related symbols.
 """
@@ -22,7 +22,9 @@ def related(node):
 		sym0 = extractSymbol(node.var)
 		
 		sym0['related']	= set()
-		sym0['phi-related']	= set()
+		
+		if not sym0.has_key('phi-related'):
+			sym0['phi-related']	= set()
 		
 		if isinstance(node.exp, Symbol):
 			sym1 = node.exp
@@ -64,6 +66,9 @@ def related(node):
 		target['phi-related']	= set([target])
 		
 		for sym0 in node:
+			if not sym0.has_key('phi-related'):
+				sym0['phi-related'] = set()
+			
 			target['phi-related'].add(sym0)
 			sym0['phi-related'].add(target)
 			

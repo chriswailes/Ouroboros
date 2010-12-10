@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/08/23
 Description:	A function for converting from the compile module's AST into the
 			pycom AST.
@@ -276,7 +276,7 @@ def translate(node, st = None, strings = None, funcName = False):
 		body = translate(node.body, st, strings, funcName)
 		body = ast.BasicBlock(body)
 		
-		return ast.While(cond, body)
+		return ast.While(cond, body, st)
 	
 	elif isinstance(node, oast.UnarySub):
 		operand = translate(node.expr, st, strings, funcName)

@@ -1,6 +1,6 @@
 """
 Author:		Chris Wailes <chris.wailes@gmail.com>
-Project:		CSCI 5525 HW1
+Project:		Ouroboros
 Date:		2010/09/01
 Description:	A transformation that transforms a class definition into simple
 			AST nodes.
@@ -34,11 +34,7 @@ def declassify(node, st = None, strings = None, klass = None):
 		
 		preStmts.append(Assign(sym, fun))
 		
-		print("Body: {}".format(node.body))
-		
 		_, body = declassify(node.body, st, strings, sym)
-		
-		print("Body: {}".format(body))
 		
 		preStmts.append(body)
 		
@@ -47,8 +43,6 @@ def declassify(node, st = None, strings = None, klass = None):
 	elif isinstance(node, Assign) and klass:
 		string = node.var.name
 		string = strings.setdefault(string, String(string))
-		
-		print("Re-writing assignment to SetAttr")
 		
 		node = SetAttr(klass, string, node.exp)
 	
