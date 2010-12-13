@@ -17,7 +17,11 @@ def interfere(node):
 	elif isinstance(node, FunctionCall):
 		for sym in node['pre-alive']:
 			if sym in node['post-alive']:
-				sym['interference'] |= interference
+				if sym.has_key('interference'):
+					sym['interference'] |= interference
+				
+				else:
+					sym['interference'] = interference
 	
 	for child in node:
 		interfere(child)

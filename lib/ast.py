@@ -499,14 +499,15 @@ class While(Statement):
 		callTest = lambda node: not isinstance(node, Phi)
 		
 		for sym in syms:
-			target = self.jn.addSymbol(sym, self.st)
-			
-			substituteTest	= lambda node: node is sym
-			replacement	= lambda node: target
-			
-			self.cond		= substitute(self.cond, callTest, substituteTest, replacement)
-			self.condBody	= substitute(self.condBody, callTest, substituteTest, replacement)
-			self.body		= substitute(self.body, callTest, substituteTest, replacement)
+			if not sym.has_key('type') or sym['type'] != 'function':
+				target = self.jn.addSymbol(sym, self.st)
+				
+				substituteTest	= lambda node: node is sym
+				replacement	= lambda node: target
+				
+				self.cond		= substitute(self.cond, callTest, substituteTest, replacement)
+				self.condBody	= substitute(self.condBody, callTest, substituteTest, replacement)
+				self.body		= substitute(self.body, callTest, substituteTest, replacement)
 
 ###############
 # Expressions #
@@ -965,3 +966,4 @@ class Subscript(Value):
 	
 	def toPython(self, level = 0):
 		return pad(level) + str(self)
+

@@ -284,4 +284,4 @@ def translate(node, st = None, strings = None, funcName = False):
 		return ast.Negate(operand)
 	
 	else:
-		raise Exception('Unsupported AST node encountered.')
+		raise Exception("Unsupported AST node encountered: {}".format(node.__class__.__name__))

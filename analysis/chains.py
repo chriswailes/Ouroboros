@@ -26,7 +26,7 @@ def chains(tree):
 				#will create the references necessary to avoid having the
 				#chain CGed right away.
 				
-				phiSet = buildFullPhiSet(sym['phi-related'])
+				phiSet = sym['phi-related']
 				
 				PhiChain(phiSet)
 		
@@ -74,22 +74,6 @@ def chains(tree):
 		
 		#Remove the symbols from the longest chain from our symbol table.
 		syms = set(syms) - set(longestChain)
-
-def buildFullPhiSet(syms):
-	fullSet	= set()
-	seen		= set()
-	
-	while len(syms) > 0:
-		sym = syms.pop()
-		
-		if sym not in fullSet:
-			fullSet.add(sym)
-			
-			syms |= sym['phi-related'] - seen
-		
-		seen.add(sym)
-	
-	return fullSet
 
 ###############
 # Chain Class #

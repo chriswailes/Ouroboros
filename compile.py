@@ -117,6 +117,13 @@ if config.startStage == 'python':
 	outFile = open(config.sName, 'w')
 	outFile.write(str(assembly))
 	outFile.close()
+	
+	if config.verbose:
+		print("Statistics:")
+		print("\tSpills: {}".format(len(spillSets)))
+		print("\tInstruction Count: {}".format(assembly.getNumInsts()))
+		print("\tMove Count: {}".format(assembly.getNumMoves()))
+		print("\tMemory References: {}".format(assembly.getNumMemRefs()))
 
 if config.targetStage == 'full':
 	if config.verbose:

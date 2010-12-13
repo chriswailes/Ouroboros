@@ -23,6 +23,15 @@ class Block(object):
 		
 		self.pos = 0
 	
+	def __iter__(self):
+		for i0 in self.insts:
+			if isinstance(i0, Block):
+				for i1 in i0:
+					yield i1
+			
+			else:
+				yield i0
+	
 	def __str__(self):
 		code = self.header
 		
@@ -89,10 +98,34 @@ class Block(object):
 	def getNumInsts(self):
 		num = 0
 		
-		for i in self.insts:
-			if isinstance(i, Block):
-				num += i.getNumInsts()
-			else:
+		for i in self:
+			if isinstance(i, Instruction):
+				num += 1
+		
+		return num
+	
+	def getNumMemRefs(self):
+		num = 0
+		
+		for i in self:
+			if isinstance(i, OneOp):
+				if isinstance(i.operand, Mem):
+					num += 1
+			
+			elif isinstance(i, TwoOp):
+				if isinstance(i.src, Mem):
+					num += 1
+				
+				if isinstance(i.dest, Mem):
+					num += 1
+		
+		return num
+	
+	def getNumMoves(self):
+		num = 0
+		
+		for i in self:
+			if isinstance(i, Instruction) and i.name == 'mov':
 				num += 1
 		
 		return num

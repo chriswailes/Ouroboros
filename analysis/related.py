@@ -60,20 +60,23 @@ def related(node):
 			sym['phi-related']	= set()
 	
 	elif isinstance(node, Phi):
-		target = node.target
+		fullSet	= set()
+		syms		= set([node.target] + node.srcs)
 		
-		target['related']		= set()
-		target['phi-related']	= set([target])
+		while len(syms) > 0:
+			sym	 = syms.pop()
+			
+			if sym.has_key('phi-related'):
+				syms	|= sym['phi-related'] - fullSet
+			
+			fullSet.add(sym)
 		
-		for sym0 in node:
-			if not sym0.has_key('phi-related'):
-				sym0['phi-related'] = set()
+		for sym in fullSet:
+			if sym.has_key('phi-related'):
+				sym['phi-related'] |= fullSet
 			
-			target['phi-related'].add(sym0)
-			sym0['phi-related'].add(target)
-			
-			for sym1 in node:
-				sym0['phi-related'].add(sym1)
+			else:
+				sym['phi-related'] = fullSet
 	
 	for child in node:
 		related(child)
