@@ -86,12 +86,12 @@ class SymbolTable(object):
 	def snapshot(self):
 		self.readSnapshots.append(self.readCounters)
 	
-	#This is here to deal with read-before-write symbols in functions.
+	# This is here to deal with read-before-write symbols in functions.
 	def update(self, other):
 		if isinstance(other, SymbolTable):
 			
-			#Update the temp counter so that we only get one instance of a
-			#temporary variable number throughout the entire program.
+			# Update the temp counter so that we only get one instance of a
+			# temporary variable number throughout the entire program.
 			self.tmpCounter = other.tmpCounter
 			
 			for trip in other.singletons:

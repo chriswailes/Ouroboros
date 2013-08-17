@@ -17,14 +17,14 @@ def init():
 def chains(tree):
 	syms = []
 	
-	#Build PhiChains
+	# Build PhiChains
 	for sym in tree.collectSymbols():
 		if len(sym['phi-related']) > 0:
 			if not sym.has_key('chain'):
-				#Create our phi chain.  The constructor will store the
-				#reference to the chain in each of its member symbols.  This
-				#will create the references necessary to avoid having the
-				#chain CGed right away.
+				# Create our phi chain.  The constructor will store the
+				# reference to the chain in each of its member symbols.
+				# This will create the references necessary to avoid having
+				# the chain CGed right away.
 				
 				phiSet = sym['phi-related']
 				
@@ -33,12 +33,12 @@ def chains(tree):
 		else:
 			syms.append(sym)
 	
-	#Build Chains
+	# Build Chains
 	while len(syms) > 0:
 		chains	= {}
 		syms		= sorted(syms, key = lambda sym: sym['span-start'])
 		
-		#Build chains from the set of symbols still left.
+		# Build chains from the set of symbols still left.
 		for sym0 in syms:
 			chains[sym0] = []
 			
@@ -57,22 +57,22 @@ def chains(tree):
 				if cond:
 					chains[sym0] = list(chains[sym1])
 			
-			#Add this symbol to the end of the chain.
+			# Add this symbol to the end of the chain.
 			chains[sym0].append(sym0)
 		
-		#Find the longest of the chains that we have just built.
+		# Find the longest of the chains that we have just built.
 		longestChain = []
 		
 		for chain in chains.values():
 			if len(chain) > len(longestChain):
 				longestChain = chain
 		
-		#Create our longest chain.  The constructor will store the reference
-		#to the chain in each of its member symbols.  This will create the
-		#references necessary to avoid having the chain CGed right away.
+		# Create our longest chain.  The constructor will store the reference
+		# to the chain in each of its member symbols.  This will create the
+		# references necessary to avoid having the chain CGed right away.
 		Chain(longestChain)
 		
-		#Remove the symbols from the longest chain from our symbol table.
+		# Remove the symbols from the longest chain from our symbol table.
 		syms = set(syms) - set(longestChain)
 
 ###############
@@ -118,7 +118,7 @@ class BasicChain(object):
 		return self.syms[-1]
 	
 	def mark(self):
-		#Give each symbol in the chain a refference to it.
+		# Give each symbol in the chain a refference to it.
 		
 		for sym in self.syms:
 			sym['chain'] = self

@@ -24,14 +24,14 @@ def flatten(node, st = None, inPlace = False):
 	newInPlace	= None
 	preStmts		= []
 	
-	#Setup flattening for this node's children.
+	# Setup flattening for this node's children.
 	if util.classGuard(node, Assign, BasicBlock, Module):
 		newInPlace = node.__class__
 	
 	elif isinstance(node, Function):
 		st = node.st
 	
-	#Flatten our children.
+	# Flatten our children.
 	if isinstance(node, While):
 		if not isinstance(node.cond, Symbol):
 			condBody, node.cond = flatten(node.cond, st)
@@ -47,7 +47,7 @@ def flatten(node, st = None, inPlace = False):
 			preStmts.append(childPreStmts)
 			newChildren.append(newChild)
 		
-		#Set our new child nodes.
+		# Set our new child nodes.
 		newChildren = util.flatten(newChildren)
 		node.setChildren(newChildren)
 	
@@ -63,18 +63,18 @@ def flatten(node, st = None, inPlace = False):
 				preStmts.append(childPreStmts)
 				newChildren.append(newChild)
 		
-		#Set our new child nodes.
+		# Set our new child nodes.
 		newChildren = util.flatten(newChildren)
 		node.setChildren(newChildren)
 	
-	#Flatten the current node.
+	# Flatten the current node.
 	if classGuard(node, BinOp, FunctionCall, IfExp, UnaryOp) and not inPlace:
 		sym = st.getTemp()
 		preStmts.append(Assign(sym, node))
 		
 		node = sym
 	
-	#Flatten our list of pre-statements.
+	# Flatten our list of pre-statements.
 	preStmts = util.flatten(preStmts)
 	
 	return node if isinstance(node, Module) else (preStmts, node)

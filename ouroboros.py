@@ -35,7 +35,7 @@ if config.startStage == 'python':
 	tree = compiler.parse(tokens)
 	
 	if config.verbose:
-		#Print the original AST
+		# Print the original AST
 		print(tree)
 		print('')
 	
@@ -45,7 +45,7 @@ if config.startStage == 'python':
 	tree = translate(tree)
 	
 	if config.verbose:
-		#Print my AST
+		# Print my AST
 		print(tree)
 		print('')
 	
@@ -55,40 +55,40 @@ if config.startStage == 'python':
 	# AST Transformations #
 	#######################
 	
-	#Constant folding and propigation and discarding of useless nodes.
+	# Constant folding and propigation and discarding of useless nodes.
 	runTransform(tree, ['value_prop', 'dead_code', 'dead_store', 'const_fold'])
 	
-	#Declassify the AST.
+	# Declassify the AST.
 	runTransform(tree, 'declassify')
 	
-	#Simplification, declassification, and flattening of the AST.
+	# Simplification, declassification, and flattening of the AST.
 	runTransform(tree, ['simplify', 'flatten'])
 	
-	#Function migration.
+	# Function migration.
 	runTransform(tree, 'function_migration')
 	
-	#Another round of constant propigation to take care of new constants
+	# Another round of constant propigation to take care of new constants
 	#introduced by the other passes.
 	runTransform(tree, ['value_prop', 'dead_code', 'dead_store'])
 	
-	#Symbol coloring.
+	# Symbol coloring.
 	runTransform(tree, 'color', {'cf':cf})
 	
 	if config.verbose:
-		#Print my flattened (and folded) AST
+		# Print my flattened (and folded) AST
 		print(tree)
 		print('')
 		
-		#Print out the original program.
+		# Print out the original program.
 		print("Before Transformation Passes:")
 		print(tokens)
 		
-		#Print out the Python code for my flattened AST
+		# Print out the Python code for my flattened AST
 		print("After Transformation Passes:")
 		print(tree.toPython())
 		print('')
 	
-	#One of the symbols from each of these sets needs to be spilled.
+	# One of the symbols from each of these sets needs to be spilled.
 	spillSets = []
 	
 	#########################
@@ -96,11 +96,11 @@ if config.startStage == 'python':
 	#########################
 	
 	while True:
-		#Attempt to compile the AST.  If a spill occurs we catch it and run
-		#the spill transformation before trying to color the AST again.  This
-		#process will continue until a successful coloring is found.
+		# Attempt to compile the AST.  If a spill occurs we catch it and run
+		# the spill transformation before trying to color the AST again.
+		# This process will continue until a successful coloring is found.
 		try:
-			#Compile the AST.
+			# Compile the AST.
 			assembly = selectInstructions(tree, cf)
 			break
 		
@@ -113,7 +113,7 @@ if config.startStage == 'python':
 			cf = runTransform(tree, 'spill', {'spillSets':spillSets})
 			runTransform(tree, 'color', {'cf':cf})
 	
-	#Put the produced assembly into the output file.
+	# Put the produced assembly into the output file.
 	outFile = open(config.sName, 'w')
 	outFile.write(str(assembly))
 	outFile.close()

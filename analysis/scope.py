@@ -17,16 +17,16 @@ def init():
 	from analysis.pass_manager import register
 	register('scope', scope, args, prereqs, result, sets)
 
-#This analysis pass marks any new symbols as either 'global' or 'local'.  Global
-#symbols are defined in the main function and can be put in the data
-#section.  Local variables that apear as free variables in lambda
-#definitions need to be packed into a closure.
+# This analysis pass marks any new symbols as either 'global' or 'local'.
+# Global symbols are defined in the main function and can be put in the data
+# section.  Local variables that apear as free variables in lambda
+# definitions need to be packed into a closure.
 def scope(node, outerScope = None):
 	if isinstance(node, Function):
 		outerScope = node.name
 		
-		#Main doesn't have any arguments, so all function arguments can be
-		#marked 'local'
+		# Main doesn't have any arguments, so all function arguments can be
+		# marked 'local'
 		for sym in node.argSymbols:
 			sym['scope'] = 'local'
 	

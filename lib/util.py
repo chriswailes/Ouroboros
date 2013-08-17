@@ -5,7 +5,7 @@ Date:		2010/09/01
 Description:	Utility functions.
 """
 
-#Performs a check to make sure that obj is one of the classes specified.
+# Performs a check to make sure that obj is one of the classes specified.
 def classGuard(obj, *klasses):
 	for klass in klasses:
 		if isinstance(obj, klass):

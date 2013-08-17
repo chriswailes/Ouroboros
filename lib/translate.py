@@ -28,8 +28,8 @@ def translate(node, st = None, strings = None, funcName = False):
 		return ast.And(left, right)
 	
 	elif isinstance(node, oast.Assign):
-		#Translate the right hand side first so it can use the older version
-		#of the left hand side.
+		# Translate the right hand side first so it can use the older version
+		# of the left hand side.
 		exp = translate(node.expr, st, strings, funcName)
 		var = node.nodes.pop()
 		
@@ -62,7 +62,8 @@ def translate(node, st = None, strings = None, funcName = False):
 		sym	= st.getSymbol(node.name, True)
 		name	= st.getName(node.name, True)
 		
-		#This is here temporarily.  It will be moved to the typify pass later.
+		# This is here temporarily.  It will be moved to the typify pass
+		# later.
 		sym['type'] = 'class'
 		
 		klass = ast.Class(name, bases, body)
@@ -140,20 +141,20 @@ def translate(node, st = None, strings = None, funcName = False):
 		tests = node.tests
 		cond, then = tests.pop(0)
 		
-		#Translate the conditional expression.
+		# Translate the conditional expression.
 		cond = translate(cond, st, strings)
 		
-		#Snapshot the SymbolTable
+		# Snapshot the SymbolTable
 		st.snapshot()
 		
-		#Translate the 'then' clause.
+		# Translate the 'then' clause.
 		then = translate(then, st, strings, funcName)
 		then = ast.BasicBlock(then)
 		
-		#Roll-back the SymbolTable for the 'else' clause.
+		# Roll-back the SymbolTable for the 'else' clause.
 		st.rollback()
 		
-		#Translate the 'else' clause.
+		# Translate the 'else' clause.
 		if len(tests) > 0:
 			els = [translate(oast.If(tests, node.else_), st, funcName)]
 		else:
@@ -195,7 +196,7 @@ def translate(node, st = None, strings = None, funcName = False):
 		return ast.List(elements)
 		
 	elif isinstance(node, oast.Module):
-		#Create a new SymbolTable for this module.
+		# Create a new SymbolTable for this module.
 		st = SymbolTable()
 		strings = {}
 		
@@ -204,7 +205,8 @@ def translate(node, st = None, strings = None, funcName = False):
 		block = ast.BasicBlock(children)
 		fun = ast.Function(st.getBIF('main'), [], block, st)
 		
-		#Mark the main function as migrated so that it doesn't get moved later.
+		# Mark the main function as migrated so that it doesn't get moved
+		# later.
 		fun['simplified'] = True
 		
 		return ast.Module([fun], strings)

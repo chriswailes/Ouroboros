@@ -23,14 +23,14 @@ def spans(node, count = 0, alive = None):
 	if isinstance(node, Module):
 		alive = {}
 	
-	#Count the spans over our children.
+	# Count the spans over our children.
 	for child in node:
 		subInc = spans(child, count, alive)
 		inc   += subInc
 		count += subInc
 	
 	if classGuard(node, Assign, Phi):
-		#Due to SSA form we know this variable isn't already alive.
+		# Due to SSA form we know this variable isn't already alive.
 		sym = extractSymbol(node)
 		
 		sym['spans-funcall'] = False
@@ -57,12 +57,12 @@ def spans(node, count = 0, alive = None):
 			if sym in node['post-alive']:
 				sym['spans-funcall'] = True
 	
-	#This is here so we don't change the alive list while we are iterating
-	#through it.
+	# This is here so we don't change the alive list while we are iterating
+	# through it.
 	deletes = []
 	
-	#Symbols don't have any pre/post-alive information due to their Singleton
-	#nature.
+	# Symbols don't have any pre/post-alive information due to their Singleton
+	# nature.
 	if not classGuard(node, Name, String, Symbol):
 		for sym in alive:
 			if isinstance(node, Function) or sym not in node['post-alive']:

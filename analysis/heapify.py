@@ -31,9 +31,9 @@ def heapify(node):
 			else:
 				sym['heapify'] = 'closure'
 		
-		#Mark this function's free variables for later use.
+		# Mark this function's free variables for later use.
 		node['free'] = syms - bound
 	
-	#Run heapify on the node's children.
+	# Run heapify on the node's children.
 	for child in node:
 		heapify(child)

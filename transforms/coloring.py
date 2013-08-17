@@ -51,26 +51,27 @@ def color(tree, cf):
 			color = None
 			
 			if sym['heapify']:
-				#Coloring heapified symbols is easy.  Just give them a label.
+				# Coloring heapified symbols is easy.  Just give them a
+				# label.
 				color = cf.getDataLabel()
 			
 			elif sym['precolor'] and isinstance(sym['precolor'], Mem):
-				#If the precolor is a memory location that means that the symbol
-				#is a function argument.  Therefor we must take its precolor as
-				#its color.
+				# If the precolor is a memory location that means that the
+				# symbol is a function argument.  Therefor we must take its
+				# precolor as its color.
 				
 				color = sym['precolor']
 			
 			elif isinstance(chain, PhiChain):
-				#Here we will try and give all phi-related symbols the same
-				#color.
+				# Here we will try and give all phi-related symbols the
+				# same color.
 				
 				colors = list(chain.getColors())
 				
 				if len(colors) == 0:
-					#When there are no colors currently assigned to any of the
-					#symbols we will try and get a new one that meets the
-					#maximum constraint of all the symbols.
+					# When there are no colors currently assigned to any
+					# of the symbols we will try and get a new one that
+					# meets the maximum constraint of all the symbols.
 					
 					if len(preColors) == 1 and isinstance(preColors[0], Register) and preColors[0] not in chain.interference():
 						color = preColors[0]
@@ -89,16 +90,17 @@ def color(tree, cf):
 						color = cf.getColor(chain.interference(), Register, chain.preferCaller())
 				
 				elif len(colors) == 1:
-					#So far the phi-related symbols only have one color
-					#between them.  We will see if it causes interference,
-					#and if not, we will use it.
+					# So far the phi-related symbols only have one color
+					# between them.  We will see if it causes
+					# interference, and if not, we will use it.
 					
 					if isinstance(colors[0], Register) and colors[0] not in interference:
 						color = colors[0]
 				
 				else:
-					#There are several choices in colors from this symbol's
-					#phi-relatives.  If any of them work we will use them.
+					# There are several choices in colors from this
+					# symbol's phi-relatives.  If any of them work we will
+					# use them.
 					
 					for c in colors:
 						if c not in interference and isinstance(c, Register):
@@ -110,9 +112,9 @@ def color(tree, cf):
 				color = chain.getColor()
 				
 				if not color:
-					#This chain doesn't have a color yet.  Try and get one
-					#that meets the constraints of every symbol in the
-					#chain.
+					# This chain doesn't have a color yet.  Try and get
+					# one that meets the constraints of every symbol in
+					# the chain.
 					
 					
 					if len(preColors) == 1 and preColors[0] not in chain.interference():
@@ -131,9 +133,9 @@ def color(tree, cf):
 						color = cf.getColor(chain.interference(), Register, preferCaller = chain.preferCaller())
 				
 				elif isinstance(color, Mem) or color in interference:
-					#The color of the chain isn't any good.  Try and find a
-					#different chain to become a part of, or start a new
-					#one.
+					# The color of the chain isn't any good.  Try and find
+					# a different chain to become a part of, or start a
+					# new one.
 					
 					newChain = chain.split(sym)
 					related = sym['related']
@@ -148,8 +150,8 @@ def color(tree, cf):
 							color = c
 							altChain.join(newChain)
 			
-			#If we didn't find a color any of the other ways we will get a
-			#new one.
+			# If we didn't find a color any of the other ways we will get a
+			# new one.
 			if not color:
 				color = cf.getColor(interference, preferCaller = preference)
 			

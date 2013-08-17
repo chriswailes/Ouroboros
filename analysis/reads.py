@@ -29,8 +29,8 @@ def reads(node):
 			sym['reads'] = 0
 	
 	elif isinstance(node, Symbol):
-		#This is kind of ugly, but because of Python's scoping rules we can
-		#read from a variable before it is 'in scope.'
+		# This is kind of ugly, but because of Python's scoping rules we can
+		# read from a variable before it is 'in scope.'
 		
 		if node.has_key('reads'):
 			node['reads'] += 1
@@ -38,9 +38,9 @@ def reads(node):
 			node['reads'] = 1
 	
 	elif isinstance(node, Subscript) and isinstance(node.symbol, Symbol):
-		#This little hack is here to take care of cases where subscripts are
-		#applied to literal values. After the flatten transformation this
-		#branch will be taken whenever we see a subscript.
+		# This little hack is here to take care of cases where subscripts are
+		# applied to literal values. After the flatten transformation this
+		# branch will be taken whenever we see a subscript.
 		
 		node.symbol['reads'] += 1
 	

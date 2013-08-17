@@ -32,15 +32,15 @@ def eliminateDeadCode(node):
 			elif isinstance(newChild, Return):
 				newChildren.append(newChild)
 				
-				#All nodes after the Return node will be discarded due to
-				#unreachability.
+				# All nodes after the Return node will be discarded due to
+				# unreachability.
 				break
 			
 			else:
-				#Anything that reaches here is an expression outside of a
-				#statement, and therefor has no effect on the program.
-				#Therefor we remove any nested statements from the expression
-				#then throw it away.
+				# Anything that reaches here is an expression outside of a
+				# statement, and therefor has no effect on the program.
+				# Therefor we remove any nested statements from the
+				# expression then throw it away.
 				newChildren.append(extractStmts(newChild))
 		
 		else:
@@ -49,15 +49,16 @@ def eliminateDeadCode(node):
 	node.setChildren(flatten(newChildren))
 	
 	if classGuard(node, If, IfExp) and isinstance(node.cond, Literal):
-		#If statements or expressions with a literal conditional value can be
-		#eliminated and replaced with the appropriate BasicBlock's children.
+		# If statements or expressions with a literal conditional value can
+		# be eliminated and replaced with the appropriate BasicBlock's
+		# children.
 			
 		return node.then if node.cond.value else node.els
 	
 	else:
 		return node
 
-#Extracts statements from expressions and returns them.
+# Extracts statements from expressions and returns them.
 def extractStmts(exp):
 	stmts = []
 	

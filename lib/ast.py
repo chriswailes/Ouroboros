@@ -16,7 +16,7 @@ class Node(dict):
 		for n in self.getChildren():
 			yield n
 	
-	#Options are:
+	# Options are:
 	#	a	- All symbols
 	#	r	- Symbols that are read from
 	#	w	- Symbols that are written to

@@ -31,19 +31,19 @@ def selectInstructions(node, cf, dest = None):
 	
 	global shifts
 	
-	#Error out if we receive a complex node that should have been flattened
-	#or translated out before instruction selection.
+	# Error out if we receive a complex node that should have been flattened
+	# or translated out before instruction selection.
 	if not node.isSimple():
 		raise Exception('Non-simple node passed to instruction selection pass.')
 	
 	if isinstance(node, ast.Assign):
-		#The destination is a name, so we need to translate it.
+		# The destination is a name, so we need to translate it.
 		dest = selectInstructions(node.var, cf)
 		
 		if isinstance(node.exp, ast.Symbol):
 			code = Block('')
 			
-			#The source is a name, so we need to translate it.
+			# The source is a name, so we need to translate it.
 			src = selectInstructions(node.exp, cf)
 			
 			if isinstance(src, Mem) and isinstance(dest, Mem):
@@ -66,9 +66,9 @@ def selectInstructions(node, cf, dest = None):
 			return move(src, dest)
 		
 		else:
-			#Here the right side of the assignment is a complex expression.
-			#We will select instructions for it, giving the Symbol
-			#representing the variable's location as the destination.
+			# Here the right side of the assignment is a complex expression.
+			# We will select instructions for it, giving the Symbol
+			# representing the variable's location as the destination.
 			return selectInstructions(node.exp, cf, dest)
 	
 	elif isinstance(node, ast.BasicBlock):
@@ -82,8 +82,8 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.BinOp):
 		code = Block()
 		
-		#The left and right operands need to be translated, but the
-		#destination is already a Symbol,
+		# The left and right operands need to be translated, but the
+		# destination is already a Symbol,
 		origLeft = left = selectInstructions(node.left, cf)
 		origRight = right = selectInstructions(node.right, cf)
 		
@@ -91,20 +91,20 @@ def selectInstructions(node, cf, dest = None):
 		# Setup #
 		#########
 		
-		#This code will make sure that both the right and left parameters are
-		#in registers.
+		# This code will make sure that both the right and left parameters are
+		# in registers.
 		
-		#tmpColor0 will be a register, and hold the final result of our
-		#computation.  The result may need to be moved if tmpColor0 is not
-		#the destination.
+		# tmpColor0 will be a register, and hold the final result of our
+		# computation.  The result may need to be moved if tmpColor0 is not
+		# the destination.
 		tmpColor0 = getTmpColor(cf, node) if isinstance(dest, Mem) else dest
 		
-		#The default tag for a result will be an int.  If it is already
-		#tagged, as will be the case for logical instructions or Add, it won't
-		#end up being tagged.
+		# The default tag for a result will be an int.  If it is already
+		# tagged, as will be the case for logical instructions or Add, it won't
+		# end up being tagged.
 		tmpColor0.tag = INT
 		
-		#Get the left operand into a register.
+		# Get the left operand into a register.
 		if classGuard(left, Mem, Label):
 			if right != dest:
 				code.append(move(left, tmpColor0))
@@ -117,33 +117,33 @@ def selectInstructions(node, cf, dest = None):
 		
 		elif isinstance(left, Immediate):
 			if isinstance(node, ast.Div):
-				#Move our dividend into %eax.
+				# Move our dividend into %eax.
 				code.append(move(left, eax))
 				left = eax
 			
 			elif isinstance(node, ast.Sub):
 				tmpColor1 = getTmpColor(cf, node) if right == tmpColor0 else tmpColor0
 				
-				#Move the right operand to another register if it is in
-				#tmpColor0.
+				# Move the right operand to another register if it is in
+				# tmpColor0.
 				if right == tmpColor0:
 					code.append(move(right, tmpColor1))
 					right = tmpColor1
 				
-				#Move the left hand immediate into the destination register.
+				# Move the left hand immediate into the destination register.
 				code.append(move(left, tmpColor0))
 				left = tmpColor0
 					
 			elif right != dest:
-				#If the left hand value is an immediate and this is an add
-				#or multiply operation the right hand value needs to be in
-				#the destination register.
+				# If the left hand value is an immediate and this is an add
+				# or multiply operation the right hand value needs to be in
+				# the destination register.
 				code.append(move(right, tmpColor0))
 				right = tmpColor0
 		
 		elif isinstance(left, Register):
 			if isinstance(node, ast.Div) and left != eax:
-				#Move our dividend into eax.
+				# Move our dividend into eax.
 				code.append(move(left, eax))
 				left = eax
 			
@@ -151,7 +151,7 @@ def selectInstructions(node, cf, dest = None):
 				code.append(move(left, tmpColor0))
 				left = tmpColor0
 		
-		#Get the right operand into a register.
+		# Get the right operand into a register.
 		if classGuard(right, Mem, Label):
 			if left != tmpColor0 and classGuard(node, ast.Add, ast.Mul) and not isinstance(node, ast.Logical):
 				code.append(move(right, tmpColor0))
@@ -166,18 +166,18 @@ def selectInstructions(node, cf, dest = None):
 		
 		elif isinstance(right, Immediate) and isinstance(node, ast.Div) and right.value not in shifts:
 			
-			#If the right hand side is an immediate it needs to be
-			#placed into a register for divide operations.
+			# If the right hand side is an immediate it needs to be
+			# placed into a register for divide operations.
 			tmpColor1 = getTmpColor(cf, node) if left == tmpColor0 else tmpColor0
 		
 			code.append(move(right, tmpColor1))
 			right = tmpColor1
 		
-		#Untag the left operand if it isn't an immediate.
+		# Untag the left operand if it isn't an immediate.
 		if isinstance(left, Color) and classGuard(node, ast.Div, ast.Mul, ast.Sub):
 			code.append(untag(left))
 		
-		#Untag the right operand if it isn't an immediate.
+		# Untag the right operand if it isn't an immediate.
 		if isinstance(right, Color) and classGuard(node, ast.Div, ast.Mul, ast.Sub):
 			code.append(untag(right))
 		
@@ -186,8 +186,8 @@ def selectInstructions(node, cf, dest = None):
 		#############
 		
 		if isinstance(node, ast.Add):
-			#The right value is never going to be an immediate due to our
-			#constant folding transformation.
+			# The right value is never going to be an immediate due to our
+			# constant folding transformation.
 			if isinstance(left, Immediate):
 				#This value hasn't been untagged yet.
 				code.append(untag(tmpColor0))
@@ -202,7 +202,7 @@ def selectInstructions(node, cf, dest = None):
 					code.append(TwoOp('add', left, tmpColor0))
 			
 			else:
-				#Build the case where we need to call the add function.
+				# Build the case where we need to call the add function.
 				case0 = Block()
 				
 				case0.append(untag(left, OBJ))
@@ -221,24 +221,24 @@ def selectInstructions(node, cf, dest = None):
 				if eax != dest:
 					case0.append(move(eax, tmpColor0))
 				
-				#Build the case where we are adding two integers.
+				# Build the case where we are adding two integers.
 				case1 = Block()
 				
-				#Untag values as necessary.
+				# Untag values as necessary.
 				case1.append(untag(left))
 				case1.append(untag(right))
 				
-				#Decide which operand to add to which.
+				# Decide which operand to add to which.
 				if left == tmpColor0:
 					case1.append(TwoOp('add', right, tmpColor0))
 				
 				else:
 					case1.append(TwoOp('add', left, tmpColor0))
 				
-				#Tag the result of the integer addition.
+				# Tag the result of the integer addition.
 				case1.append(tag(tmpColor0, INT))
 				
-				#Re-tag the operands.
+				# Re-tag the operands.
 				case1.append(tag(left, INT))
 				case1.append(tag(right, INT))
 				
@@ -246,13 +246,13 @@ def selectInstructions(node, cf, dest = None):
 			
 		elif isinstance(node, ast.Div):
 			if isinstance(right, Immediate) and right.value in shifts:
-				#We can shift to the right instead of dividing.
+				# We can shift to the right instead of dividing.
 				dist = shifts[right.value]
 				
 				code.append(TwoOp('sar', Immediate(dist), eax))
 			
 			else:
-				#Prepare out %edx.
+				# Prepare out %edx.
 				code.append(Instruction('cltd'))
 				
 				code.append(OneOp('idiv', right))
@@ -262,7 +262,7 @@ def selectInstructions(node, cf, dest = None):
 		
 		elif isinstance(node, ast.Mul):
 			if isinstance(left, Immediate) and left.value in shifts:
-				#We can shift to the left instead of multiplying.
+				# We can shift to the left instead of multiplying.
 				dist = shifts[left.value]
 				
 				code.append(TwoOp('sal', Immediate(dist), tmpColor0))
@@ -305,7 +305,7 @@ def selectInstructions(node, cf, dest = None):
 				funName = ast.Name('not_equal')
 				jmp = 'je'
 			
-			#Build the case where we need to call the equal function.
+			# Build the case where we need to call the equal function.
 			if isinstance(left, Register):
 				case0.append(untag(left, OBJ))
 			
@@ -332,14 +332,15 @@ def selectInstructions(node, cf, dest = None):
 			case2 = move(TRU, tmpColor0)
 			case3 = move(FALS, tmpColor0)
 			
-			#Pack left and right immediates for comparison.
+			# Pack left and right immediates for comparison.
 			if isinstance(left, Immediate):
 				left = pack(right, INT)
 			
 			if isinstance(right, Immediate):
 				right = pack(right, INT)
 			
-			#Build the case where we are comparing two integers or booleans.
+			# Build the case where we are comparing two integers or
+			# booleans.
 			case1 = buildITE(right, case2, case3, left, jmp)
 			
 			code.append(buildITE(tmpColor0, case0, case1, TAG_MASK, 'je', True))
@@ -354,7 +355,7 @@ def selectInstructions(node, cf, dest = None):
 		# Cleanup #
 		###########
 		
-		#Re-tag left, right, and result appropriately.
+		# Re-tag left, right, and result appropriately.
 		code.append(tag(tmpColor0))
 		
 		if isinstance(origLeft, Register) and origLeft in toColors(node['post-alive']):
@@ -363,7 +364,7 @@ def selectInstructions(node, cf, dest = None):
 		if isinstance(origRight, Register) and origRight in toColors(node['post-alive']):
 			code.append(tag(origRight))
 		
-		#Move the result.
+		# Move the result.
 		if tmpColor0 != dest:
 			code.append(move(tmpColor0, dest))
 		
@@ -383,7 +384,7 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.Function):
 		code = Block()
 		
-		#Mark that the arguments are taged.
+		# Mark that the arguments are taged.
 		#~for color in toColors(node.argSymbols):
 			#~color.tagged = True
 		
@@ -391,35 +392,35 @@ def selectInstructions(node, cf, dest = None):
 		code.append(Directive('align 4', False))
 		code.append(Label(node.name, ''))
 		
-		#Push the old base pointer onto the stack.
+		# Push the old base pointer onto the stack.
 		code.append(OneOp('push', ebp))
-		#Make the old stack pointer the new base pointer.
+		# Make the old stack pointer the new base pointer.
 		code.append(move(esp, ebp))
 		
 		usedColors = toColors(node.collectSymbols())
 		
-		#Save any callee saved registers we used.
+		# Save any callee saved registers we used.
 		saveRegs(code, callee, usedColors)
 		
-		#Expand the stack.
+		# Expand the stack.
 		foo = cf.offset - 4
 		if foo > 0:
 			code.append(TwoOp('sub', Immediate(foo), esp))
 		
-		#Append the module's code.
+		# Append the module's code.
 		code.append(selectInstructions(node.block, cf))
 		
 		endBlock = Block()
-		#Restore the stack.
+		# Restore the stack.
 		if foo > 0:
 			endBlock.append(TwoOp('add', Immediate(foo), esp))
 		
-		#Restore any callee saved registers we used.
+		# Restore any callee saved registers we used.
 		restoreRegs(endBlock, callee, usedColors)
 		
-		#Restore the %esp and %ebp registers.
+		# Restore the %esp and %ebp registers.
 		endBlock.append(Instruction('leave'))
-		#Return
+		# Return
 		endBlock.append(Instruction('ret'))
 
 		code.append(endBlock)
@@ -429,7 +430,7 @@ def selectInstructions(node, cf, dest = None):
 	elif isinstance(node, ast.FunctionCall):
 		code = Block()
 		
-		#Save any caller saved registers that are in use after this call.
+		# Save any caller saved registers that are in use after this call.
 		saveColors = toColors(node['post-alive'])
 		saveRegs(code, caller, saveColors)
 		
@@ -439,7 +440,7 @@ def selectInstructions(node, cf, dest = None):
 		for arg in args:
 			src = selectInstructions(arg, cf)
 			
-			#Pack immediates if they haven't been packed yet.
+			# Pack immediates if they haven't been packed yet.
 			if isinstance(src, Immediate):
 				src = pack(src, INT)
 			
@@ -449,18 +450,18 @@ def selectInstructions(node, cf, dest = None):
 			code.append(OneOp('push', src))
 			addSize += 4
 		
-		#Clear eax's tagged and tag values.
+		# Clear eax's tagged and tag values.
 		eax.clear()
 		
-		#Make the function call.
+		# Make the function call.
 		if isinstance(node.name, ast.Name):
-			#This is the direct call case.
+			# This is the direct call case.
 			code.append(OneOp('call', node.name, None))
 		
 		else:
-			#This is the case when we recieved the function pointer as an
-			#argument.  This can either result in a direct or an indirect
-			#call.
+			# This is the case when we recieved the function pointer as an
+			# argument.  This can either result in a direct or an indirect
+			# call.
 			src = selectInstructions(node.name, cf)
 			
 			if isinstance(src, Mem) or src == eax:
@@ -468,7 +469,7 @@ def selectInstructions(node, cf, dest = None):
 				code.append(move(src, tmpColor))
 				src = tmpColor
 			
-			#This is the case where we need to unpack the closure.
+			# This is the case where we need to unpack the closure.
 			case0 = Block()
 			
 			case0.append(OneOp('push', src))
@@ -483,7 +484,7 @@ def selectInstructions(node, cf, dest = None):
 			
 			case0.append(OneOp('call', '*' + str(eax), None))
 			
-			#The case where it is a direct call (made indirectly).
+			# The case where it is a direct call (made indirectly).
 			case1 = OneOp('call', '*' + str(src), None)
 			
 			code.append(buildITE(src, case0, case1, TAG_MASK, 'je', True))
@@ -491,18 +492,18 @@ def selectInstructions(node, cf, dest = None):
 		#~name = '*' + str(node.name['color']) if isinstance(node.name, Symbol) else node.name
 		#~code.append(OneOp('call', name, None))
 		
-		#Restore the stack.
+		# Restore the stack.
 		if addSize > 0:
 			code.append(TwoOp('add', Immediate(addSize), esp))
 		
-		#Tag the result if necessary.
+		# Tag the result if necessary.
 		code.append(tag(eax, node.tag))
 		
-		#Move the result into the proper destination.
+		# Move the result into the proper destination.
 		if dest and dest != eax:
 			code.append(move(eax, dest))
 		
-		#Restore any caller saved registers that are in use.
+		# Restore any caller saved registers that are in use.
 		restoreRegs(code, caller, saveColors)
 
 		return code
@@ -515,14 +516,14 @@ def selectInstructions(node, cf, dest = None):
 		thenSyms = node.then.collectSymbols('r')
 		elseSyms = node.els.collectSymbols('r')
 		
-		#Insert Phi moves.
+		# Insert Phi moves.
 		for phi in node.jn:
 			for sym in phi.srcs:
 				if sym['color'] != phi.target['color']:
 					(then if sym in thenSyms else els).append(move(sym['color'], phi.target['color']))
 		
-		#Here we compare the conditional to False, and if it is less then or
-		#equal to False (either False or 0) we will go to the else case.
+		# Here we compare the conditional to False, and if it is less then or
+		# equal to False (either False or 0) we will go to the else case.
 		return buildITE(cond, then, els, FALS, 'jle')
 	
 	elif isinstance(node, ast.Integer):
@@ -534,7 +535,7 @@ def selectInstructions(node, cf, dest = None):
 		data = Block("# Data\n")
 		funs = Block("\n# Functions\n")
 		
-		#Define our data section.
+		# Define our data section.
 		for sym in node.collectSymbols():
 			if sym['heapify'] and sym not in node.strings.values():
 				data.append(Directive("globl {0}".format(sym['color']), False))
@@ -546,7 +547,7 @@ def selectInstructions(node, cf, dest = None):
 				data.append(Directive('long 1'))
 				data.append(Directive('section .data'))
 		
-		#Add any strings we may need to define.
+		# Add any strings we may need to define.
 		for string in node.strings:
 			sym = node.strings[string]
 			
@@ -554,11 +555,11 @@ def selectInstructions(node, cf, dest = None):
 			data.append(Directive("string \"{0}\"".format(string)))
 			data.append(Directive('text'))
 		
-		#Define our functions.
+		# Define our functions.
 		for fun in node.functions:
 			funs.append(selectInstructions(fun, cf))
 		
-		#Concatenate our code.
+		# Concatenate our code.
 		code.append(data)
 		code.append(funs)
 		
@@ -571,7 +572,7 @@ def selectInstructions(node, cf, dest = None):
 		code = Block()
 		
 		src = selectInstructions(node.value, cf)
-		#Pack immediates if they haven't been packed yet.
+		# Pack immediates if they haven't been packed yet.
 		if isinstance(src, Immediate):
 			src = pack(src, INT)
 		
@@ -606,7 +607,7 @@ def selectInstructions(node, cf, dest = None):
 		if src != tmpColor:
 			code.append(move(src, tmpColor))
 		
-		#Untag the argument.
+		# Untag the argument.
 		code.append(untag(tmpColor))
 		
 		#############
@@ -616,7 +617,7 @@ def selectInstructions(node, cf, dest = None):
 		if isinstance(node, ast.Negate):
 			code.append(OneOp('neg', tmpColor))
 			
-			#Tell the cleanup code to tag the result as an integer.
+			# Tell the cleanup code to tag the result as an integer.
 			tmpColor.tagged = False
 			tmpColor.tag = INT
 		
@@ -630,7 +631,7 @@ def selectInstructions(node, cf, dest = None):
 		# Cleanup #
 		###########
 		
-		#Tag the result.
+		# Tag the result.
 		code.append(tag(tmpColor))
 		
 		if tmpColor != dest:
@@ -649,7 +650,7 @@ def selectInstructions(node, cf, dest = None):
 		condBody	= selectInstructions(node.condBody, cf)
 		body		= selectInstructions(node.body, cf)
 		
-		#Insert Phi moves.
+		# Insert Phi moves.
 		for phi in node.jn.phis:
 			for src in phi:
 				if src['color'] != phi.target['color']:
@@ -658,18 +659,18 @@ def selectInstructions(node, cf, dest = None):
 		l0 = getLabel()
 		l1 = getLabel()
 		
-		#Initial jump to the cond block.
+		# Initial jump to the cond block.
 		code.append(OneOp('jmp', l1, None))
 		
-		#The body label and the body.
+		# The body label and the body.
 		code.append(l0)
 		code.append(body)
 		
-		#Cond label and cond body.
+		# Cond label and cond body.
 		code.append(l1)
 		code.append(condBody)
 		
-		#Test to see if we should loop.
+		# Test to see if we should loop.
 		code.append(TwoOp('cmp', FALS, cond))
 		code.append(OneOp('jg', l0, None))
 		

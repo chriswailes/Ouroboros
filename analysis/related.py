@@ -34,15 +34,15 @@ def related(node):
 		
 		elif isinstance(node.exp, BinOp):
 			if isinstance(node.exp.left, Symbol):
-				#Mark the left symbol as related to the target symbol.
+				# Mark the left symbol as related to the target symbol.
 				sym1 = node.exp.left
 				
 				if sym1 not in node['post-alive']:
 					sym0['related'].add(sym1)
 			
 			if classGuard(node.exp, Add, Mul) and isinstance(node.exp.right, Symbol):
-				#Mark the right symbol as related to the target symbol if
-				#this is an Add or Mul node.
+				# Mark the right symbol as related to the target symbol if
+				# this is an Add or Mul node.
 				sym1 = node.exp.right
 				
 				if sym1 not in node['post-alive']:

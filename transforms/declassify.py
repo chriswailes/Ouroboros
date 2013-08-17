@@ -71,7 +71,7 @@ def declassify(node, st = None, strings = None, klass = None):
 			node.args.insert(0, node.name.exp)
 	
 	if not isinstance(node, Class):
-		#Declassify the children of this node.
+		# Declassify the children of this node.
 		for child in node:
 			childPreStmts, newChild = declassify(child, st, strings, klass)
 				
@@ -83,7 +83,7 @@ def declassify(node, st = None, strings = None, klass = None):
 				preStmts.append(childPreStmts)
 				newChildren.append(newChild)
 	
-		#Set the node's new children.
+		# Set the node's new children.
 		newChildren = util.flatten(newChildren)
 		node.setChildren(newChildren)
 	

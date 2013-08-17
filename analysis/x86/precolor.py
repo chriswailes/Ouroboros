@@ -22,10 +22,10 @@ def precolor(node):
 		node.left['precolor'] = eax
 	
 	elif isinstance(node, Function):
-		#This clause pre-colors function arguments with their position on the
-		#stack relative to the %ebp register.  The first argument starts 8
-		#bytes above the base pointer.  Each successive argument is 4 bytes
-		#above that.
+		# This clause pre-colors function arguments with their position on
+		# the stack relative to the %ebp register.  The first argument
+		# starts 8 bytes above the base pointer.  Each successive argument is
+		# 4 bytes above that.
 		
 		offset = 8
 		
@@ -36,7 +36,7 @@ def precolor(node):
 			offset += 4
 	
 	elif isinstance(node, Return):
-		#Values are returned from functions in the %eax register.
+		# Values are returned from functions in the %eax register.
 		
 		node['precolor'] = eax
 	

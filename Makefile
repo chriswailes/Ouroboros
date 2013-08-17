@@ -1,7 +1,7 @@
-#Author		= Chris Wailes <chris.wailes@gmail.com
-#Project		= CSCI 5525 HW1
-#Date		= 2010/08/24
-#Description	= This file compiles the generated Python assembly code.
+# Author		= Chris Wailes <chris.wailes@gmail.com>
+# Project		= Ouroboros
+# Date		= 2010/08/24
+# Description	= This file compiles the generated Python assembly code.
 
 CC		= gcc
 CFLAGS	= -O3 -Wall -fPIC -march=native

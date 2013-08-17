@@ -292,12 +292,12 @@ def buildITE(cond, then, els, comp = Immediate(0), jmp = 'jz', test = False):
 	
 	code.append(OneOp(jmp, elsLabel, None))
 	
-	#Now the then case
+	# Now the then case
 	code.append(then)
 	code.append(OneOp('jmp', endLabel, None))
 	
 	if els:
-		#Now the else label and case.
+		# Now the else label and case.
 		code.append(elsLabel)
 		code.append(els)
 	
@@ -336,7 +336,7 @@ def move(src, dest):
 	return TwoOp('mov', src, dest)
 
 def restoreRegs(code, regs, inUse):
-	#Make a copy of the passed in list so we don't reverse it for everyone.
+	# Make a copy of the passed in list so we don't reverse it for everyone.
 	regs = list(regs)
 	regs.reverse()
 	

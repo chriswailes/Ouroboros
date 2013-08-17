@@ -1,7 +1,7 @@
-#Author		= Chris Wailes <chris.wailes@gmail.com
-#Project		= Ouroboros
-#Date		= 2010/09/19
-#Description	= Makefile for pycom/analysis
+# Author		= Chris Wailes <chris.wailes@gmail.com
+# Project		= Ouroboros
+# Date		= 2010/09/19
+# Description 	= Makefile for pycom/analysis
 
 SUBDIRS	= x86
 
